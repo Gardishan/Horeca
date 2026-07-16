@@ -6,7 +6,20 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.ts"],
     coverage: {
-      reporter: ["text", "json", "html"],
+      provider: "v8",
+      reporter: ["text", "json-summary", "html"],
+      include: [
+        "lib/domain/**/*.ts",
+        "lib/http.ts",
+        "lib/rate-limit.ts",
+        "lib/utils.ts",
+      ],
+      thresholds: {
+        branches: 80,
+        functions: 90,
+        lines: 90,
+        statements: 90,
+      },
     },
   },
   resolve: {
@@ -15,4 +28,3 @@ export default defineConfig({
     },
   },
 });
-

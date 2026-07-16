@@ -1,9 +1,11 @@
 import { spawn } from "node:child_process";
 import process from "node:process";
+import { join } from "node:path";
 
 const origin = process.env.SMOKE_ORIGIN ?? "http://127.0.0.1:3100";
 const port = new URL(origin).port || "3100";
-const app = spawn(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "start", "--", "--hostname", "127.0.0.1", "--port", port], {
+const nextCli = join(process.cwd(), "node_modules", "next", "dist", "bin", "next");
+const app = spawn(process.execPath, [nextCli, "start", "--hostname", "127.0.0.1", "--port", port], {
   env: { ...process.env, APP_URL: origin, NEXT_PUBLIC_APP_URL: origin },
   stdio: ["ignore", "pipe", "pipe"],
 });
@@ -15,7 +17,7 @@ app.stderr.on("data", (chunk) => { logs += chunk.toString(); });
 async function waitUntilReady() {
   for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
-      const response = await fetch(`${origin}/api/catalog/products`);
+      const response = await fetch(`${origin}/api/catalog/products`, { signal: AbortSignal.timeout(5_000) });
       if (response.ok) return;
     } catch {
       // Server is still starting.
@@ -30,7 +32,7 @@ function assert(condition, message) {
 }
 
 async function json(path, init = {}) {
-  const response = await fetch(`${origin}${path}`, init);
+  const response = await fetch(`${origin}${path}`, { ...init, signal: init.signal ?? AbortSignal.timeout(10_000) });
   const payload = await response.json();
   return { response, payload };
 }
@@ -85,7 +87,10 @@ async function run() {
   const adminCookie = await login("admin@horeca.kz");
   const companies = await json("/api/admin/companies", { headers: { Cookie: adminCookie } });
   assert(companies.response.ok && companies.payload.data.length >= 2, "Admin companies API is unavailable");
-  const document = await fetch(`${origin}/api/admin/documents/document-registration-active/download`, { headers: { Cookie: adminCookie } });
+  const document = await fetch(`${origin}/api/admin/documents/document-registration-active/download`, {
+    headers: { Cookie: adminCookie },
+    signal: AbortSignal.timeout(10_000),
+  });
   const bytes = Buffer.from(await document.arrayBuffer());
   assert(document.ok && bytes.subarray(0, 5).toString() === "%PDF-", "Protected document download failed");
   checks.push("admin access and protected document download");
@@ -103,8 +108,12 @@ try {
 } finally {
   app.kill("SIGTERM");
   await new Promise((resolve) => {
-    const timeout = setTimeout(resolve, 2_000);
+    const timeout = setTimeout(() => {
+      app.kill("SIGKILL");
+      resolve();
+    }, 2_000);
     app.once("exit", () => { clearTimeout(timeout); resolve(); });
   });
+  app.stdout.destroy();
+  app.stderr.destroy();
 }
-

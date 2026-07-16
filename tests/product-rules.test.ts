@@ -45,5 +45,16 @@ describe("public catalog policy", () => {
     expect(evaluatePublicVisibility({ productStatus: "PUBLISHED", companyStatus: "ACTIVE", verificationStatus: "APPROVED", companyBlocked: false, subscriptionStatus: "ACTIVE" }).allowed).toBe(true);
     expect(evaluatePublicVisibility({ productStatus: "PUBLISHED", companyStatus: "ACTIVE", verificationStatus: "PENDING", companyBlocked: false, subscriptionStatus: "ACTIVE" }).allowed).toBe(false);
   });
-});
 
+  it("reports every reason an untrusted product is hidden", () => {
+    const result = evaluatePublicVisibility({
+      productStatus: "DRAFT",
+      companyStatus: "BLOCKED",
+      verificationStatus: "REJECTED",
+      companyBlocked: true,
+      subscriptionStatus: "EXPIRED",
+    });
+    expect(result.allowed).toBe(false);
+    expect(result.reasons).toHaveLength(5);
+  });
+});
