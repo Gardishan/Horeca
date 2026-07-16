@@ -35,14 +35,12 @@
 ## Запросы, валидация и web security
 
 - [x] Входы API валидируются Zod; Prisma использует параметризованные запросы.
-- [x] Mutation endpoints проверяют `Sec-Fetch-Site` и допустимый Origin.
+- [x] Mutation endpoints требуют допустимый Origin и отклоняют missing/opaque/cross-site запросы; статический тест покрывает все state-changing routes.
 - [x] Cookie не доступна JavaScript.
-- [x] Добавлены security headers: nosniff, frame deny, referrer и permissions policy.
-- [x] Есть honeypot и ограничение частоты login/buyer-request в памяти.
+- [x] Добавлены per-request nonce CSP, production HSTS, API `no-store`, nosniff, frame deny, referrer, permissions и isolation headers.
+- [x] Есть honeypot и rate-limit для login/register/buyer-request; production использует HTTPS shared contract и fail closed, memory разрешена только dev/test.
 - [x] API использует единый безопасный error envelope без stack traces.
-- [ ] Добавить synchronizer/double-submit CSRF token для high-risk админских действий.
-- [ ] Перенести rate limiting в Redis/managed edge limiter, применять ко всем sensitive endpoints.
-- [ ] Добавить CSP с nonce, HSTS и production-specific allowed origins.
+- [ ] Развернуть Redis/edge/shared limiter по документированному contract и применить edge abuse policy ко всем sensitive endpoints.
 - [ ] Настроить WAF/bot protection и abuse monitoring.
 - [ ] Провести SAST, dependency scanning, secret scanning, DAST и pentest.
 
@@ -79,7 +77,7 @@
 - [x] Coverage thresholds применяются к критическим domain и HTTP helpers.
 - [x] CI применяет migration и seed на PostgreSQL 17 и запускает authenticated HTTP smoke.
 - [x] Production dependencies проверяются через `npm audit` на high/critical findings.
-- [x] Moderate advisory имеет владельца, mitigations и срок пересмотра в `docs/security/advisories.json`; несовместимый `npm audit fix --force` запрещён.
+- [x] PostCSS advisory устранён совместимым override на patched release; `npm audit` проверяет полный и production dependency graph.
 - [x] Dependency Review блокирует новые high-risk зависимости в pull requests; до включения GitHub Dependency Graph автоматически используется `npm audit` fallback.
 - [x] CodeQL запускается для PR, `main` и по недельному расписанию.
 - [x] Dependabot обновляет npm и GitHub Actions зависимости.

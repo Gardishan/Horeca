@@ -109,7 +109,7 @@ npm run db:seed
 npm run smoke:http
 ```
 
-Smoke доказывает public trust filter, supplier session, admin boundary, publication policy, buyer request и защищённое скачивание документа.
+Smoke доказывает per-request CSP/HSTS и CSRF negative paths, public trust filter, supplier session, admin boundary, publication policy, buyer request и защищённое скачивание документа.
 
 ## 6. Deterministic repository gate
 

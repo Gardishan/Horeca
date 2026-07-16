@@ -75,10 +75,12 @@ const requiredFiles = [
   "docs/KNOWLEDGE_POLICY.md",
   "docs/PRODUCTION_READINESS.md",
   "docs/PROJECT_CONTEXT.md",
+  "docs/RATE_LIMIT_BACKEND.md",
   "docs/knowledge/source-registry.json",
   "docs/production-readiness.json",
   "docs/security/advisories.json",
   "prisma/schema.prisma",
+  "proxy.ts",
   "scripts/check-readiness.ts",
   "scripts/check-runtime.mjs",
 ];
@@ -112,7 +114,7 @@ for (const file of files) {
   }
 }
 
-const scanRoots = ["app/", "components/", "lib/", "prisma/", "scripts/"];
+const scanRoots = ["app/", "components/", "lib/", "prisma/", "scripts/", "proxy.ts"];
 const sourceExtensions = new Set([".js", ".mjs", ".ts", ".tsx"]);
 const secretPatterns = [
   { name: "private key", pattern: /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/ },
@@ -146,10 +148,17 @@ if (fileSet.has(".env.example")) {
     "APP_URL",
     "NEXT_PUBLIC_APP_URL",
     "PRIVATE_STORAGE_ROOT",
+    "RATE_LIMIT_MODE",
+    "RATE_LIMIT_ALLOW_IN_MEMORY",
+    "RATE_LIMIT_BACKEND_URL",
+    "RATE_LIMIT_BACKEND_TOKEN",
   ]) {
     if (!new RegExp(`^${name}=`, "m").test(envExample)) {
       failures.push(`.env.example не документирует ${name}`);
     }
+  }
+  if (!/^RATE_LIMIT_ALLOW_IN_MEMORY="?false"?$/m.test(envExample)) {
+    failures.push(".env.example не должен разрешать in-memory rate limit в production");
   }
 }
 
@@ -171,6 +180,9 @@ if (fileSet.has("package.json")) {
   }
   if (packageJson.engines?.node !== ">=22 <23") {
     failures.push("package.json должен закреплять поддерживаемую Node.js 22.x ветку");
+  }
+  if (packageJson.overrides?.postcss !== "8.5.19") {
+    failures.push("package.json должен закреплять исправленный PostCSS 8.5.19 до обновления Next.js dependency graph");
   }
 }
 

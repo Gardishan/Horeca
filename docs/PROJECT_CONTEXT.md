@@ -14,6 +14,7 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 - Pure policy: `lib/domain`.
 - Transactional use cases: `lib/services`.
 - HTTP boundaries: `app/api` + `lib/http.ts`.
+- Web perimeter: strict Origin, nonce CSP, production HSTS/API `no-store` и fail-closed remote rate-limit contract.
 - PostgreSQL/Prisma: `prisma/schema.prisma` и versioned migrations.
 - Private uploads: filesystem seam в MVP, никогда не `/public`.
 - Session: подписанная HMAC HttpOnly cookie.
@@ -61,11 +62,11 @@ MVP deliverable проверен, но commercial production readiness не за
 
 - Local storage нужно заменить на private object storage с encryption и lifecycle.
 - `antivirusCheck()` нужно подключить к реальному malware scanner.
-- In-memory rate limiter нужно заменить на Redis/edge limiter.
+- Нужно развернуть shared rate-limit backend по `docs/RATE_LIMIT_BACKEND.md`, WAF и проверить несколько реплик в staging; memory mode разрешён только dev/test.
 - Manual payment flow нужно заменить/дополнить подписанными идемпотентными provider webhooks.
 - Нужны password reset, MFA для admin, session rotation/revocation.
 - Legal/privacy/refund тексты требуют проверки юристом в Казахстане.
-- Нужны CSP с nonce/hash, threat model, pentest, monitoring/alerting и backup/restore drill.
+- Нужны threat model, pentest, monitoring/alerting и backup/restore drill; nonce CSP и strict mutation Origin уже проверяются автоматически.
 
 ## Принятые решения
 
@@ -78,6 +79,7 @@ MVP deliverable проверен, но commercial production readiness не за
 | Deterministic gates + CI | Качество подтверждается командами, а не самоотчётом агента |
 | Evidence-driven DoD | Review-ready, merge и runtime completion нельзя смешивать |
 | Machine-readable readiness | Production blockers имеют status, owner, evidence и next action |
+| Fail-closed abuse boundary | Production не продолжает rate-limited flow при отсутствии shared backend |
 
 ## Когда обновлять этот файл
 

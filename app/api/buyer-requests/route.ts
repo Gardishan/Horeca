@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   return apiHandler(async () => {
     assertSameOrigin(request);
     const meta = clientMeta(request);
-    assertRateLimit(`buyer-request:${meta.ipAddress ?? "unknown"}`, 8, 60 * 60 * 1000);
+    await assertRateLimit(`buyer-request:${meta.ipAddress ?? "unknown"}`, 8, 60 * 60 * 1000);
     const input = await parseJson(request, buyerRequestSchema);
     const { website, ...data } = input;
     void website;

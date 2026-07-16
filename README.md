@@ -50,6 +50,10 @@ npm run dev
 | `NEXT_PUBLIC_APP_URL` | Публичный URL приложения |
 | `PRIVATE_STORAGE_ROOT` | Корень приватного локального хранилища |
 | `DEMO_AUTH_ENABLED` | Резерв для отключения demo-режима перед production |
+| `RATE_LIMIT_MODE` | `memory` только для local dev/test; production использует remote backend |
+| `RATE_LIMIT_BACKEND_URL` | HTTPS endpoint атомарного shared limiter contract |
+| `RATE_LIMIT_BACKEND_TOKEN` | Bearer secret shared limiter из managed secret store |
+| `RATE_LIMIT_ALLOW_IN_MEMORY` | Test-only override; в production должен быть `false` |
 
 Для генерации секрета можно использовать `openssl rand -base64 48`.
 
@@ -203,7 +207,7 @@ docs/                архитектурные решения
 ## Важные ограничения MVP
 
 - Self-service регистрация поставщика есть, но нет email verification, восстановления пароля, MFA и ротации/отзыва сессий.
-- Rate limiting хранится в памяти одного процесса; production требует Redis/edge limiter.
+- В production rate-limited flows fail closed без shared HTTPS backend; контракт готов, но backend/WAF и multi-replica staging proof ещё нужно развернуть.
 - Локальные файлы не подходят для serverless/нескольких реплик.
 - Нет реального антивируса и платёжного шлюза.
 - Тексты оферты, privacy и refund policy — заготовки и должны быть проверены юристом в Казахстане.

@@ -43,7 +43,7 @@
     {
       "id": "production-readiness",
       "type": "machine_configuration",
-      "paths": ["docs/production-readiness.json", "docs/PRODUCTION_READINESS.md", "docs/security/advisories.json"],
+      "paths": ["docs/production-readiness.json", "docs/PRODUCTION_READINESS.md", "docs/RATE_LIMIT_BACKEND.md", "docs/security/advisories.json"],
       "authority": "machine_configuration",
       "requiresCurrentVersion": true
     },

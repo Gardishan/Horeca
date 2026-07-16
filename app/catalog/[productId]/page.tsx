@@ -28,8 +28,17 @@ export default async function ProductPage({ params }: { params: Promise<{ produc
       <nav className="mb-6 text-sm text-slate-500"><Link href="/catalog" className="hover:text-brand-800">Каталог</Link><span className="mx-2">/</span><span>{product.category.name}</span></nav>
       <div className="grid gap-7 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
         <section>
-          <div className="surface-flat overflow-hidden"><div className="aspect-[4/3] bg-[linear-gradient(135deg,#e5f4eb,#f7f1e5)] bg-cover bg-center" style={primaryImage ? { backgroundImage: `url(${primaryImage})` } : undefined} role="img" aria-label={product.name} /></div>
-          {product.images.length > 1 ? <div className="mt-3 grid grid-cols-5 gap-3">{product.images.map((image) => <div key={image.id} className="aspect-square rounded-xl border bg-cover bg-center" style={{ backgroundImage: `url(${image.url})` }} role="img" aria-label={image.alt} />)}</div> : null}
+          <div className="surface-flat aspect-[4/3] overflow-hidden bg-[linear-gradient(135deg,#e5f4eb,#f7f1e5)]">{primaryImage ? (
+            // Direct browser loading avoids server-side fetching of a supplier-controlled URL.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={primaryImage} alt={product.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+          ) : null}</div>
+          {product.images.length > 1 ? <div className="mt-3 grid grid-cols-5 gap-3">{product.images.map((image) => (
+            <div key={image.id} className="aspect-square overflow-hidden rounded-xl border bg-slate-50">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={image.url} alt={image.alt} className="h-full w-full object-cover" loading="lazy" referrerPolicy="no-referrer" />
+            </div>
+          ))}</div> : null}
         </section>
         <section className="surface h-fit p-6 md:p-8">
           <div className="flex flex-wrap gap-2"><StatusBadge status="APPROVED" label="Поставщик проверен" />{company.isRecommended ? <StatusBadge status="PUBLISHED" label="Рекомендуемый" /> : null}</div>

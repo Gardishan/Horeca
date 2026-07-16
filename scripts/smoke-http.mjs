@@ -3,10 +3,20 @@ import process from "node:process";
 import { join } from "node:path";
 
 const origin = process.env.SMOKE_ORIGIN ?? "http://127.0.0.1:3100";
-const port = new URL(origin).port || "3100";
+const smokeUrl = new URL(origin);
+if (!["127.0.0.1", "localhost", "::1"].includes(smokeUrl.hostname)) {
+  throw new Error("smoke:http may only launch against a local origin");
+}
+const port = smokeUrl.port || "3100";
 const nextCli = join(process.cwd(), "node_modules", "next", "dist", "bin", "next");
 const app = spawn(process.execPath, [nextCli, "start", "--hostname", "127.0.0.1", "--port", port], {
-  env: { ...process.env, APP_URL: origin, NEXT_PUBLIC_APP_URL: origin },
+  env: {
+    ...process.env,
+    APP_URL: origin,
+    NEXT_PUBLIC_APP_URL: origin,
+    RATE_LIMIT_MODE: "memory",
+    RATE_LIMIT_ALLOW_IN_MEMORY: "true",
+  },
   stdio: ["ignore", "pipe", "pipe"],
 });
 
@@ -53,10 +63,37 @@ async function run() {
   await waitUntilReady();
   const checks = [];
 
+  const firstPage = await fetch(`${origin}/`, { signal: AbortSignal.timeout(10_000) });
+  const secondPage = await fetch(`${origin}/`, { signal: AbortSignal.timeout(10_000) });
+  const firstCsp = firstPage.headers.get("content-security-policy") ?? "";
+  const secondCsp = secondPage.headers.get("content-security-policy") ?? "";
+  assert(firstPage.ok && secondPage.ok, "Application shell is unavailable");
+  assert(firstCsp.includes("'strict-dynamic'") && firstCsp.includes("'nonce-"), "Nonce CSP is missing");
+  assert(!firstCsp.includes("'unsafe-inline'") && !firstCsp.includes("'unsafe-eval'"), "Production CSP contains an unsafe exception");
+  assert(firstCsp !== secondCsp, "CSP nonce was reused across requests");
+  assert(firstPage.headers.get("strict-transport-security")?.includes("max-age=63072000"), "Production HSTS is missing");
+  assert(firstPage.headers.get("x-content-type-options") === "nosniff", "Security headers are missing");
+  checks.push("per-request CSP nonce and production security headers");
+
   const catalog = await json("/api/catalog/products");
   assert(catalog.response.ok && catalog.payload.data.items.length === 4, "Catalog trust filter returned an unexpected product set");
   assert(catalog.payload.data.items.every((item) => item.company.name === "Qazaq Coffee & Food Supply"), "Unverified supplier leaked into catalog");
+  assert(catalog.response.headers.get("cache-control")?.includes("no-store"), "API response is cacheable");
   checks.push("public catalog trust filter");
+
+  const missingOrigin = await json("/api/buyer-requests", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+  assert(missingOrigin.response.status === 403 && missingOrigin.payload.error.code === "CSRF_REJECTED", "Mutation without Origin was accepted");
+  const crossSite = await json("/api/buyer-requests", {
+    method: "POST",
+    headers: { Origin: "https://attacker.example", "Sec-Fetch-Site": "cross-site", "Content-Type": "application/json" },
+    body: "{}",
+  });
+  assert(crossSite.response.status === 403 && crossSite.payload.error.code === "CSRF_REJECTED", "Cross-site mutation was accepted");
+  checks.push("mutation Origin and Fetch Metadata negative paths");
 
   const supplierCookie = await login("supplier@horeca.kz");
   const dashboard = await json("/api/dashboard/company", { headers: { Cookie: supplierCookie } });

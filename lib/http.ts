@@ -20,13 +20,19 @@ export function assertSameOrigin(request: Request) {
   }
 
   const origin = request.headers.get("origin");
-  if (!origin) return;
+  if (!origin || origin === "null") {
+    throw new AppError("Origin обязателен для изменения данных", 403, "CSRF_REJECTED");
+  }
   const requestUrl = new URL(request.url);
-  const allowedOrigins = new Set([
-    requestUrl.origin,
-    process.env.APP_URL,
-    process.env.NEXT_PUBLIC_APP_URL,
-  ].filter(Boolean));
+  const allowedOrigins = new Set([requestUrl.origin]);
+  for (const configuredUrl of [process.env.APP_URL, process.env.NEXT_PUBLIC_APP_URL]) {
+    if (!configuredUrl) continue;
+    try {
+      allowedOrigins.add(new URL(configuredUrl).origin);
+    } catch {
+      // Runtime validation reports invalid application URLs before serving traffic.
+    }
+  }
   if (!allowedOrigins.has(origin)) {
     throw new AppError("Origin запроса не разрешён", 403, "CSRF_REJECTED");
   }
@@ -98,4 +104,3 @@ export async function apiHandler(handler: () => Promise<Response>) {
     );
   }
 }
-

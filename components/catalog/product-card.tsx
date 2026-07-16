@@ -25,11 +25,19 @@ export function ProductCard({ product }: { product: ProductCardData }) {
     <article className="group surface-flat overflow-hidden hover:-translate-y-1 hover:border-brand-700/25 hover:shadow-soft">
       <Link href={`/catalog/${product.slug}`} className="block">
         <div
-          className="relative aspect-[4/3] bg-[linear-gradient(135deg,#e8f5ed,#f7f3e8)] bg-cover bg-center"
-          style={product.imageUrl ? { backgroundImage: `url(${JSON.stringify(product.imageUrl).slice(1, -1)})` } : undefined}
-          role="img"
-          aria-label={product.name}
+          className="relative aspect-[4/3] overflow-hidden bg-[linear-gradient(135deg,#e8f5ed,#f7f3e8)]"
         >
+          {product.imageUrl ? (
+            // Direct browser loading avoids proxying a supplier-controlled URL through the server.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={product.imageUrl}
+              alt={product.name}
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          ) : null}
           <div className="absolute inset-x-3 top-3 flex flex-wrap gap-2">
             <span className="rounded-full bg-white/92 px-2.5 py-1 text-[0.68rem] font-bold text-brand-950 shadow-sm backdrop-blur">{product.category.name}</span>
             {product.isFeatured || product.company.isRecommended ? <span className="inline-flex items-center gap-1 rounded-full bg-amber-100/95 px-2.5 py-1 text-[0.68rem] font-bold text-amber-900"><Sparkles className="size-3" />Рекомендуем</span> : null}
