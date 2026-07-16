@@ -36,6 +36,8 @@ jobs:
       APP_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       PRIVATE_STORAGE_ROOT: /tmp/horeca-private
+      RATE_LIMIT_MODE: memory
+      RATE_LIMIT_ALLOW_IN_MEMORY: "true"
     steps:
       - uses: actions/checkout@v7
         with:

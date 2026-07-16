@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { AppError } from "@/lib/errors";
@@ -40,8 +42,45 @@ describe("same-origin protection", () => {
     ).toThrowError(/Origin/);
   });
 
-  it("allows requests without a browser Origin header", () => {
-    expect(() => assertSameOrigin(new Request("https://horeca.example/api/test"))).not.toThrow();
+  it("rejects an absent or opaque Origin on a mutation boundary", () => {
+    expect(() => assertSameOrigin(new Request("https://horeca.example/api/test", {
+      method: "POST",
+    }))).toThrowError(/Origin/);
+    expect(() => assertSameOrigin(new Request("https://horeca.example/api/test", {
+      method: "POST",
+      headers: { origin: "null" },
+    }))).toThrowError(/Origin/);
+  });
+
+  it("normalizes configured application URLs to origins", () => {
+    process.env.APP_URL = "https://admin.horeca.example/path/";
+    expect(() => assertSameOrigin(new Request("https://internal.example/api/test", {
+      method: "POST",
+      headers: { origin: "https://admin.horeca.example" },
+    }))).not.toThrow();
+  });
+
+  it("keeps every state-changing route behind the shared origin guard", () => {
+    const root = path.join(process.cwd(), "app", "api");
+    const routeFiles: string[] = [];
+    const visit = (directory: string) => {
+      for (const entry of readdirSync(directory, { withFileTypes: true })) {
+        const absolute = path.join(directory, entry.name);
+        if (entry.isDirectory()) visit(absolute);
+        else if (entry.name === "route.ts") routeFiles.push(absolute);
+      }
+    };
+    visit(root);
+
+    const unsafeRoutes = routeFiles.filter((file) =>
+      /export async function (?:POST|PUT|PATCH|DELETE)/.test(readFileSync(file, "utf8")),
+    );
+    expect(unsafeRoutes.length).toBeGreaterThan(0);
+    for (const file of unsafeRoutes) {
+      expect(readFileSync(file, "utf8"), path.relative(process.cwd(), file)).toContain(
+        "assertSameOrigin(request)",
+      );
+    }
   });
 });
 

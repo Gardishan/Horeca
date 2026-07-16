@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 
@@ -7,7 +8,8 @@ export const metadata: Metadata = {
   description: "B2B-каталог проверенных поставщиков для ресторанов, кафе, отелей и кейтеринга Казахстана.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  await connection();
   return (
     <html lang="ru">
       <body>
@@ -17,4 +19,3 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     </html>
   );
 }
-

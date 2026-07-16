@@ -30,7 +30,7 @@ Security fixes применяются к текущей ветке `main`. Demo-
 - уникальные secrets из managed secret store;
 - private object storage с encryption, retention и malware scanning;
 - реальный payment provider с подписанными идемпотентными webhooks;
-- Redis/edge rate limiter;
+- shared Redis/edge rate-limit backend и WAF по `docs/RATE_LIMIT_BACKEND.md`;
 - backups и проверенный restore;
 - централизованные audit logs, monitoring и alerting;
 - юридическая и privacy-проверка для Казахстана;

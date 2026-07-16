@@ -37,15 +37,15 @@ npm run release:check
 - server-side бизнес-инварианты;
 - воспроизводимая PostgreSQL schema/migration/seed;
 - quality, integration, dependency и CodeQL gates.
+- совместимое устранение PostCSS advisory без downgrade Next.js.
 
 Можно планировать после создания leaf issue:
 
-- web perimeter: distributed rate limiting, CSRF, nonce CSP, HSTS/WAF;
 - repository protection: ruleset/branch protection и private vulnerability reporting.
-- dependency advisory: пересмотр до 01.08.2026 и compatible upgrade без принудительного downgrade Next.js.
 
 Сначала нужен owner decision или внешний доступ:
 
+- shared rate-limit backend, WAF и multi-replica staging readback; nonce CSP, strict Origin, HSTS и fail-closed contract уже реализованы в приложении;
 - hosting/IaC и production cutover;
 - managed database и restore drill;
 - identity provider;

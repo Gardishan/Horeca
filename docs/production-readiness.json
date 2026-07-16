@@ -47,12 +47,12 @@
     {
       "id": "dependency-moderate-advisory",
       "category": "security",
-      "title": "Moderate transitive PostCSS advisory remains under time-bound review",
-      "status": "planned",
+      "title": "PostCSS advisory is resolved with a compatible patched override",
+      "status": "done",
       "blocking": false,
       "owner": "Engineering",
-      "evidence": ["docs/security/advisories.json"],
-      "nextAction": "Review by 2026-08-01 and upgrade Next.js/PostCSS when a compatible patched dependency graph is available; do not apply the incompatible npm audit force downgrade."
+      "evidence": ["package.json", "package-lock.json", "docs/security/advisories.json", "https://github.com/Gardishan/Horeca/issues/10"],
+      "nextAction": "Keep npm audit and Dependency Review green; remove the override only after the supported Next.js dependency graph resolves to PostCSS 8.5.10 or newer."
     },
     {
       "id": "production-platform",
@@ -97,12 +97,12 @@
     {
       "id": "production-web-perimeter",
       "category": "security",
-      "title": "Distributed rate limiting, CSP/CSRF, HSTS, WAF and abuse controls",
-      "status": "planned",
+      "title": "Application perimeter is hardened; shared limiter, WAF and staging readback remain external",
+      "status": "blocked",
       "blocking": true,
       "owner": "Engineering + Platform/DevOps",
-      "evidence": [],
-      "nextAction": "Implement Redis or edge rate limiting, high-risk CSRF tokens and nonce-based CSP; configure HSTS/WAF and prove negative paths in staging."
+      "evidence": ["proxy.ts", "next.config.ts", "lib/http.ts", "lib/rate-limit.ts", "lib/web-security.ts", "tests/http-security.test.ts", "tests/rate-limit.test.ts", "tests/web-security.test.ts", "docs/RATE_LIMIT_BACKEND.md", "https://github.com/Gardishan/Horeca/issues/11"],
+      "nextAction": "Select the production platform, provision the shared HTTPS rate-limit backend and WAF, then attach multi-replica staging negative-path, rollback and observe-window readback to issue #11."
     },
     {
       "id": "production-payments",
@@ -151,7 +151,7 @@
       "status": "planned",
       "blocking": true,
       "owner": "Repository owner",
-      "evidence": [],
+      "evidence": ["https://github.com/Gardishan/Horeca/issues/12"],
       "nextAction": "Enable branch protection or a ruleset requiring Quality and Security checks, prevent force-push/deletion and enable private vulnerability reporting."
     },
     {

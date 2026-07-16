@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   return apiHandler(async () => {
     assertSameOrigin(request);
     const meta = clientMeta(request);
-    assertRateLimit(`login:${meta.ipAddress ?? "unknown"}`, 10, 10 * 60 * 1000);
+    await assertRateLimit(`login:${meta.ipAddress ?? "unknown"}`, 10, 10 * 60 * 1000);
     const input = await parseJson(request, loginSchema);
     if (process.env.DEMO_AUTH_ENABLED === "false" && DEMO_ACCOUNTS.some((account) => account.email === input.email)) {
       throw new AppError("Demo-аккаунты отключены", 403, "DEMO_DISABLED");

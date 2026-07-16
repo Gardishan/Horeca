@@ -46,6 +46,10 @@ flowchart TD
 - File pipeline применяет allowlist, MIME/signature validation, UUID naming и private permissions.
 - Admin download создаёт неизменяемую запись доступа.
 - Payment confirmation отделена от supplier signal.
+- Каждая HTML-страница получает уникальный CSP nonce; production CSP не допускает `unsafe-inline`/`unsafe-eval`.
+- Mutation API требует явный разрешённый Origin и отклоняет отсутствующий, opaque или cross-site Origin до use case.
+- API помечен `no-store`; HSTS и дополнительные browser isolation headers включаются в production build.
+- Rate limit использует локальное состояние только в dev/test; production без HTTPS shared backend завершается fail-closed.
 
 ## Эволюция на 3–6 месяцев
 
