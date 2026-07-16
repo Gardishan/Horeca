@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "product": "HoReCa KZ",
+  "target": "commercial-production",
+  "updatedAt": "2026-07-17",
+  "controls": [
+    {
+      "id": "mvp-critical-flows",
+      "category": "product",
+      "title": "Critical buyer, supplier and admin flows are implemented",
+      "status": "done",
+      "blocking": true,
+      "owner": "Engineering",
+      "evidence": ["README.md", "scripts/smoke-http.mjs"],
+      "nextAction": "Keep the authenticated HTTP smoke green for every release candidate."
+    },
+    {
+      "id": "business-invariants",
+      "category": "application",
+      "title": "Trust, publication, activation and role invariants are server-side",
+      "status": "done",
+      "blocking": true,
+      "owner": "Engineering",
+      "evidence": ["lib/domain/product-rules.ts", "lib/domain/verification-rules.ts", "tests/product-rules.test.ts", "tests/verification-rules.test.ts"],
+      "nextAction": "Add positive and negative tests whenever an invariant changes."
+    },
+    {
+      "id": "database-reproducibility",
+      "category": "data",
+      "title": "Schema, migration and deterministic demo seed are reproducible",
+      "status": "done",
+      "blocking": true,
+      "owner": "Engineering",
+      "evidence": ["prisma/schema.prisma", "prisma/migrations/202607160001_init/migration.sql", "prisma/seed.ts"],
+      "nextAction": "Use a new migration for every schema change and verify it on an empty PostgreSQL database."
+    },
+    {
+      "id": "quality-security-gates",
+      "category": "delivery",
+      "title": "Quality, integration, dependency and CodeQL gates are automated",
+      "status": "done",
+      "blocking": true,
+      "owner": "Engineering",
+      "evidence": [".github/workflows/quality.yml", ".github/workflows/security.yml", "scripts/check-repository.mjs"],
+      "nextAction": "Keep required checks green and review any exception as a separate risk decision."
+    },
+    {
+      "id": "dependency-moderate-advisory",
+      "category": "security",
+      "title": "Moderate transitive PostCSS advisory remains under time-bound review",
+      "status": "planned",
+      "blocking": false,
+      "owner": "Engineering",
+      "evidence": ["docs/security/advisories.json"],
+      "nextAction": "Review by 2026-08-01 and upgrade Next.js/PostCSS when a compatible patched dependency graph is available; do not apply the incompatible npm audit force downgrade."
+    },
+    {
+      "id": "production-platform",
+      "category": "infrastructure",
+      "title": "Production hosting, IaC, TLS, rollout, rollback and observe window",
+      "status": "blocked",
+      "blocking": true,
+      "owner": "Product owner + Platform/DevOps",
+      "evidence": [],
+      "nextAction": "Select the hosting target, commit its source-of-truth configuration, deploy a staging release, document rollback, then complete an authorized production cutover and observe window."
+    },
+    {
+      "id": "production-database",
+      "category": "data",
+      "title": "Managed PostgreSQL uses TLS, least privilege, backups and tested restore",
+      "status": "blocked",
+      "blocking": true,
+      "owner": "Platform/DevOps + Engineering",
+      "evidence": [],
+      "nextAction": "Provision the production database, define RPO/RTO and retention, run a restore drill and attach timestamped evidence."
+    },
+    {
+      "id": "production-identity",
+      "category": "security",
+      "title": "Production identity supports verification, reset, MFA and session revocation",
+      "status": "blocked",
+      "blocking": true,
+      "owner": "Product owner + Engineering",
+      "evidence": [],
+      "nextAction": "Approve an identity provider and implement email verification, password reset, admin MFA, rotation and device/session revocation; remove demo identities from production."
+    },
+    {
+      "id": "production-file-security",
+      "category": "security",
+      "title": "Private object storage, KMS, malware quarantine and retention are live",
+      "status": "blocked",
+      "blocking": true,
+      "owner": "Platform/DevOps + Security",
+      "evidence": [],
+      "nextAction": "Choose private object storage and malware scanning, implement quarantine-before-clean, encryption, lifecycle and DLP/retention controls, then verify download authorization in staging."
+    },
+    {
+      "id": "production-web-perimeter",
+      "category": "security",
+      "title": "Distributed rate limiting, CSP/CSRF, HSTS, WAF and abuse controls",
+      "status": "planned",
+      "blocking": true,
+      "owner": "Engineering + Platform/DevOps",
+      "evidence": [],
+      "nextAction": "Implement Redis or edge rate limiting, high-risk CSRF tokens and nonce-based CSP; configure HSTS/WAF and prove negative paths in staging."
+    },
+    {
+      "id": "production-payments",
+      "category": "billing",
+      "title": "Signed payment webhooks, idempotency, reconciliation and ledger",
+      "status": "blocked",
+      "blocking": true,
+      "owner": "Product owner + Finance + Engineering",
+      "evidence": [],
+      "nextAction": "Select the Kazakhstan payment/fiscal integration, approve the accounting flow, then implement signed idempotent webhooks, reconciliation, ledger and four-eyes controls."
+    },
+    {
+      "id": "production-observability",
+      "category": "operations",
+      "title": "Logs, metrics, traces, alerts and incident response are operational",
+      "status": "blocked",
+      "blocking": true,
+      "owner": "Platform/DevOps + Security",
+      "evidence": [],
+      "nextAction": "Select the monitoring stack, define SLOs and alerts, publish the incident playbook and verify signal/readback during a staging failure exercise."
+    },
+    {
+      "id": "production-secrets",
+      "category": "security",
+      "title": "Secrets are managed and rotated outside repository and runtime images",
+      "status": "blocked",
+      "blocking": true,
+      "owner": "Platform/DevOps + Security",
+      "evidence": [],
+      "nextAction": "Configure a managed secret store, least-privilege access and a tested rotation procedure for auth, database and integration credentials."
+    },
+    {
+      "id": "legal-privacy-approval",
+      "category": "compliance",
+      "title": "Kazakhstan legal texts, privacy impact and retention are approved",
+      "status": "blocked",
+      "blocking": true,
+      "owner": "Product owner + Legal",
+      "evidence": [],
+      "nextAction": "Obtain signed legal review of offer/privacy/refund templates, complete the privacy impact assessment and approve document retention/deletion periods."
+    },
+    {
+      "id": "repository-protection",
+      "category": "delivery",
+      "title": "Main branch protection and private vulnerability reporting are enabled",
+      "status": "planned",
+      "blocking": true,
+      "owner": "Repository owner",
+      "evidence": [],
+      "nextAction": "Enable branch protection or a ruleset requiring Quality and Security checks, prevent force-push/deletion and enable private vulnerability reporting."
+    },
+    {
+      "id": "android-release",
+      "category": "mobile",
+      "title": "Android wrapper is signed, tested and points to the approved production origin",
+      "status": "blocked",
+      "blocking": true,
+      "owner": "Product owner + Mobile release owner",
+      "evidence": [],
+      "nextAction": "Approve the production domain, configure protected signing credentials, test the release build on supported Android versions and complete store/distribution review."
+    }
+  ]
+}

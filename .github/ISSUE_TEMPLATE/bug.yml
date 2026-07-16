@@ -1,0 +1,45 @@
+name: Defect
+description: Reproducible product, security or reliability defect.
+title: "fix: "
+body:
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+      description: Include environment, version/commit and safe error output.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Exact deterministic steps; distinguish environment failure from a code defect.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact and risk
+      description: Affected roles, data, billing, security and frequency.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Closing evidence
+      description: Regression test, relevant suite, runtime readback and rollback if needed.
+    validations:
+      required: true
+  - type: checkboxes
+    id: hygiene
+    attributes:
+      label: Safety
+      options:
+        - label: Logs and attachments contain no secrets, private documents or personal data.
+          required: true

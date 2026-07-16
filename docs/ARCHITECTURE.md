@@ -58,4 +58,4 @@ flowchart TD
 
 ## Architecture fitness functions
 
-CI должен оставаться зелёным по пяти проверкам: Prisma validate, strict TypeScript, domain tests, ESLint и production build. Следующие fitness functions: dependency boundary linting, migration test на пустой/предыдущей БД, API contract tests и security scanning.
+CI должен оставаться зелёным по runtime/repository/readiness gates, Prisma validate, strict TypeScript, coverage, ESLint, production build, migration/seed, authenticated HTTP smoke, dependency audit/review и CodeQL. Commercial launch дополнительно требует строгого readiness gate. Следующие fitness functions: dependency boundary linting, migration upgrade test с предыдущей версии, расширенные API contract tests и DAST.

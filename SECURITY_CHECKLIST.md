@@ -1,6 +1,6 @@
 # Security checklist
 
-Статус MVP на 16.07.2026. `[x]` означает, что контроль реализован в коде; `[ ]` — обязательная production-задача.
+Статус MVP на 17.07.2026. `[x]` означает, что контроль реализован в коде; `[ ]` — обязательная production-задача. Канонический launch status: `docs/production-readiness.json`.
 
 ## Документы и файлы
 
@@ -68,7 +68,7 @@
 - [ ] Определить RPO/RTO, retention и incident response playbook.
 - [ ] Централизовать structured logs, metrics, traces и security alerts.
 - [ ] Настроить secret manager и регулярную ротацию секретов.
-- [ ] Добавить dependency update policy и SBOM.
+- [x] Dependency update policy автоматизирована; CycloneDX SBOM сохраняется как artifact и подписывается GitHub attestation на `main`.
 - [ ] Провести legal review всех шаблонов в юрисдикции Казахстана.
 - [ ] Провести privacy impact assessment и утвердить сроки хранения документов.
 
@@ -79,6 +79,7 @@
 - [x] Coverage thresholds применяются к критическим domain и HTTP helpers.
 - [x] CI применяет migration и seed на PostgreSQL 17 и запускает authenticated HTTP smoke.
 - [x] Production dependencies проверяются через `npm audit` на high/critical findings.
+- [x] Moderate advisory имеет владельца, mitigations и срок пересмотра в `docs/security/advisories.json`; несовместимый `npm audit fix --force` запрещён.
 - [x] Dependency Review блокирует новые high-risk зависимости в pull requests; до включения GitHub Dependency Graph автоматически используется `npm audit` fallback.
 - [x] CodeQL запускается для PR, `main` и по недельному расписанию.
 - [x] Dependabot обновляет npm и GitHub Actions зависимости.

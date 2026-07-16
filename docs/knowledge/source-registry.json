@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "domain": "horeca-kz",
+  "resolutionOrder": [
+    "runtime_evidence",
+    "implementation_truth",
+    "approved_canon",
+    "machine_configuration",
+    "approved_acceptance",
+    "reviewed_decision",
+    "advisory_context"
+  ],
+  "sources": [
+    {
+      "id": "runtime-smoke",
+      "type": "runtime_evidence",
+      "paths": ["scripts/smoke-http.mjs", ".github/workflows/quality.yml"],
+      "authority": "runtime_evidence",
+      "requiresCommitSha": true,
+      "requiresEnvironmentAndTimestamp": true
+    },
+    {
+      "id": "data-model",
+      "type": "source_code",
+      "paths": ["prisma/schema.prisma", "prisma/migrations"],
+      "authority": "implementation_truth",
+      "requiresCommitSha": true
+    },
+    {
+      "id": "business-policies",
+      "type": "source_code_and_tests",
+      "paths": ["lib/domain", "lib/services", "tests"],
+      "authority": "implementation_truth",
+      "requiresCommitSha": true
+    },
+    {
+      "id": "engineering-canon",
+      "type": "approved_documentation",
+      "paths": ["AGENTS.md", "docs/ARCHITECTURE.md", "docs/DEFINITION_OF_DONE.md", "docs/ENGINEERING_PLAYBOOK.md"],
+      "authority": "approved_canon",
+      "requiresCurrentVersion": true
+    },
+    {
+      "id": "production-readiness",
+      "type": "machine_configuration",
+      "paths": ["docs/production-readiness.json", "docs/PRODUCTION_READINESS.md", "docs/security/advisories.json"],
+      "authority": "machine_configuration",
+      "requiresCurrentVersion": true
+    },
+    {
+      "id": "github-acceptance",
+      "type": "issue_and_pull_request",
+      "paths": [".github/ISSUE_TEMPLATE", ".github/PULL_REQUEST_TEMPLATE.md"],
+      "authority": "approved_acceptance",
+      "requiresCommitSha": true
+    },
+    {
+      "id": "external-guidance",
+      "type": "external_documentation",
+      "paths": ["README.md", "THIRD_PARTY_NOTICES.md"],
+      "authority": "advisory_context",
+      "requiresCurrentVersion": true,
+      "restrictions": ["verify_against_current_code", "never_treat_as_runtime_evidence"]
+    }
+  ]
+}

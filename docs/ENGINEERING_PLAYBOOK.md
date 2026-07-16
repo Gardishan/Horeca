@@ -2,6 +2,8 @@
 
 Этот playbook превращает agent-assisted разработку в проверяемый процесс. Он адаптирует применимые идеи ECC под фактический стек HoReCa KZ: search-first, TDD, security review triggers, verification loop, deterministic delivery gate и долговременный project context.
 
+Перед работой применяйте иерархию из `docs/KNOWLEDGE_POLICY.md`: runtime evidence и текущий код/тесты выше transcript, скриншота или внешнего prompt.
+
 ## 1. Search first
 
 До создания нового abstraction найдите существующую реализацию:
@@ -89,12 +91,14 @@ npm run verify
 
 Он последовательно проверяет:
 
-1. состав репозитория и high-confidence secret patterns;
-2. Prisma schema;
-3. strict TypeScript;
-4. unit tests и coverage thresholds;
-5. ESLint;
-6. production Next.js build.
+1. Node.js 22 runtime;
+2. состав репозитория и high-confidence secret patterns;
+3. структуру production readiness registry и evidence paths;
+4. Prisma schema;
+5. strict TypeScript;
+6. unit tests и coverage thresholds;
+7. ESLint;
+8. production Next.js build.
 
 ### Сквозной gate
 
@@ -142,11 +146,23 @@ Smoke доказывает public trust filter, supplier session, admin boundary
 
 Не используйте его как дневник каждого сообщения. Обновляйте при изменении контракта, процесса или риска. Деталь поведения должна жить ближе к коду: в тесте, schema или конкретной архитектурной документации.
 
-## 9. CI defense in depth
+## 9. Evidence-driven completion
+
+Используйте состояния из `docs/DEFINITION_OF_DONE.md`:
+
+- review-ready — ожидает review/merge;
+- merged, runtime pending — код принят, но live критерий не доказан;
+- runtime verified — подтверждён нужный environment;
+- Done — закрыты технический и управленческий DoD.
+
+Audit doc, activity count, touched complexity, число commits/deployments и parent epic не являются delivery evidence. Для внешнего blocker укажите owner и exact next action. Production readiness хранится в machine-readable registry; `npm run release:check` не должен быть зелёным, пока blocking controls реально не закрыты.
+
+## 10. CI defense in depth
 
 - `Quality`: verify, PostgreSQL migration/seed, HTTP smoke и production dependency audit.
 - `Security`: dependency review на PR с `npm audit` fallback при недоступном Dependency Graph и CodeQL на PR/main/weekly schedule.
 - Dependabot: сгруппированные npm и GitHub Actions updates.
+- SBOM: CycloneDX artifact и signed GitHub attestation для `main`.
 - PR template: риск, rollback, schema/security impact и фактические доказательства.
 
 Минимальные GitHub permissions и `persist-credentials: false` уменьшают blast radius workflow.
