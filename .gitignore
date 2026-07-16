@@ -1,0 +1,26 @@
+node_modules/
+.next/
+out/
+coverage/
+.env
+.env.local
+.env.*.local
+*.log
+*.tsbuildinfo
+.DS_Store
+upload/
+
+# Prisma / local databases
+prisma/*.db
+prisma/*.db-journal
+
+# Private uploads: keep the directory policy, never commit user files
+storage/private/company-documents/*
+!storage/private/company-documents/.gitignore
+
+# Android / IDE
+android/.gradle/
+android/local.properties
+android/**/build/
+*.iml
+.idea/
