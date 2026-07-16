@@ -1,0 +1,485 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  SUPPLIER
+  BUYER
+}
+
+enum CompanyStatus {
+  DRAFT
+  PENDING_REVIEW
+  ACTIVE
+  BLOCKED
+  REJECTED
+}
+
+enum VerificationStatus {
+  NOT_STARTED
+  PENDING
+  APPROVED
+  REJECTED
+  REUPLOAD_REQUESTED
+}
+
+enum PlanCode {
+  START
+  PRO
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  INACTIVE
+  PENDING_PAYMENT
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID_PENDING_CONFIRMATION
+  PAID
+  CANCELLED
+}
+
+enum PaymentMethod {
+  MANUAL_BANK_TRANSFER
+  MOCK
+}
+
+enum PaymentStatus {
+  PENDING
+  PROOF_UPLOADED
+  CONFIRMED
+  REJECTED
+}
+
+enum DocumentType {
+  REGISTRATION
+  BIN_IIN
+  BANK_DETAILS
+  CERTIFICATE
+  PRICE_LIST
+  POWER_OF_ATTORNEY
+  OTHER
+}
+
+enum DocumentStatus {
+  UPLOADED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  REUPLOAD_REQUESTED
+}
+
+enum AntivirusStatus {
+  PENDING
+  CLEAN
+  SUSPICIOUS
+  SKIPPED_MOCK
+}
+
+enum LegalType {
+  OFFER
+  PRIVACY
+  SUPPLIER_VERIFICATION
+  REFUND_POLICY
+}
+
+enum RefundStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BillingEventType {
+  INVOICE_CREATED
+  PAYMENT_PROOF_UPLOADED
+  PAYMENT_CONFIRMED
+  PAYMENT_REJECTED
+  SUBSCRIPTION_ACTIVATED
+  SUBSCRIPTION_EXPIRED
+}
+
+enum ProductUnit {
+  KG
+  LITER
+  PIECE
+  BOX
+  BAG
+  PACKAGE
+}
+
+enum AvailabilityStatus {
+  IN_STOCK
+  LOW_STOCK
+  OUT_OF_STOCK
+  PRE_ORDER
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  INACTIVE
+  BLOCKED
+}
+
+enum BuyerRequestStatus {
+  NEW
+  CONTACTED
+  CLOSED
+  SPAM
+}
+
+model User {
+  id                    String                @id @default(cuid())
+  email                 String                @unique
+  passwordHash          String
+  name                  String
+  role                  UserRole              @default(BUYER)
+  company               Company?              @relation("CompanyOwner")
+  reviewedVerifications CompanyVerification[] @relation("VerificationReviewer")
+  reviewedDocuments     CompanyDocument[]     @relation("DocumentReviewer")
+  documentDownloads     DocumentDownloadLog[]
+  legalAcceptances      LegalAcceptance[]
+  auditLogs             AdminAuditLog[]
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+}
+
+model Company {
+  id                   String                 @id @default(cuid())
+  ownerId              String                 @unique
+  owner                User                   @relation("CompanyOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  name                 String
+  legalName            String
+  binIin               String                 @unique
+  address              String
+  city                 String
+  deliveryCities       String[]
+  categories           String[]
+  description          String
+  phone                String
+  email                String
+  whatsapp             String?
+  telegram             String?
+  instagram            String?
+  website              String?
+  logoUrl              String?
+  bannerUrl            String?
+  status               CompanyStatus          @default(DRAFT)
+  verificationStatus   VerificationStatus     @default(NOT_STARTED)
+  isRecommended        Boolean                @default(false)
+  isBlocked            Boolean                @default(false)
+  lastVerifiedAt       DateTime?
+  subscriptions        Subscription[]
+  payments             Payment[]
+  invoices             Invoice[]
+  verifications        CompanyVerification[]
+  documents            CompanyDocument[]
+  legalAcceptances     LegalAcceptance[]
+  refundRequests       RefundRequest[]
+  billingHistory       BillingHistory[]
+  products             Product[]
+  buyerRequests        BuyerRequest[]
+  documentDownloadLogs DocumentDownloadLog[]
+  auditLogs            AdminAuditLog[]
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  @@index([status, verificationStatus, isBlocked])
+  @@index([city])
+}
+
+model SupplierPlan {
+  id           String         @id @default(cuid())
+  code         PlanCode       @unique
+  name         String
+  priceMonthly Decimal        @db.Decimal(12, 2)
+  maxProducts  Int?
+  features     Json
+  subscriptions Subscription[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  companyId String
+  planId    String
+  company   Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  plan      SupplierPlan       @relation(fields: [planId], references: [id])
+  status    SubscriptionStatus @default(INACTIVE)
+  startsAt  DateTime?
+  endsAt    DateTime?
+  invoices  Invoice[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([companyId, status])
+  @@index([status, endsAt])
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  companyId      String
+  subscriptionId String
+  company        Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  subscription   Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  invoiceNumber  String        @unique
+  amount         Decimal       @db.Decimal(12, 2)
+  currency       String        @default("KZT")
+  status         InvoiceStatus @default(DRAFT)
+  mockPdfPath    String?
+  issuedAt       DateTime?
+  dueAt          DateTime?
+  payments       Payment[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([companyId, status])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  companyId     String
+  invoiceId     String
+  company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoice       Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount        Decimal       @db.Decimal(12, 2)
+  currency      String        @default("KZT")
+  method        PaymentMethod @default(MANUAL_BANK_TRANSFER)
+  status        PaymentStatus @default(PENDING)
+  proofFilePath String?
+  adminComment  String?
+  paidAt        DateTime?
+  confirmedAt   DateTime?
+  refundRequests RefundRequest[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([companyId, status])
+  @@index([invoiceId])
+}
+
+model CompanyVerification {
+  id             String             @id @default(cuid())
+  companyId      String
+  company        Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  status         VerificationStatus @default(NOT_STARTED)
+  submittedAt    DateTime?
+  reviewedAt     DateTime?
+  reviewedById   String?
+  reviewedBy     User?              @relation("VerificationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  adminComment   String?
+  documents      CompanyDocument[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([status, submittedAt])
+  @@index([companyId, createdAt])
+}
+
+model CompanyDocument {
+  id              String            @id @default(cuid())
+  companyId       String
+  verificationId  String?
+  company         Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  verification    CompanyVerification? @relation(fields: [verificationId], references: [id], onDelete: SetNull)
+  type             DocumentType
+  originalName     String
+  storedName       String            @unique
+  storagePath      String
+  mimeType         String
+  size             Int
+  status           DocumentStatus    @default(UPLOADED)
+  antivirusStatus  AntivirusStatus   @default(PENDING)
+  adminComment     String?
+  uploadedAt       DateTime          @default(now())
+  reviewedAt       DateTime?
+  reviewedById     String?
+  reviewedBy       User?             @relation("DocumentReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  downloadLogs     DocumentDownloadLog[]
+
+  @@index([companyId, status])
+  @@index([verificationId])
+}
+
+model LegalAcceptance {
+  id         String    @id @default(cuid())
+  companyId  String
+  userId     String
+  company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       LegalType
+  version    String
+  acceptedAt DateTime  @default(now())
+  ipAddress  String?
+  userAgent  String?
+
+  @@unique([companyId, userId, type, version])
+  @@index([companyId, type])
+}
+
+model RefundRequest {
+  id           String       @id @default(cuid())
+  companyId    String
+  paymentId    String
+  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  payment      Payment      @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  status       RefundStatus @default(PENDING)
+  reason       String
+  amount       Decimal      @db.Decimal(12, 2)
+  adminComment String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([companyId, status])
+}
+
+model BillingHistory {
+  id          String           @id @default(cuid())
+  companyId   String
+  company     Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  type        BillingEventType
+  amount      Decimal?         @db.Decimal(12, 2)
+  description String
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+
+  @@index([companyId, createdAt])
+}
+
+model ProductCategory {
+  id        String            @id @default(cuid())
+  name      String
+  slug      String            @unique
+  parentId  String?
+  parent    ProductCategory?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  ProductCategory[] @relation("CategoryTree")
+  products  Product[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([parentId])
+}
+
+model DeliveryCity {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id                 String             @id @default(cuid())
+  companyId          String
+  company            Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name               String
+  slug               String             @unique
+  sku                String
+  categoryId         String
+  category           ProductCategory    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  description        String
+  price              Decimal            @db.Decimal(12, 2)
+  wholesalePrice     Decimal?           @db.Decimal(12, 2)
+  currency           String             @default("KZT")
+  unit               ProductUnit
+  moq                Int                @default(1)
+  stock              Int                @default(0)
+  availabilityStatus AvailabilityStatus @default(IN_STOCK)
+  status             ProductStatus      @default(DRAFT)
+  city               String
+  deliveryCities     String[]
+  leadTimeDays       Int                @default(1)
+  imageUrl           String?
+  isFeatured         Boolean            @default(false)
+  images             ProductImage[]
+  buyerRequests      BuyerRequest[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@unique([companyId, sku])
+  @@index([status, categoryId, city])
+  @@index([companyId, status])
+  @@index([name])
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([productId, sortOrder])
+}
+
+model BuyerRequest {
+  id           String             @id @default(cuid())
+  productId    String
+  companyId    String
+  product      Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  company      Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  buyerName    String
+  buyerCompany String
+  phone        String
+  email        String
+  message      String
+  quantity     Int
+  status       BuyerRequestStatus @default(NEW)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([companyId, status, createdAt])
+  @@index([productId])
+}
+
+model DocumentDownloadLog {
+  id          String          @id @default(cuid())
+  documentId  String
+  adminUserId String
+  companyId   String
+  document    CompanyDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  adminUser   User            @relation(fields: [adminUserId], references: [id], onDelete: Restrict)
+  company     Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ipAddress   String?
+  userAgent   String?
+  downloadedAt DateTime       @default(now())
+
+  @@index([documentId, downloadedAt])
+  @@index([companyId, downloadedAt])
+}
+
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  adminUserId String
+  companyId   String?
+  adminUser   User     @relation(fields: [adminUserId], references: [id], onDelete: Restrict)
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  action      String
+  entityType  String
+  entityId    String
+  before      Json?
+  after       Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@index([adminUserId, createdAt])
+}
