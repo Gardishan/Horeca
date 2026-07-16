@@ -61,7 +61,7 @@
       "status": "blocked",
       "blocking": true,
       "owner": "Product owner + Platform/DevOps",
-      "evidence": [],
+      "evidence": ["https://github.com/Gardishan/Horeca/issues/14"],
       "nextAction": "Select the hosting target, commit its source-of-truth configuration, deploy a staging release, document rollback, then complete an authorized production cutover and observe window."
     },
     {
@@ -71,7 +71,7 @@
       "status": "blocked",
       "blocking": true,
       "owner": "Platform/DevOps + Engineering",
-      "evidence": [],
+      "evidence": ["https://github.com/Gardishan/Horeca/issues/16"],
       "nextAction": "Provision the production database, define RPO/RTO and retention, run a restore drill and attach timestamped evidence."
     },
     {
@@ -81,7 +81,7 @@
       "status": "blocked",
       "blocking": true,
       "owner": "Product owner + Engineering",
-      "evidence": [],
+      "evidence": ["https://github.com/Gardishan/Horeca/issues/17"],
       "nextAction": "Approve an identity provider and implement email verification, password reset, admin MFA, rotation and device/session revocation; remove demo identities from production."
     },
     {
@@ -91,7 +91,7 @@
       "status": "blocked",
       "blocking": true,
       "owner": "Platform/DevOps + Security",
-      "evidence": [],
+      "evidence": ["https://github.com/Gardishan/Horeca/issues/15"],
       "nextAction": "Choose private object storage and malware scanning, implement quarantine-before-clean, encryption, lifecycle and DLP/retention controls, then verify download authorization in staging."
     },
     {
@@ -111,7 +111,7 @@
       "status": "blocked",
       "blocking": true,
       "owner": "Product owner + Finance + Engineering",
-      "evidence": [],
+      "evidence": ["https://github.com/Gardishan/Horeca/issues/18"],
       "nextAction": "Select the Kazakhstan payment/fiscal integration, approve the accounting flow, then implement signed idempotent webhooks, reconciliation, ledger and four-eyes controls."
     },
     {
@@ -121,7 +121,7 @@
       "status": "blocked",
       "blocking": true,
       "owner": "Platform/DevOps + Security",
-      "evidence": [],
+      "evidence": ["https://github.com/Gardishan/Horeca/issues/20"],
       "nextAction": "Select the monitoring stack, define SLOs and alerts, publish the incident playbook and verify signal/readback during a staging failure exercise."
     },
     {
@@ -131,7 +131,7 @@
       "status": "blocked",
       "blocking": true,
       "owner": "Platform/DevOps + Security",
-      "evidence": [],
+      "evidence": ["https://github.com/Gardishan/Horeca/issues/21"],
       "nextAction": "Configure a managed secret store, least-privilege access and a tested rotation procedure for auth, database and integration credentials."
     },
     {
@@ -141,7 +141,7 @@
       "status": "blocked",
       "blocking": true,
       "owner": "Product owner + Legal",
-      "evidence": [],
+      "evidence": ["https://github.com/Gardishan/Horeca/issues/22"],
       "nextAction": "Obtain signed legal review of offer/privacy/refund templates, complete the privacy impact assessment and approve document retention/deletion periods."
     },
     {
@@ -161,7 +161,7 @@
       "status": "blocked",
       "blocking": true,
       "owner": "Product owner + Mobile release owner",
-      "evidence": [],
+      "evidence": ["https://github.com/Gardishan/Horeca/issues/19"],
       "nextAction": "Approve the production domain, configure protected signing credentials, test the release build on supported Android versions and complete store/distribution review."
     }
   ]

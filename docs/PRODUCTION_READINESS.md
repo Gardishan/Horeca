@@ -55,3 +55,4 @@ npm run release:check
 - Android signing и production distribution.
 
 Подробные владельцы и закрывающие действия хранятся в registry и выводятся `npm run check:readiness`.
+Каждый незавершённый blocking control связан с отдельным GitHub leaf issue из evidence registry; parent epic — issue #9.
