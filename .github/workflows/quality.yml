@@ -5,25 +5,48 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: horeca
+          POSTGRES_USER: horeca
+          POSTGRES_PASSWORD: horeca
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U horeca -d horeca"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
       DATABASE_URL: postgresql://horeca:horeca@localhost:5432/horeca?schema=public
       AUTH_SECRET: ci-only-secret-with-at-least-thirty-two-characters
       APP_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
+      PRIVATE_STORAGE_ROOT: /tmp/horeca-private
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run prisma:validate
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run lint
-      - run: npm run build
-
+      - run: npm run verify
+      - run: npm run db:deploy
+      - run: npm run db:seed
+      - run: npm run smoke:http
+      - run: npm run security:audit

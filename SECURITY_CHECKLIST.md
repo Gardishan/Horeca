@@ -72,3 +72,16 @@
 - [ ] Провести legal review всех шаблонов в юрисдикции Казахстана.
 - [ ] Провести privacy impact assessment и утвердить сроки хранения документов.
 
+## Supply chain и delivery
+
+- [x] `npm ci` использует зафиксированный lockfile.
+- [x] Repository gate блокирует `.env`, private uploads, generated artifacts и high-confidence secrets.
+- [x] Coverage thresholds применяются к критическим domain и HTTP helpers.
+- [x] CI применяет migration и seed на PostgreSQL 17 и запускает authenticated HTTP smoke.
+- [x] Production dependencies проверяются через `npm audit` на high/critical findings.
+- [x] Dependency Review блокирует новые high-risk зависимости в pull requests; до включения GitHub Dependency Graph автоматически используется `npm audit` fallback.
+- [x] CodeQL запускается для PR, `main` и по недельному расписанию.
+- [x] Dependabot обновляет npm и GitHub Actions зависимости.
+- [x] Workflow permissions минимизированы; checkout не сохраняет credentials.
+- [ ] Включить branch protection для `main` с обязательными Quality и Security checks.
+- [ ] Настроить private vulnerability reporting и incident response contacts.
