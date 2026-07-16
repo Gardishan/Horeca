@@ -1,0 +1,61 @@
+name: Product change
+description: User-facing feature or business-rule change with measurable acceptance.
+title: "feat: "
+body:
+  - type: markdown
+    attributes:
+      value: "Describe one leaf result. Activity, a draft PR or a parent epic is not Done."
+  - type: textarea
+    id: outcome
+    attributes:
+      label: User or operational outcome
+      description: Who gets what observable result?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Include happy path, invalid input and forbidden role/state where relevant.
+      placeholder: |
+        - [ ] Happy path...
+        - [ ] Negative path...
+        - [ ] Role/state boundary...
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Highest risk area
+      options:
+        - Standard product/UI
+        - Authentication or authorization
+        - Billing or subscription
+        - Files, PII or legal data
+        - Database migration
+        - Infrastructure or production runtime
+    validations:
+      required: true
+  - type: textarea
+    id: ownership
+    attributes:
+      label: Owner, dependencies and blockers
+      description: Name the result owner and the exact external action if blocked.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Required evidence
+      description: Commands, tests, smoke/readback, rollout, rollback and observe window as applicable.
+    validations:
+      required: true
+  - type: checkboxes
+    id: hygiene
+    attributes:
+      label: Intake checks
+      options:
+        - label: This is a leaf scope or explicitly lists its open leaf issues.
+          required: true
+        - label: The issue contains no secrets, private documents or personal data.
+          required: true

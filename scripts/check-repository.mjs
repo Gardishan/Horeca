@@ -27,6 +27,7 @@ function walk(directory, prefix = "") {
     }
     if (
       entry.name.endsWith(".tsbuildinfo") ||
+      relative === "sbom.cdx.json" ||
       relative === ".env" ||
       relative === ".env.local" ||
       /^\.env\..+\.local$/.test(relative)
@@ -56,22 +57,37 @@ const fileSet = new Set(files);
 
 const requiredFiles = [
   ".env.example",
+  ".node-version",
+  ".nvmrc",
+  ".npmrc",
+  ".github/ISSUE_TEMPLATE/bug.yml",
+  ".github/ISSUE_TEMPLATE/feature.yml",
+  ".github/ISSUE_TEMPLATE/production-change.yml",
   ".github/workflows/quality.yml",
+  ".github/workflows/security.yml",
   "AGENTS.md",
   "README.md",
   "SECURITY.md",
   "SECURITY_CHECKLIST.md",
   "docs/ARCHITECTURE.md",
+  "docs/DEFINITION_OF_DONE.md",
   "docs/ENGINEERING_PLAYBOOK.md",
+  "docs/KNOWLEDGE_POLICY.md",
+  "docs/PRODUCTION_READINESS.md",
   "docs/PROJECT_CONTEXT.md",
+  "docs/knowledge/source-registry.json",
+  "docs/production-readiness.json",
+  "docs/security/advisories.json",
   "prisma/schema.prisma",
+  "scripts/check-readiness.ts",
+  "scripts/check-runtime.mjs",
 ];
 
 for (const required of requiredFiles) {
   if (!fileSet.has(required)) failures.push(`Отсутствует обязательный файл: ${required}`);
 }
 
-const forbiddenExact = new Set([".env", ".env.local", "tsconfig.tsbuildinfo"]);
+const forbiddenExact = new Set([".env", ".env.local", "sbom.cdx.json", "tsconfig.tsbuildinfo"]);
 const forbiddenPrefixes = [".next/", "coverage/", "node_modules/", "upload/"];
 
 for (const file of files) {
@@ -139,8 +155,67 @@ if (fileSet.has(".env.example")) {
 
 if (fileSet.has("package.json")) {
   const packageJson = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
-  for (const script of ["build", "check:repo", "lint", "test:coverage", "typecheck", "verify"]) {
+  for (const script of [
+    "build",
+    "check:readiness",
+    "check:repo",
+    "check:runtime",
+    "lint",
+    "release:check",
+    "security:sbom",
+    "test:coverage",
+    "typecheck",
+    "verify",
+  ]) {
     if (!packageJson.scripts?.[script]) failures.push(`package.json не содержит script ${script}`);
+  }
+  if (packageJson.engines?.node !== ">=22 <23") {
+    failures.push("package.json должен закреплять поддерживаемую Node.js 22.x ветку");
+  }
+}
+
+for (const runtimePin of [".nvmrc", ".node-version"]) {
+  if (fileSet.has(runtimePin) && readFileSync(path.join(root, runtimePin), "utf8").trim() !== "22") {
+    failures.push(`${runtimePin} должен закреплять Node.js 22`);
+  }
+}
+
+if (
+  fileSet.has(".npmrc") &&
+  !/^engine-strict=true$/m.test(readFileSync(path.join(root, ".npmrc"), "utf8"))
+) {
+  failures.push(".npmrc должен запрещать установку на неподдерживаемом Node.js runtime");
+}
+
+if (fileSet.has("docs/knowledge/source-registry.json")) {
+  try {
+    const registry = JSON.parse(
+      readFileSync(path.join(root, "docs/knowledge/source-registry.json"), "utf8"),
+    );
+    if (registry.version !== 1 || !Array.isArray(registry.sources) || registry.sources.length === 0) {
+      failures.push("Knowledge source registry имеет неподдерживаемую структуру");
+    }
+  } catch {
+    failures.push("Knowledge source registry содержит невалидный JSON");
+  }
+}
+
+if (fileSet.has("docs/security/advisories.json")) {
+  try {
+    const advisories = JSON.parse(
+      readFileSync(path.join(root, "docs/security/advisories.json"), "utf8"),
+    );
+    if (
+      advisories.version !== 1 ||
+      !Array.isArray(advisories.exceptions) ||
+      advisories.exceptions.some(
+        (item) => !item.id || !item.owner || !item.reviewBy || !Array.isArray(item.mitigations),
+      )
+    ) {
+      failures.push("Security advisory registry имеет неподдерживаемую структуру");
+    }
+  } catch {
+    failures.push("Security advisory registry содержит невалидный JSON");
   }
 }
 

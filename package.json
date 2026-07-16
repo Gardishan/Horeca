@@ -3,13 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=22 <23"
   },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "check:runtime": "node scripts/check-runtime.mjs",
     "check:repo": "node scripts/check-repository.mjs",
+    "check:readiness": "node --import tsx scripts/check-readiness.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -17,14 +19,16 @@
     "test:watch": "vitest",
     "smoke:http": "node scripts/smoke-http.mjs",
     "security:audit": "npm audit --omit=dev --audit-level=high",
+    "security:sbom": "npm sbom --omit=dev --sbom-format=cyclonedx > sbom.cdx.json",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "quality:quick": "npm run check:repo && npm run typecheck && npm run test && npm run lint",
-    "verify": "npm run check:repo && npm run prisma:validate && npm run typecheck && npm run test:coverage && npm run lint && npm run build",
+    "quality:quick": "npm run check:runtime && npm run check:repo && npm run check:readiness && npm run typecheck && npm run test && npm run lint",
+    "verify": "npm run check:runtime && npm run check:repo && npm run check:readiness && npm run prisma:validate && npm run typecheck && npm run test:coverage && npm run lint && npm run build",
+    "release:check": "npm run verify && npm run security:audit && npm run check:readiness -- --strict",
     "validate": "npm run verify",
     "postinstall": "prisma generate"
   },
@@ -42,7 +46,6 @@
     "@types/node": "^24.10.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
-    "@vitest/coverage-v8": "4.1.10",
     "@vitest/coverage-v8": "4.1.10",
     "dotenv": "17.4.2",
     "eslint": "9.39.5",

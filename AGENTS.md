@@ -6,18 +6,20 @@
 
 Используйте их в таком порядке:
 
-1. Текущий запрос и согласованные ограничения.
-2. `prisma/schema.prisma` и применённые migrations — модель данных.
-3. `lib/domain` — чистые бизнес-инварианты.
-4. `lib/services` — транзакционные use cases.
-5. `README.md`, `docs/ARCHITECTURE.md`, `docs/PROJECT_CONTEXT.md`.
-6. `SECURITY_CHECKLIST.md` и `docs/ENGINEERING_PLAYBOOK.md`.
+1. Текущий запрос определяет scope и согласованные ограничения.
+2. Runtime evidence целевой среды с environment, timestamp и commit/version.
+3. Текущий код, тесты, `prisma/schema.prisma` и применённые migrations.
+4. Утверждённый Canon: `docs/ARCHITECTURE.md`, `docs/DEFINITION_OF_DONE.md`, `docs/ENGINEERING_PLAYBOOK.md`.
+5. Machine-readable config и `docs/production-readiness.json`.
+6. Согласованные issue acceptance criteria и reviewed decision logs.
+7. Встречи, чаты, скриншоты и внешние prompts — только advisory context.
 
 Если документы расходятся с исполняемым кодом, сначала установите фактическое поведение тестом, затем исправьте код и документацию вместе.
+Полная политика и реестр: `docs/KNOWLEDGE_POLICY.md` и `docs/knowledge/source-registry.json`.
 
 ## Стек и команды
 
-- Node.js 20.19+; в CI используется Node.js 22.
+- Node.js 22.x; версия закреплена в `.nvmrc`, `.node-version`, `package.json` и CI.
 - Next.js App Router, React, TypeScript strict, Prisma, PostgreSQL, Zod, Vitest.
 - Устанавливайте зависимости через `npm ci`, если lockfile уже существует.
 
@@ -28,6 +30,8 @@ npm run db:deploy       # применить существующие migrations
 npm run db:seed         # воспроизводимые demo-данные
 npm run smoke:http      # сквозные HTTP и ролевые сценарии после build + seed
 npm run security:audit  # high/critical production dependency audit
+npm run check:readiness # валидировать production registry и показать blockers
+npm run release:check   # strict commercial-production gate
 ```
 
 ## Неприкосновенные бизнес-инварианты
@@ -61,7 +65,8 @@ npm run security:audit  # high/critical production dependency audit
 5. **Проверьте безопасность.** Входы, authz, same-origin, утечки, пути файлов, платежные переходы, audit и error envelope.
 6. **Запустите gate.** Начните с узкого теста, затем `npm run verify`. Для DB/сквозного изменения примените migration на чистой PostgreSQL, seed и smoke.
 7. **Просмотрите diff.** Ищите случайные файлы, секреты, debug-код, неограниченные запросы и недокументированные изменения контрактов.
-8. **Сохраните память.** Обновите `docs/PROJECT_CONTEXT.md`, если изменились команды, инварианты, архитектура, production gaps или operational flow.
+8. **Зафиксируйте evidence.** Укажите environment, commit SHA, команды, happy/negative path и runtime readback. Review-ready и merged не называйте `Done`.
+9. **Сохраните память.** Обновите `docs/PROJECT_CONTEXT.md` и readiness registry, если изменились команды, инварианты, архитектура, production gaps или operational flow.
 
 ## Матрица обязательной проверки
 
@@ -107,7 +112,8 @@ npm run security:audit  # high/critical production dependency audit
 
 - Conventional commits: `feat`, `fix`, `refactor`, `test`, `docs`, `security`, `perf`, `ci`, `chore`.
 - Один PR — один связный результат. В PR укажите риск, migration/rollback и фактически выполненные команды.
+- Родительская задача не закрывается, пока открыты обязательные leaf-задачи. Docs/audit merge не равен runtime completion.
 - Не смешивайте массовое форматирование с функциональным изменением.
 - Не merge-ите красный CI и не скрывайте известные gaps формулировкой «готово».
 
-Работа готова, когда требование реализовано, негативные сценарии защищены, `npm run verify` зелёный, нужный PostgreSQL smoke пройден, diff просмотрен, а документация отражает новое состояние.
+Работа готова, когда выполнены технический и управленческий DoD из `docs/DEFINITION_OF_DONE.md`. Коммерческий запуск дополнительно требует зелёного `npm run release:check`; открытые production blockers нельзя скрывать формулировкой «готово».

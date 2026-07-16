@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "updatedAt": "2026-07-17",
+  "exceptions": [
+    {
+      "id": "GHSA-qx2v-qp2m-jg93",
+      "severity": "moderate",
+      "dependency": "postcss",
+      "introducedBy": "next@16.2.10",
+      "status": "temporary-risk-acceptance",
+      "owner": "Engineering",
+      "reviewBy": "2026-08-01",
+      "rationale": "The vulnerable stringify path is transitive build tooling and HoReCa KZ does not accept or stringify untrusted CSS. npm audit currently proposes a forced downgrade to Next.js 9.3.3, which is incompatible and creates greater security and reliability risk.",
+      "mitigations": [
+        "Do not process user-controlled CSS",
+        "Keep Dependency Review, Dependabot and weekly audit enabled",
+        "Upgrade Next.js/PostCSS as soon as a compatible patched dependency graph is available"
+      ],
+      "references": [
+        "https://github.com/advisories/GHSA-qx2v-qp2m-jg93"
+      ]
+    }
+  ]
+}

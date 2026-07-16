@@ -36,4 +36,4 @@ Security fixes применяются к текущей ветке `main`. Demo-
 - юридическая и privacy-проверка для Казахстана;
 - threat model, pentest и incident response runbook.
 
-Текущее состояние контролей отслеживается в `SECURITY_CHECKLIST.md`.
+Текущее состояние контролей отслеживается в `SECURITY_CHECKLIST.md`, а блокирующий commercial launch status — в `docs/production-readiness.json`. Временные dependency exceptions находятся в `docs/security/advisories.json`.

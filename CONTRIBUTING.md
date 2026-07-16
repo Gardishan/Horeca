@@ -2,6 +2,8 @@
 
 ## Быстрый старт
 
+Используйте Node.js 22.x. `.nvmrc` и `.node-version` являются каноническими runtime pins.
+
 ```bash
 cp .env.example .env
 docker compose up -d postgres
@@ -22,6 +24,7 @@ npm run dev
 5. Запустите узкие тесты, затем `npm run verify`.
 6. Для schema/API/auth/billing/uploads выполните дополнительные проверки из `AGENTS.md`.
 7. Заполните PR template фактическими командами и результатами.
+8. Не закрывайте parent issue, если обязательные leaf-задачи, runtime evidence или external approvals остаются открыты.
 
 ## Quality gates
 
@@ -29,6 +32,7 @@ npm run dev
 npm run quality:quick
 npm run verify
 npm run security:audit
+npm run check:readiness
 ```
 
 Для изменений данных и сквозных сценариев:
@@ -41,6 +45,14 @@ npm run smoke:http
 ```
 
 CI повторяет full verification на PostgreSQL 17, включая migration, seed и HTTP smoke.
+
+`npm run release:check` предназначен для commercial production candidate и остаётся красным, пока registry содержит blocking controls.
+
+## Runtime и сбои окружения
+
+Перед выводом о дефекте зафиксируйте `node -v`, `npm -v`, путь runtime и повторите проверку под Node.js 22. Поломка локального package manager или native library классифицируется как environment blocker, пока тот же тест не воспроизведён на поддерживаемом runtime.
+
+Не создавайте ручные symlink между несовместимыми версиями native libraries. Восстановите поддерживаемый runtime через version manager и повторите исходную команду.
 
 ## Тесты
 
@@ -75,4 +87,7 @@ PR блокируется при failing quality/security checks, неизвес
 - Архитектурные решения: `docs/ARCHITECTURE.md`.
 - Текущее состояние и известные gaps: `docs/PROJECT_CONTEXT.md`.
 - Процесс проверки: `docs/ENGINEERING_PLAYBOOK.md`.
+- Definition of Done: `docs/DEFINITION_OF_DONE.md`.
+- Иерархия источников: `docs/KNOWLEDGE_POLICY.md`.
+- Commercial launch status: `docs/PRODUCTION_READINESS.md` и `docs/production-readiness.json`.
 - Реализованные и pending security controls: `SECURITY_CHECKLIST.md`.

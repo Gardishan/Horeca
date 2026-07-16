@@ -1,0 +1,57 @@
+name: Production or infrastructure change
+description: Runtime, hosting, database, network, security or operational change.
+title: "ops: "
+body:
+  - type: markdown
+    attributes:
+      value: "Merged configuration or an audit document is not runtime completion. Production changes require authorization, readback and an observe window."
+  - type: textarea
+    id: target
+    attributes:
+      label: Target and source of truth
+      description: Environment/service and the repository/configuration that owns desired state.
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current state and evidence
+      description: Safe read-only evidence, timestamp and commit/version.
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: Planned change and acceptance
+      description: Include happy path, negative path, cost/security/reliability constraints.
+    validations:
+      required: true
+  - type: textarea
+    id: authorization
+    attributes:
+      label: Owner and production authorization
+      description: Who executes, who approves and what access is required?
+    validations:
+      required: true
+  - type: textarea
+    id: rollout
+    attributes:
+      label: Staging, rollout and rollback
+    validations:
+      required: true
+  - type: textarea
+    id: observe
+    attributes:
+      label: Observe window and closing evidence
+      description: Metrics/logs/readback, duration and exact Done signal.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety checks
+      options:
+        - label: Destructive steps require backup/restore evidence and explicit approval.
+          required: true
+        - label: Evidence contains no secrets, production dumps, private documents or personal data.
+          required: true
