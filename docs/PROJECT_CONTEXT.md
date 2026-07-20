@@ -85,6 +85,7 @@ MVP deliverable проверен, но commercial production readiness не за
 | Fail-closed abuse boundary | Production не продолжает rate-limited flow при отсутствии shared backend |
 | Provider-neutral OCI baseline | Hosting ещё не выбран; immutable standalone image сохраняет переносимость и единый tested artifact |
 | Split health probes | Liveness управляет restart, readiness не пускает traffic без config + PostgreSQL |
+| Dependabot minor/patch automation | Major toolchain upgrades требуют совместимой migration всей матрицы; security updates остаются независимыми |
 
 ## Когда обновлять этот файл
 

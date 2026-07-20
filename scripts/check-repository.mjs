@@ -63,6 +63,7 @@ const requiredFiles = [
   ".github/ISSUE_TEMPLATE/bug.yml",
   ".github/ISSUE_TEMPLATE/feature.yml",
   ".github/ISSUE_TEMPLATE/production-change.yml",
+  ".github/dependabot.yml",
   ".github/workflows/quality.yml",
   ".github/workflows/security.yml",
   ".dockerignore",
@@ -216,6 +217,19 @@ if (
   !/^engine-strict=true$/m.test(readFileSync(path.join(root, ".npmrc"), "utf8"))
 ) {
   failures.push(".npmrc должен запрещать установку на неподдерживаемом Node.js runtime");
+}
+
+if (fileSet.has(".github/dependabot.yml")) {
+  const dependabot = readFileSync(path.join(root, ".github/dependabot.yml"), "utf8");
+  if (
+    !/dependency-name:\s*["']\*["'][\s\S]*update-types:[\s\S]*version-update:semver-major/.test(
+      dependabot,
+    )
+  ) {
+    failures.push(
+      "Dependabot должен оставлять major version updates для отдельного совместимого migration PR",
+    );
+  }
 }
 
 if (fileSet.has("docs/knowledge/source-registry.json")) {

@@ -19,6 +19,14 @@ updates:
         update-types:
           - minor
           - patch
+    # Major upgrades are coordinated in a tracked engineering issue because
+    # the Node/Next/TypeScript/ESLint/Prisma compatibility matrix must move as
+    # one reviewed change. Dependabot security updates are unaffected by this
+    # version-update filter.
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: github-actions
     directory: /

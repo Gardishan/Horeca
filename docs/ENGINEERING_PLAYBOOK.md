@@ -161,9 +161,11 @@ Audit doc, activity count, touched complexity, число commits/deployments и
 
 - `Quality`: verify, PostgreSQL migration/seed, HTTP smoke и production dependency audit.
 - `Security`: dependency review на PR с `npm audit` fallback при недоступном Dependency Graph и CodeQL на PR/main/weekly schedule.
-- Dependabot: сгруппированные npm и GitHub Actions updates.
+- Dependabot: сгруппированные npm minor/patch и GitHub Actions updates; npm major version updates выполняются отдельным совместимым migration PR и не занимают автоматическую очередь.
 - SBOM: CycloneDX artifact и signed GitHub attestation для `main`.
 - PR template: риск, rollback, schema/security impact и фактические доказательства.
+
+`update-types` ограничивает только version updates и не отключает Dependabot security updates. Текущая координация major toolchain migration ведётся в [issue #25](https://github.com/Gardishan/Horeca/issues/25); изолированные обновления Prisma CLI/client, TypeScript/ESLint parser stack или Node types нельзя сливать только потому, что бот создал независимые PR.
 
 Минимальные GitHub permissions и `persist-credentials: false` уменьшают blast radius workflow.
 
