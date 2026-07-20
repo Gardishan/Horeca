@@ -44,6 +44,8 @@ npm run dev
 
 | Переменная | Назначение |
 |---|---|
+| `APP_ENV` | Явная среда: `development`, `test`, `staging` или `production` |
+| `DEPLOYMENT_VERSION` | Commit SHA/release ID для health evidence |
 | `DATABASE_URL` | PostgreSQL connection string |
 | `AUTH_SECRET` | Секрет подписи cookie, минимум 32 случайных символа |
 | `APP_URL` | Серверный origin для проверки mutation-запросов |
@@ -56,6 +58,8 @@ npm run dev
 | `RATE_LIMIT_ALLOW_IN_MEMORY` | Test-only override; в production должен быть `false` |
 
 Для генерации секрета можно использовать `openssl rand -base64 48`.
+
+В staging/production конфигурация проверяется до приёма трафика: HTTPS origins, PostgreSQL TLS, absolute private path, отключённый demo mode и remote rate limiter обязательны. Проверить тот же контракт вручную: `npm run runtime:validate`. Полный inventory без значений — `docs/SECRETS.md`.
 
 ## Demo-аккаунты
 
@@ -160,6 +164,16 @@ npm run check:readiness
 
 GitHub Actions дополнительно поднимает PostgreSQL 17, применяет migration, выполняет seed и сквозной HTTP smoke. Отдельный security workflow запускает dependency review (или `npm audit`, пока Dependency Graph недоступен) и CodeQL; Dependabot обновляет npm и Actions зависимости.
 
+## Deployable runtime
+
+- `Dockerfile` собирает non-root Next.js standalone image и отдельный migration target.
+- `/api/health/live` проверяет процесс без dependencies.
+- `/api/health/ready` проверяет runtime policy и PostgreSQL, при отказе безопасно возвращает `503`.
+- `instrumentation.ts` валидирует environment на старте и не печатает secret values.
+- Demo seed жёстко запрещён в staging/production.
+
+Provider-neutral rollout, migration и rollback contract описаны в `docs/DEPLOYMENT.md`. Наличие image не означает завершённый production launch: нужны выбранная платформа, secret store, managed DB, WAF/shared limiter, staging readback и cutover evidence из readiness registry.
+
 ### Agent-assisted разработка
 
 - `AGENTS.md` — обязательные границы, инварианты и матрица проверки для coding agents.
@@ -197,6 +211,7 @@ app/                 страницы и Route Handlers
 components/          UI, формы, каталог и admin-компоненты
 lib/domain/          чистые бизнес-правила
 lib/services/        транзакционные use cases и запросы к Prisma
+Dockerfile           standalone application image и migration job
 prisma/              schema и воспроизводимый seed
 storage/private/     приватные локальные файлы (не Git)
 tests/               unit-тесты доменных инвариантов

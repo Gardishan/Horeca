@@ -7,9 +7,10 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "build": "next build && node scripts/prepare-standalone.mjs",
+    "start": "node .next/standalone/server.js",
     "check:runtime": "node scripts/check-runtime.mjs",
+    "runtime:validate": "node --import tsx scripts/validate-runtime-config.ts",
     "check:repo": "node scripts/check-repository.mjs",
     "check:readiness": "node --import tsx scripts/check-readiness.ts",
     "lint": "eslint .",

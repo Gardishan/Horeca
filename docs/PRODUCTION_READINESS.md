@@ -1,6 +1,6 @@
 # Production readiness
 
-HoReCa KZ имеет проверенный MVP, но на 17.07.2026 не является готовым к коммерческому production-запуску. Канонический machine-readable статус находится в `docs/production-readiness.json`.
+HoReCa KZ имеет проверенный MVP и deployable container baseline, но на 20.07.2026 не является готовым к коммерческому production-запуску. Канонический machine-readable статус находится в `docs/production-readiness.json`.
 
 ## Команды
 
@@ -38,6 +38,7 @@ npm run release:check
 - воспроизводимая PostgreSQL schema/migration/seed;
 - quality, integration, dependency и CodeQL gates.
 - совместимое устранение PostCSS advisory без downgrade Next.js.
+- provider-neutral standalone image, fail-fast runtime policy, liveness/readiness и rollback contract; live deployment evidence ещё отсутствует.
 
 Можно планировать после создания leaf issue:
 
@@ -46,7 +47,7 @@ npm run release:check
 Сначала нужен owner decision или внешний доступ:
 
 - shared rate-limit backend, WAF и multi-replica staging readback; nonce CSP, strict Origin, HSTS и fail-closed contract уже реализованы в приложении;
-- hosting/IaC и production cutover;
+- выбор hosting/IaC, staging deployment и production cutover; application image и runbook уже готовы;
 - managed database и restore drill;
 - identity provider;
 - object storage и malware scanning;

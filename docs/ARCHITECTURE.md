@@ -50,6 +50,14 @@ flowchart TD
 - Mutation API требует явный разрешённый Origin и отклоняет отсутствующий, opaque или cross-site Origin до use case.
 - API помечен `no-store`; HSTS и дополнительные browser isolation headers включаются в production build.
 - Rate limit использует локальное состояние только в dev/test; production без HTTPS shared backend завершается fail-closed.
+- `instrumentation.ts` проверяет deployed runtime до приёма трафика и никогда не возвращает secret values.
+- Liveness не зависит от БД; readiness требует допустимую конфигурацию и успешный PostgreSQL probe.
+
+## Deployment boundary
+
+Приложение собирается в Next.js standalone OCI image и запускается non-root. Миграции отделены в one-shot image target, чтобы schema privileges не требовались runtime process. Один immutable image digest продвигается staging → production; rolling rollout требует backward-compatible migrations, readiness gating и возврат на предыдущий digest без destructive DB rollback.
+
+Cloud-specific IaC намеренно не выбран без owner decision. `docs/DEPLOYMENT.md` фиксирует переносимый runtime contract, а production provider, workload identity, TLS/WAF, managed PostgreSQL, object storage и observe evidence остаются внешними controls.
 
 ## Эволюция на 3–6 месяцев
 

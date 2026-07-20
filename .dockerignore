@@ -1,0 +1,15 @@
+.git
+.github
+.next
+coverage
+node_modules
+sbom.cdx.json
+*.log
+.env
+.env.*
+!.env.example
+android
+docs
+tests
+storage/private/company-documents/*
+!storage/private/company-documents/.gitignore

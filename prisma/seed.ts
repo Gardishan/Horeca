@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { assertDemoSeedAllowed } from "../lib/runtime-config";
 
 const prisma = new PrismaClient();
 
@@ -36,6 +37,7 @@ async function createMockPdf(companyId: string, fileName: string, title: string)
 }
 
 async function main() {
+  assertDemoSeedAllowed(process.env);
   const passwordHash = await bcrypt.hash("demo123", 12);
 
   for (const plan of planData) {
@@ -126,4 +128,3 @@ async function main() {
 }
 
 main().catch((error) => { console.error(error); process.exitCode = 1; }).finally(async () => prisma.$disconnect());
-

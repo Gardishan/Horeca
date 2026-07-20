@@ -10,8 +10,10 @@ export default defineConfig({
       reporter: ["text", "json-summary", "html"],
       include: [
         "lib/domain/**/*.ts",
+        "lib/health.ts",
         "lib/http.ts",
         "lib/rate-limit.ts",
+        "lib/runtime-config.ts",
         "lib/utils.ts",
       ],
       thresholds: {
