@@ -1,4 +1,4 @@
-export type LegalSection = { title: string; paragraphs?: string[]; bullets?: string[] };
+type LegalSection = { title: string; paragraphs?: string[]; bullets?: string[] };
 export type LegalDocument = { title: string; summary: string; sections: LegalSection[] };
 
 export const LEGAL_DOCUMENTS: Record<string, LegalDocument> = {
@@ -43,4 +43,3 @@ export const LEGAL_DOCUMENTS: Record<string, LegalDocument> = {
     ],
   },
 };
-

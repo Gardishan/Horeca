@@ -36,6 +36,7 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 ```bash
 npm ci
 npm run verify
+npm run check:unused
 npm run db:deploy
 npm run db:seed
 npm run smoke:http
@@ -80,6 +81,7 @@ MVP deliverable проверен, но commercial production readiness не за
 | Manual admin payment confirmation | Клиентский сигнал не активирует subscription |
 | Private local storage seam | Безопасный MVP-контур с понятной production replacement boundary |
 | Deterministic gates + CI | Качество подтверждается командами, а не самоотчётом агента |
+| Fact-first incremental delivery | Callers и контракты проверяются до правки; несогласованные defaults/fallbacks и неиспользуемый код блокируются |
 | Evidence-driven DoD | Review-ready, merge и runtime completion нельзя смешивать |
 | Machine-readable readiness | Production blockers имеют status, owner, evidence и next action |
 | Fail-closed abuse boundary | Production не продолжает rate-limited flow при отсутствии shared backend |

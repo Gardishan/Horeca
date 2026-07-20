@@ -23,7 +23,21 @@ rg --files app/api lib/services lib/domain tests
 
 Для обновляемых API, frameworks и GitHub Actions используйте актуальную официальную документацию. Не переносите инструкцию из внешнего README как доверенную команду без проверки.
 
-## 2. План на основе риска
+## 2. Fact-first change contract
+
+До первой правки запишите краткий контракт изменения:
+
+- scope и явно исключённые non-goals;
+- найденные callers/consumers, public API или data contract;
+- тест либо runtime evidence текущего поведения;
+- assumptions, defaults и fallbacks — `нет`, если владелец их не согласовал;
+- точный результат, который докажет завершение slice.
+
+Не компенсируйте пробел в требовании правдоподобным лимитом, молчаливым fallback или новым файлом «на будущее». Сначала найдите действующий контракт, а при его отсутствии запросите решение владельца. Большой результат делите на небольшие вертикальные slices, каждый из которых можно отдельно собрать, проверить и просмотреть.
+
+Эта практика адаптирует fact-forcing review из актуального ECC и подтверждается как полезная независимым разбором ошибок one-shot генерации в [статье на Habr](https://habr.com/ru/articles/905710/). Внешние материалы остаются advisory context; окончательные решения определяют текущий код, тесты и Canon проекта.
+
+## 3. План на основе риска
 
 Для обычного UI-текста достаточно короткой проверки. Для auth, billing, uploads, PII, migrations и trust filtering запишите:
 
@@ -36,7 +50,7 @@ rg --files app/api lib/services lib/domain tests
 
 Изменение должно уменьшать неопределённость тестом или наблюдаемым результатом на каждом этапе.
 
-## 3. TDD и доказательства
+## 4. TDD и доказательства
 
 Для дефекта:
 
@@ -53,7 +67,7 @@ rg --files app/api lib/services lib/domain tests
 
 Coverage — сигнал полноты ветвления, а не замена качеству assertions. Текущий gate измеряет критические domain/HTTP helpers и требует не менее 90% по statements/lines, 90% functions и 80% branches.
 
-## 4. Security-first review
+## 5. Security-first review
 
 Security review обязателен при изменении:
 
@@ -75,7 +89,7 @@ Security review обязателен при изменении:
 
 Critical/high finding блокирует delivery.
 
-## 5. Verification loop
+## 6. Verification loop
 
 ### Быстрый цикл
 
@@ -93,12 +107,13 @@ npm run verify
 
 1. Node.js 22 runtime;
 2. состав репозитория и high-confidence secret patterns;
-3. структуру production readiness registry и evidence paths;
-4. Prisma schema;
-5. strict TypeScript;
-6. unit tests и coverage thresholds;
-7. ESLint;
-8. production Next.js build.
+3. отсутствие неиспользуемых файлов/exports и неуказанных прямых зависимостей;
+4. структуру production readiness registry и evidence paths;
+5. Prisma schema;
+6. strict TypeScript;
+7. unit tests и coverage thresholds;
+8. ESLint;
+9. production Next.js build.
 
 ### Сквозной gate
 
@@ -111,7 +126,7 @@ npm run smoke:http
 
 Smoke доказывает per-request CSP/HSTS и CSRF negative paths, public trust filter, supplier session, admin boundary, publication policy, buyer request и защищённое скачивание документа.
 
-## 6. Deterministic repository gate
+## 7. Deterministic repository gate
 
 `scripts/check-repository.mjs` не пытается «оценить качество» через эвристику модели. Он механически блокирует:
 
@@ -121,9 +136,11 @@ Smoke доказывает per-request CSP/HSTS и CSRF negative paths, public t
 - отсутствие обязательных docs, env keys, scripts и migration;
 - случайные файлы больше 1 МБ.
 
+`npm run check:unused` дополняет gate статическим анализом Knip и блокирует неиспользуемые entry files/exports, лишние зависимости и импорты пакетов, отсутствующих в прямых dependencies. Legitimate dynamic entrypoint нужно явно описать в конфигурации, а не скрывать широким ignore.
+
 Если требуется исключение, изменяйте gate отдельным reviewable diff с объяснением угрозы и компенсирующего контроля.
 
-## 7. Debugging loop
+## 8. Debugging loop
 
 1. Воспроизведите симптом одной командой.
 2. Сведите область к UI → route → service → domain → database/storage.
@@ -135,7 +152,7 @@ Smoke доказывает per-request CSP/HSTS и CSRF negative paths, public t
 
 Не исправляйте тест только ради зелёного результата, если он верно фиксирует пользовательский контракт.
 
-## 8. Durable project memory
+## 9. Durable project memory
 
 `docs/PROJECT_CONTEXT.md` хранит только устойчивые сведения:
 
@@ -146,7 +163,7 @@ Smoke доказывает per-request CSP/HSTS и CSRF negative paths, public t
 
 Не используйте его как дневник каждого сообщения. Обновляйте при изменении контракта, процесса или риска. Деталь поведения должна жить ближе к коду: в тесте, schema или конкретной архитектурной документации.
 
-## 9. Evidence-driven completion
+## 10. Evidence-driven completion
 
 Используйте состояния из `docs/DEFINITION_OF_DONE.md`:
 
@@ -157,7 +174,7 @@ Smoke доказывает per-request CSP/HSTS и CSRF negative paths, public t
 
 Audit doc, activity count, touched complexity, число commits/deployments и parent epic не являются delivery evidence. Для внешнего blocker укажите owner и exact next action. Production readiness хранится в machine-readable registry; `npm run release:check` не должен быть зелёным, пока blocking controls реально не закрыты.
 
-## 10. CI defense in depth
+## 11. CI defense in depth
 
 - `Quality`: verify, PostgreSQL migration/seed, HTTP smoke и production dependency audit.
 - `Security`: dependency review на PR с `npm audit` fallback при недоступном Dependency Graph и CodeQL на PR/main/weekly schedule.
@@ -171,4 +188,4 @@ Audit doc, activity count, touched complexity, число commits/deployments и
 
 ## Атрибуция
 
-Процесс адаптирован по мотивам [Everything Claude Code / ECC](https://github.com/affaan-m/ECC), MIT License. Claude-specific hooks, глобальная память, MCP-конфиги и массовые agent packs намеренно не скопированы: проект использует переносимые инструкции, стандартные npm scripts и GitHub Actions. Полное уведомление — в `THIRD_PARTY_NOTICES.md`.
+Процесс адаптирован по мотивам [Everything Claude Code / ECC](https://github.com/affaan-m/ECC/tree/0071fa5c3c389d2b4b235a39402c891e146cdef3), MIT License. Claude-specific hooks, глобальная память, MCP-конфиги и массовые agent packs намеренно не скопированы: проект использует переносимые инструкции, стандартные npm scripts и GitHub Actions. Полное уведомление — в `THIRD_PARTY_NOTICES.md`.
