@@ -185,6 +185,7 @@ if (fileSet.has("package.json")) {
     "check:readiness",
     "check:repo",
     "check:runtime",
+    "check:unused",
     "lint",
     "release:check",
     "runtime:validate",

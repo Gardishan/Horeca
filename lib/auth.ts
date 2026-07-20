@@ -38,7 +38,7 @@ function signature(payload: string) {
   return createHmac("sha256", getSecret()).update(payload).digest("base64url");
 }
 
-export function createSessionToken(userId: string, role: UserRole) {
+function createSessionToken(userId: string, role: UserRole) {
   const payload = encode(
     JSON.stringify({
       userId,
@@ -49,7 +49,7 @@ export function createSessionToken(userId: string, role: UserRole) {
   return `${payload}.${signature(payload)}`;
 }
 
-export function verifySessionToken(token: string): SessionPayload | null {
+function verifySessionToken(token: string): SessionPayload | null {
   const [payload, suppliedSignature] = token.split(".");
   if (!payload || !suppliedSignature) return null;
 
@@ -90,7 +90,7 @@ export async function clearSession() {
   });
 }
 
-export async function getSession() {
+async function getSession() {
   const token = (await cookies()).get(COOKIE_NAME)?.value;
   return token ? verifySessionToken(token) : null;
 }
@@ -104,7 +104,7 @@ export async function getCurrentUser() {
   });
 }
 
-export async function requireUser() {
+async function requireUser() {
   const user = await getCurrentUser();
   if (!user) throw new UnauthorizedError();
   return user;
@@ -122,4 +122,3 @@ export async function requireSupplierCompany() {
   if (!company) throw new ForbiddenError("Для пользователя не создан профиль поставщика");
   return { user, company };
 }
-

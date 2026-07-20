@@ -1,49 +1,7 @@
-import type { PlanCode, ProductUnit } from "@prisma/client";
+import type { ProductUnit } from "@prisma/client";
 
-export const APP_NAME = "HoReCa KZ";
 export const LEGAL_VERSION = "mvp-2026-07";
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-
-export const PLAN_DEFINITIONS: Record<
-  PlanCode,
-  { name: string; price: number; maxProducts: number | null; features: string[] }
-> = {
-  START: {
-    name: "START",
-    price: 15_000,
-    maxProducts: 10,
-    features: [
-      "Профиль компании",
-      "До 10 товаров",
-      "Заявки покупателей",
-      "Базовая статистика",
-    ],
-  },
-  PRO: {
-    name: "PRO",
-    price: 35_000,
-    maxProducts: 100,
-    features: [
-      "До 100 товаров",
-      "Приоритет в поиске",
-      "Расширенная статистика",
-      "WhatsApp и Telegram CTA",
-      "Бейдж проверенного поставщика",
-    ],
-  },
-  PREMIUM: {
-    name: "PREMIUM",
-    price: 75_000,
-    maxProducts: null,
-    features: [
-      "Безлимитные товары",
-      "Закрепление в категории",
-      "Приоритетные заявки",
-      "Аналитика просмотров и кликов",
-      "Отметка рекомендуемого поставщика",
-    ],
-  },
-};
 
 export const UNIT_LABELS: Record<ProductUnit, string> = {
   KG: "кг",
@@ -112,8 +70,6 @@ export const DEMO_ACCOUNTS = [
   { email: "pending@horeca.kz", password: "demo123", role: "SUPPLIER", label: "Pending Supplier" },
 ] as const;
 
-export const KZ_CITIES = ["Алматы", "Астана", "Шымкент", "Караганда", "Актобе", "Атырау"];
-
 export function formatMoney(value: number | string, currency = "KZT") {
   return new Intl.NumberFormat("ru-KZ", {
     style: "currency",
@@ -130,4 +86,3 @@ export function formatDate(value: Date | string | null | undefined) {
     year: "numeric",
   }).format(new Date(value));
 }
-

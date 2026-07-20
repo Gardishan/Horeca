@@ -22,6 +22,7 @@
 - Есть PR либо явная причина `no-PR` для внешнего operational action.
 - Выполнены релевантные unit, negative, role и integration/smoke проверки.
 - `npm run verify` зелёный на поддерживаемом Node.js 22.
+- `npm run check:unused` не находит неиспользуемые файлы/exports и неуказанные прямые зависимости.
 - Для schema есть новая migration, чистый deploy и seed/smoke evidence.
 - Для runtime/infra есть staging readback, rollout, rollback и observe window.
 - Нет необъяснённой security, privacy, cost или reliability регрессии.
@@ -30,7 +31,8 @@
 ## Управленческий DoD
 
 - Задача или PR имеет одного понятного владельца результата.
-- Scope, acceptance criteria, риск и точное закрывающее действие сформулированы до реализации.
+- Scope, non-goals, acceptance criteria, риск и точное закрывающее действие сформулированы до реализации.
+- Callers, публичные/data-контракты и текущее поведение проверены; несогласованные assumptions, defaults и fallbacks отсутствуют.
 - Linked issue/leaf и родительская граница не допускают двойного зачёта.
 - Evidence comment содержит фактически выполненные команды и безопасные runtime-ссылки/логи.
 - Review-ready, merged и runtime verified не смешаны.

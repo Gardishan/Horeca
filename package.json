@@ -12,6 +12,7 @@
     "check:runtime": "node scripts/check-runtime.mjs",
     "runtime:validate": "node --import tsx scripts/validate-runtime-config.ts",
     "check:repo": "node scripts/check-repository.mjs",
+    "check:unused": "knip",
     "check:readiness": "node --import tsx scripts/check-readiness.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -27,8 +28,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "quality:quick": "npm run check:runtime && npm run check:repo && npm run check:readiness && npm run typecheck && npm run test && npm run lint",
-    "verify": "npm run check:runtime && npm run check:repo && npm run check:readiness && npm run prisma:validate && npm run typecheck && npm run test:coverage && npm run lint && npm run build",
+    "quality:quick": "npm run check:runtime && npm run check:repo && npm run check:unused && npm run check:readiness && npm run typecheck && npm run test && npm run lint",
+    "verify": "npm run check:runtime && npm run check:repo && npm run check:unused && npm run check:readiness && npm run prisma:validate && npm run typecheck && npm run test:coverage && npm run lint && npm run build",
     "release:check": "npm run verify && npm run security:audit && npm run check:readiness -- --strict",
     "validate": "npm run verify",
     "postinstall": "prisma generate"
@@ -40,6 +41,7 @@
     "next": "16.2.10",
     "react": "19.2.7",
     "react-dom": "19.2.7",
+    "server-only": "0.0.1",
     "zod": "4.4.3"
   },
   "devDependencies": {
@@ -51,6 +53,7 @@
     "dotenv": "17.4.2",
     "eslint": "9.39.5",
     "eslint-config-next": "16.2.10",
+    "knip": "6.27.0",
     "prisma": "6.19.3",
     "tailwindcss": "4.3.3",
     "tsx": "^4.20.0",

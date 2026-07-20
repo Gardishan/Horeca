@@ -1,6 +1,6 @@
 const NONCE_PATTERN = /^[A-Za-z0-9+/_=-]+$/;
 
-export type HeaderDefinition = { key: string; value: string };
+type HeaderDefinition = { key: string; value: string };
 
 export function createCspNonce() {
   return Buffer.from(crypto.randomUUID()).toString("base64");

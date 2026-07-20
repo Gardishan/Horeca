@@ -13,6 +13,13 @@
 
 - 
 
+## Change contract
+
+- Scope:
+- Non-goals:
+- Подтверждённые callers/consumers и контракты:
+- Assumptions, новые defaults или fallbacks: нет / перечислить и приложить согласование владельца
+
 ## Риск и границы
 
 - Linked leaf issue или причина `no issue`:
@@ -25,11 +32,13 @@
 ## Доказательства
 
 - [ ] Используется Node.js 22 (`npm run check:runtime`)
+- [ ] `npm run check:unused` не находит неиспользуемый код и неявные зависимости
 - [ ] `npm run verify`
 - [ ] Миграция применена на чистой PostgreSQL, если менялась схема
 - [ ] `npm run db:seed && npm run smoke:http`, если менялись сквозные сценарии
 - [ ] Проверены негативные и ролевые сценарии
 - [ ] Нет новых секретов, приватных документов и debug-логов
+- [ ] Diff не содержит несвязанных правок, неиспользуемых файлов и выдуманных defaults/fallbacks
 - [ ] Документация и `docs/PROJECT_CONTEXT.md` обновлены при изменении контрактов
 - [ ] Parent/leaf closure не скрывает открытые части; известные blockers имеют owner и next action
 

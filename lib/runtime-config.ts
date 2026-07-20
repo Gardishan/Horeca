@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export type ApplicationEnvironment = "development" | "test" | "staging" | "production";
+type ApplicationEnvironment = "development" | "test" | "staging" | "production";
 export type RuntimeConfigurationSummary = {
   appEnvironment: ApplicationEnvironment;
   appOrigin: string;
