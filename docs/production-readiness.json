@@ -2,7 +2,7 @@
   "version": 1,
   "product": "HoReCa KZ",
   "target": "commercial-production",
-  "updatedAt": "2026-07-17",
+  "updatedAt": "2026-07-20",
   "controls": [
     {
       "id": "mvp-critical-flows",
@@ -61,8 +61,8 @@
       "status": "blocked",
       "blocking": true,
       "owner": "Product owner + Platform/DevOps",
-      "evidence": ["https://github.com/Gardishan/Horeca/issues/14"],
-      "nextAction": "Select the hosting target, commit its source-of-truth configuration, deploy a staging release, document rollback, then complete an authorized production cutover and observe window."
+      "evidence": ["Dockerfile", ".dockerignore", "instrumentation.ts", "app/api/health/live/route.ts", "app/api/health/ready/route.ts", "docs/DEPLOYMENT.md", "https://github.com/Gardishan/Horeca/issues/14"],
+      "nextAction": "Select a hosting target compatible with the verified standalone container, commit provider IaC, inject managed runtime configuration, deploy staging, rehearse rollback, then complete an authorized production cutover and observe window."
     },
     {
       "id": "production-database",
@@ -121,7 +121,7 @@
       "status": "blocked",
       "blocking": true,
       "owner": "Platform/DevOps + Security",
-      "evidence": ["https://github.com/Gardishan/Horeca/issues/20"],
+      "evidence": ["lib/health.ts", "app/api/health/live/route.ts", "app/api/health/ready/route.ts", "docs/DEPLOYMENT.md", "https://github.com/Gardishan/Horeca/issues/20"],
       "nextAction": "Select the monitoring stack, define SLOs and alerts, publish the incident playbook and verify signal/readback during a staging failure exercise."
     },
     {
@@ -131,8 +131,8 @@
       "status": "blocked",
       "blocking": true,
       "owner": "Platform/DevOps + Security",
-      "evidence": ["https://github.com/Gardishan/Horeca/issues/21"],
-      "nextAction": "Configure a managed secret store, least-privilege access and a tested rotation procedure for auth, database and integration credentials."
+      "evidence": ["lib/runtime-config.ts", "instrumentation.ts", ".env.example", "docs/SECRETS.md", "https://github.com/Gardishan/Horeca/issues/21"],
+      "nextAction": "Choose a managed secret store, map the documented inventory to least-privilege workload access, then attach access-policy readback plus auth, database and limiter rotation/rollback evidence."
     },
     {
       "id": "legal-privacy-approval",

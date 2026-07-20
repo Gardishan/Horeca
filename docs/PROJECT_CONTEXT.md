@@ -1,6 +1,6 @@
 # Project context
 
-Последнее обновление: 17.07.2026.
+Последнее обновление: 20.07.2026.
 
 Это долговременная память для следующего разработчика или coding agent. Она фиксирует текущее состояние, но не заменяет schema, tests и source code.
 
@@ -18,6 +18,7 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 - PostgreSQL/Prisma: `prisma/schema.prisma` и versioned migrations.
 - Private uploads: filesystem seam в MVP, никогда не `/public`.
 - Session: подписанная HMAC HttpOnly cookie.
+- Deployment: Next.js standalone non-root image, отдельный migration target, startup validation и split liveness/readiness.
 
 Подробности: `docs/ARCHITECTURE.md`.
 
@@ -39,6 +40,7 @@ npm run db:deploy
 npm run db:seed
 npm run smoke:http
 npm run check:readiness
+npm run runtime:validate
 ```
 
 CI выполняет этот путь на Node.js 22 и PostgreSQL 17. Security workflow отдельно запускает dependency review с `npm audit` fallback, CodeQL и формирует подписанный CycloneDX SBOM на `main`.
@@ -67,6 +69,7 @@ MVP deliverable проверен, но commercial production readiness не за
 - Нужны password reset, MFA для admin, session rotation/revocation.
 - Legal/privacy/refund тексты требуют проверки юристом в Казахстане.
 - Нужны threat model, pentest, monitoring/alerting и backup/restore drill; nonce CSP и strict mutation Origin уже проверяются автоматически.
+- Deployable image и rollback contract готовы, но hosting target, live IaC, domain/TLS, multi-replica staging и cutover evidence ещё не выбраны.
 
 ## Принятые решения
 
@@ -80,6 +83,8 @@ MVP deliverable проверен, но commercial production readiness не за
 | Evidence-driven DoD | Review-ready, merge и runtime completion нельзя смешивать |
 | Machine-readable readiness | Production blockers имеют status, owner, evidence и next action |
 | Fail-closed abuse boundary | Production не продолжает rate-limited flow при отсутствии shared backend |
+| Provider-neutral OCI baseline | Hosting ещё не выбран; immutable standalone image сохраняет переносимость и единый tested artifact |
+| Split health probes | Liveness управляет restart, readiness не пускает traffic без config + PostgreSQL |
 
 ## Когда обновлять этот файл
 

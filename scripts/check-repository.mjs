@@ -65,23 +65,32 @@ const requiredFiles = [
   ".github/ISSUE_TEMPLATE/production-change.yml",
   ".github/workflows/quality.yml",
   ".github/workflows/security.yml",
+  ".dockerignore",
   "AGENTS.md",
+  "Dockerfile",
   "README.md",
   "SECURITY.md",
   "SECURITY_CHECKLIST.md",
   "docs/ARCHITECTURE.md",
   "docs/DEFINITION_OF_DONE.md",
+  "docs/DEPLOYMENT.md",
   "docs/ENGINEERING_PLAYBOOK.md",
   "docs/KNOWLEDGE_POLICY.md",
   "docs/PRODUCTION_READINESS.md",
   "docs/PROJECT_CONTEXT.md",
   "docs/RATE_LIMIT_BACKEND.md",
+  "docs/SECRETS.md",
   "docs/knowledge/source-registry.json",
   "docs/production-readiness.json",
   "docs/security/advisories.json",
   "prisma/schema.prisma",
+  "instrumentation.ts",
+  "lib/health.ts",
+  "lib/runtime-config.ts",
+  "lib/runtime-startup.ts",
   "proxy.ts",
   "scripts/check-readiness.ts",
+  "scripts/prepare-standalone.mjs",
   "scripts/check-runtime.mjs",
 ];
 
@@ -143,11 +152,14 @@ for (const file of files) {
 if (fileSet.has(".env.example")) {
   const envExample = readFileSync(path.join(root, ".env.example"), "utf8");
   for (const name of [
+    "APP_ENV",
+    "DEPLOYMENT_VERSION",
     "DATABASE_URL",
     "AUTH_SECRET",
     "APP_URL",
     "NEXT_PUBLIC_APP_URL",
     "PRIVATE_STORAGE_ROOT",
+    "DEMO_AUTH_ENABLED",
     "RATE_LIMIT_MODE",
     "RATE_LIMIT_ALLOW_IN_MEMORY",
     "RATE_LIMIT_BACKEND_URL",
@@ -160,6 +172,9 @@ if (fileSet.has(".env.example")) {
   if (!/^RATE_LIMIT_ALLOW_IN_MEMORY="?false"?$/m.test(envExample)) {
     failures.push(".env.example не должен разрешать in-memory rate limit в production");
   }
+  if (!/^APP_ENV="?development"?$/m.test(envExample)) {
+    failures.push(".env.example должен использовать development APP_ENV");
+  }
 }
 
 if (fileSet.has("package.json")) {
@@ -171,6 +186,7 @@ if (fileSet.has("package.json")) {
     "check:runtime",
     "lint",
     "release:check",
+    "runtime:validate",
     "security:sbom",
     "test:coverage",
     "typecheck",
@@ -180,6 +196,9 @@ if (fileSet.has("package.json")) {
   }
   if (packageJson.engines?.node !== ">=22 <23") {
     failures.push("package.json должен закреплять поддерживаемую Node.js 22.x ветку");
+  }
+  if (packageJson.scripts?.start !== "node .next/standalone/server.js") {
+    failures.push("package.json start должен запускать проверенный standalone server");
   }
   if (packageJson.overrides?.postcss !== "8.5.19") {
     failures.push("package.json должен закреплять исправленный PostCSS 8.5.19 до обновления Next.js dependency graph");

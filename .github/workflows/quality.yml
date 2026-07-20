@@ -15,7 +15,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:17-alpine
@@ -31,11 +31,14 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
+      APP_ENV: test
+      DEPLOYMENT_VERSION: ${{ github.sha }}
       DATABASE_URL: postgresql://horeca:horeca@localhost:5432/horeca?schema=public
       AUTH_SECRET: ci-only-secret-with-at-least-thirty-two-characters
       APP_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       PRIVATE_STORAGE_ROOT: /tmp/horeca-private
+      DEMO_AUTH_ENABLED: "true"
       RATE_LIMIT_MODE: memory
       RATE_LIMIT_ALLOW_IN_MEMORY: "true"
     steps:
@@ -48,6 +51,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run verify
+      - name: Build deployable container
+        run: docker build --build-arg VCS_REF="${GITHUB_SHA}" --tag "horeca:${GITHUB_SHA}" .
       - run: npm run db:deploy
       - run: npm run db:seed
       - run: npm run smoke:http

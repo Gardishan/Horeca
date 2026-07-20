@@ -1,6 +1,6 @@
 # Security checklist
 
-Статус MVP на 17.07.2026. `[x]` означает, что контроль реализован в коде; `[ ]` — обязательная production-задача. Канонический launch status: `docs/production-readiness.json`.
+Статус MVP на 20.07.2026. `[x]` означает, что контроль реализован в коде; `[ ]` — обязательная production-задача. Канонический launch status: `docs/production-readiness.json`.
 
 ## Документы и файлы
 
@@ -27,7 +27,7 @@
 - [x] Пароли seed-пользователей хэшируются bcrypt.
 - [x] Supplier-операции привязаны к `ownerId`; admin API требует роль `ADMIN`.
 - [x] Каталог не доверяет UI и повторно фильтрует все trust/status условия в БД.
-- [ ] Удалить demo accounts/пароли из production seed.
+- [x] Demo seed fail-closed запрещён в staging/production; test identities не могут быть случайно загружены release job.
 - [ ] Подключить полноценный identity provider / Auth.js, email verification и password reset.
 - [ ] Добавить MFA для администраторов, session rotation, device/session revocation.
 - [ ] Ввести least-privilege admin roles (billing reviewer, document reviewer, catalog moderator).
@@ -60,6 +60,9 @@
 
 - [x] Prisma schema содержит индексы для trust/status и operational queries.
 - [x] GitHub Actions проверяет schema, types, tests, lint и production build.
+- [x] Runtime fail-fast проверяет HTTPS origins, PostgreSQL TLS, demo mode, storage path и distributed limiter без утечки secret values.
+- [x] Разделены liveness и dependency-aware readiness; probes возвращают `no-store` и безопасный `503`.
+- [x] Standalone container запускается non-root и не содержит runtime secrets в build layers.
 - [x] Админские решения содержат actor, entity, before/after, IP и user agent.
 - [ ] Использовать отдельного DB-пользователя с минимальными правами; TLS до PostgreSQL.
 - [ ] Шифровать backups и проверять восстановление по расписанию.

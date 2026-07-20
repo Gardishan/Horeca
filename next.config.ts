@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import { buildStaticSecurityHeaders } from "./lib/web-security";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   poweredByHeader: false,
   experimental: {
     typedEnv: true,

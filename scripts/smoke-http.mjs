@@ -8,14 +8,19 @@ if (!["127.0.0.1", "localhost", "::1"].includes(smokeUrl.hostname)) {
   throw new Error("smoke:http may only launch against a local origin");
 }
 const port = smokeUrl.port || "3100";
-const nextCli = join(process.cwd(), "node_modules", "next", "dist", "bin", "next");
-const app = spawn(process.execPath, [nextCli, "start", "--hostname", "127.0.0.1", "--port", port], {
+const standaloneServer = join(process.cwd(), ".next", "standalone", "server.js");
+const app = spawn(process.execPath, [standaloneServer], {
   env: {
     ...process.env,
+    APP_ENV: "test",
+    DEPLOYMENT_VERSION: "http-smoke",
     APP_URL: origin,
     NEXT_PUBLIC_APP_URL: origin,
+    DEMO_AUTH_ENABLED: "true",
     RATE_LIMIT_MODE: "memory",
     RATE_LIMIT_ALLOW_IN_MEMORY: "true",
+    HOSTNAME: "127.0.0.1",
+    PORT: port,
   },
   stdio: ["ignore", "pipe", "pipe"],
 });
@@ -63,17 +68,42 @@ async function run() {
   await waitUntilReady();
   const checks = [];
 
+  const liveness = await json("/api/health/live");
+  assert(
+    liveness.response.ok && liveness.payload.data.status === "alive",
+    "Liveness probe is unavailable",
+  );
+  const readiness = await json("/api/health/ready");
+  assert(
+    readiness.response.ok &&
+      readiness.payload.data.status === "ready" &&
+      readiness.payload.data.deploymentVersion === "http-smoke",
+    "Readiness probe did not verify runtime configuration and PostgreSQL",
+  );
+  assert(
+    readiness.response.headers.get("cache-control")?.includes("no-store"),
+    "Readiness response is cacheable",
+  );
+  checks.push("liveness and dependency-aware readiness probes");
+
   const firstPage = await fetch(`${origin}/`, { signal: AbortSignal.timeout(10_000) });
   const secondPage = await fetch(`${origin}/`, { signal: AbortSignal.timeout(10_000) });
   const firstCsp = firstPage.headers.get("content-security-policy") ?? "";
   const secondCsp = secondPage.headers.get("content-security-policy") ?? "";
+  const shellHtml = await firstPage.clone().text();
+  const staticAssetPath = shellHtml.match(/\/_next\/static\/[^"'<> ]+/)?.[0];
   assert(firstPage.ok && secondPage.ok, "Application shell is unavailable");
+  assert(staticAssetPath, "Standalone shell does not reference a static asset");
+  const staticAsset = await fetch(`${origin}${staticAssetPath}`, {
+    signal: AbortSignal.timeout(10_000),
+  });
+  assert(staticAsset.ok, "Standalone static asset is unavailable");
   assert(firstCsp.includes("'strict-dynamic'") && firstCsp.includes("'nonce-"), "Nonce CSP is missing");
   assert(!firstCsp.includes("'unsafe-inline'") && !firstCsp.includes("'unsafe-eval'"), "Production CSP contains an unsafe exception");
   assert(firstCsp !== secondCsp, "CSP nonce was reused across requests");
   assert(firstPage.headers.get("strict-transport-security")?.includes("max-age=63072000"), "Production HSTS is missing");
   assert(firstPage.headers.get("x-content-type-options") === "nosniff", "Security headers are missing");
-  checks.push("per-request CSP nonce and production security headers");
+  checks.push("standalone static assets, per-request CSP nonce and production security headers");
 
   const catalog = await json("/api/catalog/products");
   assert(catalog.response.ok && catalog.payload.data.items.length === 4, "Catalog trust filter returned an unexpected product set");
