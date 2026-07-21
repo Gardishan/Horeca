@@ -10,6 +10,7 @@ export default defineConfig({
       reporter: ["text", "json-summary", "html"],
       include: [
         "lib/domain/**/*.ts",
+        "lib/file-security.ts",
         "lib/health.ts",
         "lib/http.ts",
         "lib/rate-limit.ts",

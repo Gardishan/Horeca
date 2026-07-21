@@ -18,6 +18,7 @@ export function startNodeRuntime(
         event: "runtime_configuration_validated",
         appEnvironment: configuration.appEnvironment,
         deploymentVersion: configuration.deploymentVersion,
+        malwareScanMode: configuration.malwareScanMode,
         rateLimitMode: configuration.rateLimitMode,
       }),
     );

@@ -64,7 +64,7 @@ MVP deliverable проверен, но commercial production readiness не за
 ## Известные production gaps
 
 - Local storage нужно заменить на private object storage с encryption и lifecycle.
-- `antivirusCheck()` нужно подключить к реальному malware scanner.
+- Fail-closed HTTPS contract для `antivirusCheck()` готов; нужно развернуть реальный malware scanner и private object storage, затем приложить staging evidence.
 - Нужно развернуть shared rate-limit backend по `docs/RATE_LIMIT_BACKEND.md`, WAF и проверить несколько реплик в staging; memory mode разрешён только dev/test.
 - Manual payment flow нужно заменить/дополнить подписанными идемпотентными provider webhooks.
 - Нужны password reset, MFA для admin, session rotation/revocation.
@@ -89,6 +89,7 @@ MVP deliverable проверен, но commercial production readiness не за
 | Split health probes | Liveness управляет restart, readiness не пускает traffic без config + PostgreSQL |
 | Dependabot minor/patch automation | Major toolchain upgrades требуют совместимой migration всей матрицы; security updates остаются независимыми |
 | Runtime/type major alignment | Node.js runtime, engine pins и `@types/node` остаются на одной major-ветке; repository gate блокирует drift |
+| Fail-closed malware boundary | Mock разрешён только dev/test; deployed runtime требует HTTPS scanner, а outage/unknown verdict блокирует upload до storage |
 
 ## Когда обновлять этот файл
 

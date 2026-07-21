@@ -77,6 +77,7 @@ const requiredFiles = [
   "docs/DEPLOYMENT.md",
   "docs/ENGINEERING_PLAYBOOK.md",
   "docs/KNOWLEDGE_POLICY.md",
+  "docs/MALWARE_SCAN_BACKEND.md",
   "docs/PRODUCTION_READINESS.md",
   "docs/PROJECT_CONTEXT.md",
   "docs/RATE_LIMIT_BACKEND.md",
@@ -165,6 +166,10 @@ if (fileSet.has(".env.example")) {
     "RATE_LIMIT_ALLOW_IN_MEMORY",
     "RATE_LIMIT_BACKEND_URL",
     "RATE_LIMIT_BACKEND_TOKEN",
+    "MALWARE_SCAN_MODE",
+    "MALWARE_SCAN_BACKEND_URL",
+    "MALWARE_SCAN_BACKEND_TOKEN",
+    "MALWARE_SCAN_TIMEOUT_MS",
   ]) {
     if (!new RegExp(`^${name}=`, "m").test(envExample)) {
       failures.push(`.env.example не документирует ${name}`);
@@ -175,6 +180,9 @@ if (fileSet.has(".env.example")) {
   }
   if (!/^APP_ENV="?development"?$/m.test(envExample)) {
     failures.push(".env.example должен использовать development APP_ENV");
+  }
+  if (!/^MALWARE_SCAN_MODE="?mock"?$/m.test(envExample)) {
+    failures.push(".env.example должен ограничивать mock malware scanner режимом разработки");
   }
 }
 

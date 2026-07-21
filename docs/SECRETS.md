@@ -9,6 +9,7 @@
 | `DATABASE_URL` | да | Prisma runtime и migration job | новый least-privilege DB credential → deploy → revoke старый |
 | `AUTH_SECRET` | да | HMAC session cookie | controlled rotation с принудительным повторным login |
 | `RATE_LIMIT_BACKEND_TOKEN` | да | shared limiter client | backend принимает old+new → deploy new → revoke old |
+| `MALWARE_SCAN_BACKEND_TOKEN` | да | remote malware scanner client | scanner принимает old+new → deploy new → revoke old |
 | `APP_ENV` | нет | runtime policy | immutable per environment |
 | `DEPLOYMENT_VERSION` | нет | readiness/evidence | commit SHA или release identifier |
 | `APP_URL` | нет | same-origin policy | меняется вместе с approved domain/cutover |
@@ -18,6 +19,9 @@
 | `RATE_LIMIT_MODE` | нет | abuse boundary | всегда `remote` в staging/production |
 | `RATE_LIMIT_ALLOW_IN_MEMORY` | нет | test-only override | всегда `false` в staging/production |
 | `RATE_LIMIT_BACKEND_URL` | нет | limiter endpoint | HTTPS only |
+| `MALWARE_SCAN_MODE` | нет | file security boundary | `remote` в staging/production; `mock` только dev/test |
+| `MALWARE_SCAN_BACKEND_URL` | нет | malware scanner endpoint | HTTPS only; URL не содержит credentials |
+| `MALWARE_SCAN_TIMEOUT_MS` | нет | scanner availability bound | явное значение 1000–60000 ms |
 
 `lib/runtime-config.ts` проверяет inventory при запуске и возвращает только безопасный summary. Ошибки перечисляют имена нарушенных controls и не включают secret values.
 
@@ -44,6 +48,13 @@
 2. Обновить managed secret и перезапустить replicas.
 3. Проверить allow, deny, timeout и malformed-response paths.
 4. Отозвать old token и проверить alerts/readback.
+
+### Malware scanner
+
+1. Настроить scanner на временный приём old и new token.
+2. Обновить managed secret и выполнить rolling deployment.
+3. Проверить clean, infected/EICAR, timeout, malformed-response и outage paths по `docs/MALWARE_SCAN_BACKEND.md`.
+4. Отозвать old token и проверить, что application не логирует token или file bytes.
 
 ### Session signing
 

@@ -1,11 +1,108 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { AntivirusStatus } from "@prisma/client";
+import { z } from "zod";
 import { MAX_UPLOAD_BYTES } from "@/lib/constants";
 import { AppError } from "@/lib/errors";
+
+const malwareVerdictSchema = z.object({
+  verdict: z.enum(["clean", "infected"]),
+  signature: z.string().max(512).optional(),
+}).strict();
+
+type MalwareScanMode = "mock" | "remote";
+
+function malwareScanUnavailable() {
+  return new AppError(
+    "Проверка файла временно недоступна",
+    503,
+    "MALWARE_SCAN_UNAVAILABLE",
+  );
+}
+
+function isDeployedEnvironment() {
+  return (
+    process.env.APP_ENV === "staging" ||
+    process.env.APP_ENV === "production" ||
+    (!process.env.APP_ENV && process.env.NODE_ENV === "production")
+  );
+}
+
+function malwareScanMode(): MalwareScanMode {
+  const mode = process.env.MALWARE_SCAN_MODE;
+  if (mode === "remote") return mode;
+  if ((mode === "mock" || !mode) && !isDeployedEnvironment()) return "mock";
+  throw malwareScanUnavailable();
+}
+
+function remoteScannerConfiguration() {
+  const endpoint = process.env.MALWARE_SCAN_BACKEND_URL;
+  const token = process.env.MALWARE_SCAN_BACKEND_TOKEN;
+  const timeoutMs = Number(process.env.MALWARE_SCAN_TIMEOUT_MS);
+
+  let url: URL;
+  try {
+    url = new URL(endpoint ?? "");
+  } catch {
+    throw malwareScanUnavailable();
+  }
+
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    !token ||
+    token.length < 32 ||
+    !Number.isInteger(timeoutMs) ||
+    timeoutMs < 1_000 ||
+    timeoutMs > 60_000
+  ) {
+    throw malwareScanUnavailable();
+  }
+
+  return { endpoint: url.toString(), token, timeoutMs };
+}
+
+async function scanRemote(file: ValidatedUpload): Promise<AntivirusStatus> {
+  const { endpoint, token, timeoutMs } = remoteScannerConfiguration();
+  const body = file.buffer.buffer.slice(
+    file.buffer.byteOffset,
+    file.buffer.byteOffset + file.buffer.byteLength,
+  ) as ArrayBuffer;
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": file.mimeType,
+        "X-Content-Sha256": createHash("sha256").update(file.buffer).digest("hex"),
+      },
+      body,
+      cache: "no-store",
+      redirect: "error",
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch {
+    throw malwareScanUnavailable();
+  }
+
+  if (!response.ok) throw malwareScanUnavailable();
+
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    throw malwareScanUnavailable();
+  }
+
+  const parsed = malwareVerdictSchema.safeParse(payload);
+  if (!parsed.success) throw malwareScanUnavailable();
+  return parsed.data.verdict === "clean" ? "CLEAN" : "SUSPICIOUS";
+}
 
 const ALLOWED_TYPES = new Map([
   [".pdf", new Set(["application/pdf"])],
@@ -74,8 +171,7 @@ export async function validateUpload(file: File): Promise<ValidatedUpload> {
 }
 
 export async function antivirusCheck(file: ValidatedUpload): Promise<AntivirusStatus> {
-  // MVP seam: replace with ClamAV or a managed malware scanner before production.
-  void file;
+  if (malwareScanMode() === "remote") return scanRemote(file);
   return process.env.NODE_ENV === "test" ? "CLEAN" : "SKIPPED_MOCK";
 }
 
