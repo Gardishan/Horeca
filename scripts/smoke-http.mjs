@@ -19,6 +19,7 @@ const app = spawn(process.execPath, [standaloneServer], {
     DEMO_AUTH_ENABLED: "true",
     RATE_LIMIT_MODE: "memory",
     RATE_LIMIT_ALLOW_IN_MEMORY: "true",
+    MALWARE_SCAN_MODE: "mock",
     HOSTNAME: "127.0.0.1",
     PORT: port,
   },

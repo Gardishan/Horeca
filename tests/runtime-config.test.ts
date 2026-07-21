@@ -21,6 +21,10 @@ function productionEnvironment(): NodeJS.ProcessEnv {
     RATE_LIMIT_ALLOW_IN_MEMORY: "false",
     RATE_LIMIT_BACKEND_URL: "https://rate-limit.example.kz/consume",
     RATE_LIMIT_BACKEND_TOKEN: "rate-limit-secret-that-must-never-leak",
+    MALWARE_SCAN_MODE: "remote",
+    MALWARE_SCAN_BACKEND_URL: "https://scanner.example.kz/v1/scan",
+    MALWARE_SCAN_BACKEND_TOKEN: "scanner-secret-that-must-never-leak",
+    MALWARE_SCAN_TIMEOUT_MS: "15000",
   };
 }
 
@@ -33,12 +37,14 @@ describe("runtime configuration", () => {
       appEnvironment: "production",
       appOrigin: "https://horeca.example.kz",
       deploymentVersion: "e6a1451",
+      malwareScanMode: "remote",
       rateLimitMode: "remote",
       storageRoot: "/var/lib/horeca/private",
     });
     expect(JSON.stringify(summary)).not.toContain("database-secret");
     expect(JSON.stringify(summary)).not.toContain("auth-secret");
     expect(JSON.stringify(summary)).not.toContain("rate-limit-secret");
+    expect(JSON.stringify(summary)).not.toContain("scanner-secret");
   });
 
   it("rejects an insecure deployed configuration without echoing secret values", () => {
@@ -55,6 +61,10 @@ describe("runtime configuration", () => {
       RATE_LIMIT_ALLOW_IN_MEMORY: "true",
       RATE_LIMIT_BACKEND_URL: "http://rate-limit.example.kz/consume",
       RATE_LIMIT_BACKEND_TOKEN: "also-do-not-leak",
+      MALWARE_SCAN_MODE: "mock",
+      MALWARE_SCAN_BACKEND_URL: "http://scanner.example.kz/v1/scan",
+      MALWARE_SCAN_BACKEND_TOKEN: "scanner-do-not-leak",
+      MALWARE_SCAN_TIMEOUT_MS: "0",
     });
 
     let error: unknown;
@@ -76,10 +86,15 @@ describe("runtime configuration", () => {
         expect.stringContaining("DEMO_AUTH_ENABLED"),
         expect.stringContaining("RATE_LIMIT_MODE"),
         expect.stringContaining("RATE_LIMIT_ALLOW_IN_MEMORY"),
+        expect.stringContaining("MALWARE_SCAN_MODE"),
+        expect.stringContaining("MALWARE_SCAN_BACKEND_URL"),
+        expect.stringContaining("MALWARE_SCAN_BACKEND_TOKEN"),
+        expect.stringContaining("MALWARE_SCAN_TIMEOUT_MS"),
       ]),
     });
     expect(String(error)).not.toContain("do-not-leak");
     expect(JSON.stringify(error)).not.toContain("do-not-leak");
+    expect(JSON.stringify(error)).not.toContain("scanner-do-not-leak");
   });
 
   it("supports an explicit local test environment with an in-memory limiter", () => {
@@ -96,8 +111,13 @@ describe("runtime configuration", () => {
         DEMO_AUTH_ENABLED: "true",
         RATE_LIMIT_MODE: "memory",
         RATE_LIMIT_ALLOW_IN_MEMORY: "true",
+        MALWARE_SCAN_MODE: "mock",
       }),
-    ).toMatchObject({ appEnvironment: "test", rateLimitMode: "memory" });
+    ).toMatchObject({
+      appEnvironment: "test",
+      malwareScanMode: "mock",
+      rateLimitMode: "memory",
+    });
   });
 
   it("requires an explicit APP_ENV for a production Node process", () => {

@@ -27,7 +27,8 @@ ENV APP_ENV=test \
     PRIVATE_STORAGE_ROOT=/tmp/horeca-private \
     DEMO_AUTH_ENABLED=true \
     RATE_LIMIT_MODE=memory \
-    RATE_LIMIT_ALLOW_IN_MEMORY=true
+    RATE_LIMIT_ALLOW_IN_MEMORY=true \
+    MALWARE_SCAN_MODE=mock
 RUN npm run build
 
 FROM base AS migration

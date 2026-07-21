@@ -50,7 +50,7 @@ npm run release:check
 - выбор hosting/IaC, staging deployment и production cutover; application image и runbook уже готовы;
 - managed database и restore drill;
 - identity provider;
-- object storage и malware scanning;
+- private object storage и deployed malware scanner; application-side HTTPS contract уже fail-closed;
 - payment/fiscal integration;
 - monitoring, secret manager, legal/privacy approval;
 - Android signing и production distribution.

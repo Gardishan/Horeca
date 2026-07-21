@@ -43,7 +43,7 @@ flowchart TD
 
 - Browser не получает storage path и не имеет прямого доступа к файлам.
 - Route Handler повторно проверяет роль и ownership для каждой операции.
-- File pipeline применяет allowlist, MIME/signature validation, UUID naming и private permissions.
+- File pipeline применяет allowlist, MIME/signature validation, UUID naming и private permissions; staging/production дополнительно требуют fail-closed HTTPS malware scanner до сохранения.
 - Admin download создаёт неизменяемую запись доступа.
 - Payment confirmation отделена от supplier signal.
 - Каждая HTML-страница получает уникальный CSP nonce; production CSP не допускает `unsafe-inline`/`unsafe-eval`.

@@ -41,6 +41,7 @@ jobs:
       DEMO_AUTH_ENABLED: "true"
       RATE_LIMIT_MODE: memory
       RATE_LIMIT_ALLOW_IN_MEMORY: "true"
+      MALWARE_SCAN_MODE: mock
     steps:
       - uses: actions/checkout@v7
         with:

@@ -8,6 +8,7 @@ console.log(
       appEnvironment: configuration.appEnvironment,
       appOrigin: configuration.appOrigin,
       deploymentVersion: configuration.deploymentVersion,
+      malwareScanMode: configuration.malwareScanMode,
       rateLimitMode: configuration.rateLimitMode,
     },
     null,

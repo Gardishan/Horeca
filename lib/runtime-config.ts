@@ -5,6 +5,7 @@ export type RuntimeConfigurationSummary = {
   appEnvironment: ApplicationEnvironment;
   appOrigin: string;
   deploymentVersion: string;
+  malwareScanMode: "mock" | "remote";
   rateLimitMode: "memory" | "remote";
   storageRoot: string;
 };
@@ -157,12 +158,54 @@ export function validateRuntimeConfiguration(
     issues.push("DEMO_AUTH_ENABLED must be false in staging and production");
   }
 
+  const configuredMalwareScanMode = environment.MALWARE_SCAN_MODE?.trim();
+  const malwareScanMode = configuredMalwareScanMode === "remote" ? "remote" : "mock";
+  if (configuredMalwareScanMode && !["mock", "remote"].includes(configuredMalwareScanMode)) {
+    issues.push("MALWARE_SCAN_MODE must be mock or remote");
+  }
+  if (deployed && malwareScanMode !== "remote") {
+    issues.push("MALWARE_SCAN_MODE must be remote in staging and production");
+  }
+
+  const scannerUrlValue = malwareScanMode === "remote"
+    ? required(environment, "MALWARE_SCAN_BACKEND_URL", issues)
+    : environment.MALWARE_SCAN_BACKEND_URL?.trim() ?? "";
+  const scannerUrl = configuredUrl("MALWARE_SCAN_BACKEND_URL", scannerUrlValue, issues);
+  if (scannerUrl && scannerUrl.protocol !== "https:") {
+    issues.push("MALWARE_SCAN_BACKEND_URL must use HTTPS");
+  }
+  if (scannerUrl && (scannerUrl.username || scannerUrl.password)) {
+    issues.push("MALWARE_SCAN_BACKEND_URL must not contain credentials");
+  }
+
+  const scannerToken = malwareScanMode === "remote"
+    ? required(environment, "MALWARE_SCAN_BACKEND_TOKEN", issues)
+    : environment.MALWARE_SCAN_BACKEND_TOKEN?.trim() ?? "";
+  if (scannerToken && scannerToken.length < 32) {
+    issues.push("MALWARE_SCAN_BACKEND_TOKEN must contain at least 32 characters");
+  }
+
+  const scannerTimeoutValue = malwareScanMode === "remote"
+    ? required(environment, "MALWARE_SCAN_TIMEOUT_MS", issues)
+    : environment.MALWARE_SCAN_TIMEOUT_MS?.trim() ?? "";
+  if (scannerTimeoutValue) {
+    const scannerTimeoutMs = Number(scannerTimeoutValue);
+    if (
+      !Number.isInteger(scannerTimeoutMs) ||
+      scannerTimeoutMs < 1_000 ||
+      scannerTimeoutMs > 60_000
+    ) {
+      issues.push("MALWARE_SCAN_TIMEOUT_MS must be an integer from 1000 to 60000");
+    }
+  }
+
   if (issues.length > 0) throw new RuntimeConfigurationError(issues);
 
   return {
     appEnvironment,
     appOrigin: appUrl?.origin ?? "",
     deploymentVersion,
+    malwareScanMode,
     rateLimitMode,
     storageRoot,
   };
