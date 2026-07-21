@@ -78,6 +78,7 @@ const requiredFiles = [
   "docs/ENGINEERING_PLAYBOOK.md",
   "docs/KNOWLEDGE_POLICY.md",
   "docs/MALWARE_SCAN_BACKEND.md",
+  "docs/PRIVATE_OBJECT_STORAGE.md",
   "docs/PRODUCTION_READINESS.md",
   "docs/PROJECT_CONTEXT.md",
   "docs/RATE_LIMIT_BACKEND.md",
@@ -160,7 +161,17 @@ if (fileSet.has(".env.example")) {
     "AUTH_SECRET",
     "APP_URL",
     "NEXT_PUBLIC_APP_URL",
+    "PRIVATE_STORAGE_MODE",
     "PRIVATE_STORAGE_ROOT",
+    "PRIVATE_STORAGE_S3_ENDPOINT",
+    "PRIVATE_STORAGE_S3_REGION",
+    "PRIVATE_STORAGE_S3_BUCKET",
+    "PRIVATE_STORAGE_S3_FORCE_PATH_STYLE",
+    "PRIVATE_STORAGE_S3_SSE",
+    "PRIVATE_STORAGE_S3_KMS_KEY_ID",
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY",
+    "AWS_SESSION_TOKEN",
     "DEMO_AUTH_ENABLED",
     "RATE_LIMIT_MODE",
     "RATE_LIMIT_ALLOW_IN_MEMORY",
@@ -183,6 +194,9 @@ if (fileSet.has(".env.example")) {
   }
   if (!/^MALWARE_SCAN_MODE="?mock"?$/m.test(envExample)) {
     failures.push(".env.example должен ограничивать mock malware scanner режимом разработки");
+  }
+  if (!/^PRIVATE_STORAGE_MODE="?filesystem"?$/m.test(envExample)) {
+    failures.push(".env.example должен использовать filesystem storage только как development default");
   }
 }
 

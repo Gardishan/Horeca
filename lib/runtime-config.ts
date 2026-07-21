@@ -7,7 +7,7 @@ export type RuntimeConfigurationSummary = {
   deploymentVersion: string;
   malwareScanMode: "mock" | "remote";
   rateLimitMode: "memory" | "remote";
-  storageRoot: string;
+  storageMode: "filesystem" | "s3";
 };
 
 const applicationEnvironments = new Set<ApplicationEnvironment>([
@@ -81,6 +81,16 @@ function validateApplicationUrl(
   }
 }
 
+function isValidBucketName(bucket: string) {
+  return (
+    /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(bucket) &&
+    !bucket.includes("..") &&
+    !bucket.includes(".-") &&
+    !bucket.includes("-.") &&
+    !/^\d{1,3}(?:\.\d{1,3}){3}$/.test(bucket)
+  );
+}
+
 export function validateRuntimeConfiguration(
   environment: NodeJS.ProcessEnv = process.env,
 ): RuntimeConfigurationSummary {
@@ -122,9 +132,76 @@ export function validateRuntimeConfiguration(
     issues.push("APP_URL and NEXT_PUBLIC_APP_URL must have the same origin");
   }
 
-  const storageRoot = required(environment, "PRIVATE_STORAGE_ROOT", issues);
+  const configuredStorageMode = environment.PRIVATE_STORAGE_MODE?.trim();
+  const storageMode = configuredStorageMode === "s3" ? "s3" : "filesystem";
+  if (configuredStorageMode && !["filesystem", "s3"].includes(configuredStorageMode)) {
+    issues.push("PRIVATE_STORAGE_MODE must be filesystem or s3");
+  }
+  if (deployed && storageMode !== "s3") {
+    issues.push("PRIVATE_STORAGE_MODE must be s3 in staging and production");
+  }
+
+  const storageRoot = storageMode === "filesystem"
+    ? required(environment, "PRIVATE_STORAGE_ROOT", issues)
+    : environment.PRIVATE_STORAGE_ROOT?.trim() ?? "";
   if (storageRoot && deployed && !path.isAbsolute(storageRoot)) {
     issues.push("PRIVATE_STORAGE_ROOT must be absolute in staging and production");
+  }
+
+  const s3VariableNames = [
+    "PRIVATE_STORAGE_S3_ENDPOINT",
+    "PRIVATE_STORAGE_S3_REGION",
+    "PRIVATE_STORAGE_S3_BUCKET",
+    "PRIVATE_STORAGE_S3_FORCE_PATH_STYLE",
+    "PRIVATE_STORAGE_S3_SSE",
+    "PRIVATE_STORAGE_S3_KMS_KEY_ID",
+  ] as const;
+  const s3ConfigurationPresent = storageMode === "s3" || s3VariableNames.some(
+    (name) => Boolean(environment[name]?.trim()),
+  );
+  if (s3ConfigurationPresent) {
+    const s3EndpointValue = required(environment, "PRIVATE_STORAGE_S3_ENDPOINT", issues);
+    const s3Endpoint = configuredUrl("PRIVATE_STORAGE_S3_ENDPOINT", s3EndpointValue, issues);
+    if (s3Endpoint && s3Endpoint.protocol !== "https:") {
+      issues.push("PRIVATE_STORAGE_S3_ENDPOINT must use HTTPS");
+    }
+    if (s3Endpoint && (s3Endpoint.username || s3Endpoint.password)) {
+      issues.push("PRIVATE_STORAGE_S3_ENDPOINT must not contain credentials");
+    }
+    if (s3Endpoint && (s3Endpoint.pathname !== "/" || s3Endpoint.search || s3Endpoint.hash)) {
+      issues.push("PRIVATE_STORAGE_S3_ENDPOINT must contain only the service origin");
+    }
+
+    const s3Region = required(environment, "PRIVATE_STORAGE_S3_REGION", issues);
+    if (s3Region && !/^[a-zA-Z0-9-]{1,64}$/.test(s3Region)) {
+      issues.push("PRIVATE_STORAGE_S3_REGION must be a valid region identifier");
+    }
+
+    const s3Bucket = required(environment, "PRIVATE_STORAGE_S3_BUCKET", issues);
+    if (s3Bucket && !isValidBucketName(s3Bucket)) {
+      issues.push("PRIVATE_STORAGE_S3_BUCKET must be a valid DNS-compatible bucket name");
+    }
+
+    const forcePathStyle = required(
+      environment,
+      "PRIVATE_STORAGE_S3_FORCE_PATH_STYLE",
+      issues,
+    );
+    if (forcePathStyle && !["true", "false"].includes(forcePathStyle)) {
+      issues.push("PRIVATE_STORAGE_S3_FORCE_PATH_STYLE must be true or false");
+    }
+
+    const encryption = required(environment, "PRIVATE_STORAGE_S3_SSE", issues);
+    if (encryption && !["AES256", "aws:kms"].includes(encryption)) {
+      issues.push("PRIVATE_STORAGE_S3_SSE must be AES256 or aws:kms");
+    }
+    const kmsKeyId = environment.PRIVATE_STORAGE_S3_KMS_KEY_ID?.trim() ?? "";
+    if (encryption === "aws:kms" && !kmsKeyId) {
+      issues.push("PRIVATE_STORAGE_S3_KMS_KEY_ID is required when PRIVATE_STORAGE_S3_SSE is aws:kms");
+    }
+    if (encryption === "AES256" && kmsKeyId) {
+      issues.push("PRIVATE_STORAGE_S3_KMS_KEY_ID must be empty when PRIVATE_STORAGE_S3_SSE is AES256");
+    }
   }
 
   const configuredRateLimitMode = environment.RATE_LIMIT_MODE?.trim();
@@ -207,7 +284,7 @@ export function validateRuntimeConfiguration(
     deploymentVersion,
     malwareScanMode,
     rateLimitMode,
-    storageRoot,
+    storageMode,
   };
 }
 

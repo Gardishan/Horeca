@@ -24,6 +24,7 @@ ENV APP_ENV=test \
     AUTH_SECRET=container-build-secret-with-at-least-thirty-two-characters \
     APP_URL=http://localhost:3000 \
     NEXT_PUBLIC_APP_URL=http://localhost:3000 \
+    PRIVATE_STORAGE_MODE=filesystem \
     PRIVATE_STORAGE_ROOT=/tmp/horeca-private \
     DEMO_AUTH_ENABLED=true \
     RATE_LIMIT_MODE=memory \

@@ -1,9 +1,8 @@
-import { readFile } from "node:fs/promises";
 import { requireRole } from "@/lib/auth";
 import { apiHandler, clientMeta } from "@/lib/http";
 import { NotFoundError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
-import { resolvePrivatePath } from "@/lib/file-security";
+import { readPrivateUpload } from "@/lib/file-security";
 
 export async function GET(request: Request, context: { params: Promise<{ documentId: string }> }) {
   return apiHandler(async () => {
@@ -12,9 +11,7 @@ export async function GET(request: Request, context: { params: Promise<{ documen
     const document = await prisma.companyDocument.findUnique({ where: { id: documentId } });
     if (!document) throw new NotFoundError("Документ не найден");
 
-    const content = await readFile(resolvePrivatePath(document.storagePath)).catch(() => {
-      throw new NotFoundError("Файл документа отсутствует в приватном хранилище");
-    });
+    const content = await readPrivateUpload(document.storagePath);
     await prisma.documentDownloadLog.create({
       data: {
         documentId,
@@ -23,7 +20,11 @@ export async function GET(request: Request, context: { params: Promise<{ documen
         ...clientMeta(request),
       },
     });
-    return new Response(content, {
+    const body = content.buffer.slice(
+      content.byteOffset,
+      content.byteOffset + content.byteLength,
+    ) as ArrayBuffer;
+    return new Response(body, {
       status: 200,
       headers: {
         "Content-Type": document.mimeType,
@@ -35,4 +36,3 @@ export async function GET(request: Request, context: { params: Promise<{ documen
     });
   });
 }
-

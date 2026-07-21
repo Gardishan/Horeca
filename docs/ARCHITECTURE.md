@@ -43,7 +43,7 @@ flowchart TD
 
 - Browser не получает storage path и не имеет прямого доступа к файлам.
 - Route Handler повторно проверяет роль и ownership для каждой операции.
-- File pipeline применяет allowlist, MIME/signature validation, UUID naming и private permissions; staging/production дополнительно требуют fail-closed HTTPS malware scanner до сохранения.
+- File pipeline применяет allowlist, MIME/signature validation, UUID naming и fail-closed HTTPS malware scanner до сохранения; staging/production дополнительно требуют S3-compatible private storage с явным SSE/KMS mode.
 - Admin download создаёт неизменяемую запись доступа.
 - Payment confirmation отделена от supplier signal.
 - Каждая HTML-страница получает уникальный CSP nonce; production CSP не допускает `unsafe-inline`/`unsafe-eval`.
@@ -57,7 +57,7 @@ flowchart TD
 
 Приложение собирается в Next.js standalone OCI image и запускается non-root. Миграции отделены в one-shot image target, чтобы schema privileges не требовались runtime process. Один immutable image digest продвигается staging → production; rolling rollout требует backward-compatible migrations, readiness gating и возврат на предыдущий digest без destructive DB rollback.
 
-Cloud-specific IaC намеренно не выбран без owner decision. `docs/DEPLOYMENT.md` фиксирует переносимый runtime contract, а production provider, workload identity, TLS/WAF, managed PostgreSQL, object storage и observe evidence остаются внешними controls.
+Cloud-specific IaC намеренно не выбран без owner decision. `docs/DEPLOYMENT.md` фиксирует переносимый runtime contract, а `docs/PRIVATE_OBJECT_STORAGE.md` — provider-compatible application boundary. Production provider, workload identity, TLS/WAF, managed PostgreSQL, реально созданные buckets/policies и observe evidence остаются внешними controls.
 
 ## Эволюция на 3–6 месяцев
 

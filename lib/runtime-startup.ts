@@ -20,6 +20,7 @@ export function startNodeRuntime(
         deploymentVersion: configuration.deploymentVersion,
         malwareScanMode: configuration.malwareScanMode,
         rateLimitMode: configuration.rateLimitMode,
+        storageMode: configuration.storageMode,
       }),
     );
   } catch (error) {

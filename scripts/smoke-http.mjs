@@ -16,6 +16,7 @@ const app = spawn(process.execPath, [standaloneServer], {
     DEPLOYMENT_VERSION: "http-smoke",
     APP_URL: origin,
     NEXT_PUBLIC_APP_URL: origin,
+    PRIVATE_STORAGE_MODE: "filesystem",
     DEMO_AUTH_ENABLED: "true",
     RATE_LIMIT_MODE: "memory",
     RATE_LIMIT_ALLOW_IN_MEMORY: "true",

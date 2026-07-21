@@ -10,11 +10,21 @@
 | `AUTH_SECRET` | да | HMAC session cookie | controlled rotation с принудительным повторным login |
 | `RATE_LIMIT_BACKEND_TOKEN` | да | shared limiter client | backend принимает old+new → deploy new → revoke old |
 | `MALWARE_SCAN_BACKEND_TOKEN` | да | remote malware scanner client | scanner принимает old+new → deploy new → revoke old |
+| `AWS_ACCESS_KEY_ID` | да | optional S3 static credential | предпочесть workload identity; иначе issue new pair → deploy → revoke old |
+| `AWS_SECRET_ACCESS_KEY` | да | optional S3 static credential | хранить и вращать только вместе с access key ID |
+| `AWS_SESSION_TOKEN` | да | optional short-lived S3 session | истекает автоматически; обновляется credential provider |
 | `APP_ENV` | нет | runtime policy | immutable per environment |
 | `DEPLOYMENT_VERSION` | нет | readiness/evidence | commit SHA или release identifier |
 | `APP_URL` | нет | same-origin policy | меняется вместе с approved domain/cutover |
 | `NEXT_PUBLIC_APP_URL` | нет | public origin contract | тот же origin, что `APP_URL` |
-| `PRIVATE_STORAGE_ROOT` | нет | MVP filesystem seam | absolute runtime path; production replacement tracked in #15 |
+| `PRIVATE_STORAGE_MODE` | нет | private file boundary | `s3` в staging/production; `filesystem` только dev/test |
+| `PRIVATE_STORAGE_ROOT` | нет | local filesystem mode | используется только dev/test |
+| `PRIVATE_STORAGE_S3_ENDPOINT` | нет | S3 client | HTTPS service origin без credentials/path/query |
+| `PRIVATE_STORAGE_S3_REGION` | нет | S3 client | явный provider region |
+| `PRIVATE_STORAGE_S3_BUCKET` | нет | S3 client | отдельный private bucket для среды |
+| `PRIVATE_STORAGE_S3_FORCE_PATH_STYLE` | нет | S3 client | явное `true`/`false` по provider contract |
+| `PRIVATE_STORAGE_S3_SSE` | нет | S3 write policy | явное `AES256` или `aws:kms` |
+| `PRIVATE_STORAGE_S3_KMS_KEY_ID` | нет | KMS encryption selector | обязателен только для `aws:kms`; identifier не является secret, но не логируется |
 | `DEMO_AUTH_ENABLED` | нет | demo account guard | всегда `false` в staging/production |
 | `RATE_LIMIT_MODE` | нет | abuse boundary | всегда `remote` в staging/production |
 | `RATE_LIMIT_ALLOW_IN_MEMORY` | нет | test-only override | всегда `false` в staging/production |
@@ -55,6 +65,15 @@
 2. Обновить managed secret и выполнить rolling deployment.
 3. Проверить clean, infected/EICAR, timeout, malformed-response и outage paths по `docs/MALWARE_SCAN_BACKEND.md`.
 4. Отозвать old token и проверить, что application не логирует token или file bytes.
+
+### Private object storage
+
+1. Предпочесть workload identity/short-lived credential standard AWS SDK chain. Если используются static keys, создать новую пару с тем же минимальным bucket/prefix policy.
+2. Обновить managed secret, выполнить rolling deployment и проверить `PutObject`/`GetObject` через приложение.
+3. Проверить отказ старого credential, отсутствие public access и сохранность audit/data-access logs.
+4. Для `aws:kms` отдельно выполнить approved key-rotation/recovery drill; не менять `PRIVATE_STORAGE_S3_KMS_KEY_ID` без проверки чтения ранее записанных объектов.
+
+Подробный storage contract и evidence checklist: `docs/PRIVATE_OBJECT_STORAGE.md`.
 
 ### Session signing
 

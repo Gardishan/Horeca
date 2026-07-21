@@ -15,6 +15,7 @@ HoReCa KZ поставляется как self-hosted Next.js 16 Node.js contain
 | `/api/health/ready` | readiness: конфигурация допустима и PostgreSQL отвечает |
 | `docs/SECRETS.md` | inventory и rotation contract без значений секретов |
 | `docs/MALWARE_SCAN_BACKEND.md` | fail-closed HTTPS scanner contract и evidence checklist |
+| `docs/PRIVATE_OBJECT_STORAGE.md` | S3-compatible private storage contract и provider evidence checklist |
 
 ## Требования к платформе
 
@@ -24,8 +25,9 @@ HoReCa KZ поставляется как self-hosted Next.js 16 Node.js contain
 - WAF и trusted proxy перезаписывают forwarding headers, а не добавляют их после клиентских значений.
 - Shared HTTPS rate-limit backend реализует `docs/RATE_LIMIT_BACKEND.md`.
 - Shared HTTPS malware scanner реализует `docs/MALWARE_SCAN_BACKEND.md`; mock запрещён в staging/production.
+- S3-compatible private object storage реализует `docs/PRIVATE_OBJECT_STORAGE.md`; filesystem запрещён в staging/production.
 - Managed secret store внедряет секреты только во время запуска; они не являются build args, image labels или IaC outputs.
-- Persistent private storage допускается только для staging rehearsal. Production требует object storage/quarantine из issue #15.
+- Bucket/IAM/KMS/lifecycle/quarantine policies и data residency подтверждаются runtime readback; наличие SDK boundary не закрывает issue #15.
 
 ## Build и preflight
 
@@ -46,7 +48,7 @@ docker build \
 npm run runtime:validate
 ```
 
-Команда выводит только environment, origin, release version, limiter mode и malware-scan mode. Connection strings и tokens не печатаются.
+Команда выводит только environment, origin, release version, limiter mode, malware-scan mode и storage mode. Connection strings, endpoints, bucket names, key identifiers и tokens не печатаются.
 
 ## Миграции
 
