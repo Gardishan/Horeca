@@ -9,6 +9,7 @@ const testEnvironment: NodeJS.ProcessEnv = {
   AUTH_SECRET: "test-secret-with-at-least-thirty-two-characters",
   APP_URL: "http://127.0.0.1:3100",
   NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3100",
+  PRIVATE_STORAGE_MODE: "filesystem",
   PRIVATE_STORAGE_ROOT: "./storage/private",
   DEMO_AUTH_ENABLED: "true",
   RATE_LIMIT_MODE: "memory",

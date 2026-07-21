@@ -16,7 +16,7 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 - HTTP boundaries: `app/api` + `lib/http.ts`.
 - Web perimeter: strict Origin, nonce CSP, production HSTS/API `no-store` и fail-closed remote rate-limit contract.
 - PostgreSQL/Prisma: `prisma/schema.prisma` и versioned migrations.
-- Private uploads: filesystem seam в MVP, никогда не `/public`.
+- Private uploads: filesystem только dev/test; staging/production требуют S3-compatible boundary, никогда не `/public`.
 - Session: подписанная HMAC HttpOnly cookie.
 - Deployment: Next.js standalone non-root image, отдельный migration target, startup validation и split liveness/readiness.
 
@@ -63,8 +63,8 @@ MVP deliverable проверен, но commercial production readiness не за
 
 ## Известные production gaps
 
-- Local storage нужно заменить на private object storage с encryption и lifecycle.
-- Fail-closed HTTPS contract для `antivirusCheck()` готов; нужно развернуть реальный malware scanner и private object storage, затем приложить staging evidence.
+- Application-side S3-compatible storage boundary готов; нужно создать private buckets, IAM/KMS/lifecycle/retention controls и приложить staging evidence.
+- Fail-closed HTTPS contract для `antivirusCheck()` готов; нужно развернуть реальный malware scanner и согласованный quarantine/clean flow, затем приложить staging evidence.
 - Нужно развернуть shared rate-limit backend по `docs/RATE_LIMIT_BACKEND.md`, WAF и проверить несколько реплик в staging; memory mode разрешён только dev/test.
 - Manual payment flow нужно заменить/дополнить подписанными идемпотентными provider webhooks.
 - Нужны password reset, MFA для admin, session rotation/revocation.
@@ -79,7 +79,7 @@ MVP deliverable проверен, но commercial production readiness не за
 | Modular monolith | Быстрый MVP без преждевременной distributed complexity |
 | Central domain policies | UI/API не должны расходиться в trust и billing rules |
 | Manual admin payment confirmation | Клиентский сигнал не активирует subscription |
-| Private local storage seam | Безопасный MVP-контур с понятной production replacement boundary |
+| Private S3-compatible storage boundary | Filesystem ограничен dev/test; deployed runtime fail-fast требует private object storage и явный SSE/KMS mode |
 | Deterministic gates + CI | Качество подтверждается командами, а не самоотчётом агента |
 | Fact-first incremental delivery | Callers и контракты проверяются до правки; несогласованные defaults/fallbacks и неиспользуемый код блокируются |
 | Evidence-driven DoD | Review-ready, merge и runtime completion нельзя смешивать |
@@ -90,6 +90,7 @@ MVP deliverable проверен, но commercial production readiness не за
 | Dependabot minor/patch automation | Major toolchain upgrades требуют совместимой migration всей матрицы; security updates остаются независимыми |
 | Runtime/type major alignment | Node.js runtime, engine pins и `@types/node` остаются на одной major-ветке; repository gate блокирует drift |
 | Fail-closed malware boundary | Mock разрешён только dev/test; deployed runtime требует HTTPS scanner, а outage/unknown verdict блокирует upload до storage |
+| Fail-closed storage boundary | Deployed runtime запрещает filesystem; S3 outage/malformed body блокируют flow без утечки provider details |
 
 ## Когда обновлять этот файл
 

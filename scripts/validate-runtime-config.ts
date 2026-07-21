@@ -10,6 +10,7 @@ console.log(
       deploymentVersion: configuration.deploymentVersion,
       malwareScanMode: configuration.malwareScanMode,
       rateLimitMode: configuration.rateLimitMode,
+      storageMode: configuration.storageMode,
     },
     null,
     2,
