@@ -1,6 +1,6 @@
 # Project context
 
-Последнее обновление: 20.07.2026.
+Последнее обновление: 21.07.2026.
 
 Это долговременная память для следующего разработчика или coding agent. Она фиксирует текущее состояние, но не заменяет schema, tests и source code.
 
@@ -88,6 +88,7 @@ MVP deliverable проверен, но commercial production readiness не за
 | Provider-neutral OCI baseline | Hosting ещё не выбран; immutable standalone image сохраняет переносимость и единый tested artifact |
 | Split health probes | Liveness управляет restart, readiness не пускает traffic без config + PostgreSQL |
 | Dependabot minor/patch automation | Major toolchain upgrades требуют совместимой migration всей матрицы; security updates остаются независимыми |
+| Runtime/type major alignment | Node.js runtime, engine pins и `@types/node` остаются на одной major-ветке; repository gate блокирует drift |
 
 ## Когда обновлять этот файл
 

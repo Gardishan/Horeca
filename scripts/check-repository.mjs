@@ -199,6 +199,9 @@ if (fileSet.has("package.json")) {
   if (packageJson.engines?.node !== ">=22 <23") {
     failures.push("package.json должен закреплять поддерживаемую Node.js 22.x ветку");
   }
+  if (!/^(?:\^|~)?22\./.test(packageJson.devDependencies?.["@types/node"] ?? "")) {
+    failures.push("@types/node должен соответствовать закреплённой Node.js 22.x ветке");
+  }
   if (packageJson.scripts?.start !== "node .next/standalone/server.js") {
     failures.push("package.json start должен запускать проверенный standalone server");
   }
