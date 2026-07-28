@@ -26,10 +26,11 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 
 1. Public catalog не показывает товар неподтверждённой/заблокированной компании или без активной подписки.
 2. Publication требует verification, current subscription, confirmed payment и plan capacity.
-3. Activation требует profile + legal acceptance + approved documents + confirmed payment + approved verification.
+3. Activation требует profile + legal acceptance + approved documents с допустимым antivirus verdict + confirmed payment + approved verification.
 4. Supplier не управляет чужой компанией или товаром.
 5. Admin decisions и private downloads оставляют audit evidence.
 6. Client-side state никогда не является источником billing/trust решения.
+7. Generic profile update не меняет trust/block/billing status; payment decision возможен только из `PROOF_UPLOADED`, не обращает terminal status и атомарно конкурирует с противоположным решением.
 
 ## Проверенный путь качества
 
@@ -98,6 +99,7 @@ MVP deliverable проверен, но commercial production readiness не за
 | Fail-closed storage boundary | Deployed runtime запрещает filesystem; S3 outage/malformed body блокируют flow без утечки provider details |
 | Minimal standalone artifact | Явные tracing exclusions и build gate не допускают source/tests/docs/coverage в runtime image |
 | Time-bound advisory exception | Dev-only finding без совместимого исправления имеет expiry, mitigations и tracking; production audit остаётся блокирующим |
+| Guarded privileged transitions | Generic profile update не меняет trust state; payment confirm/reject использует проверяемую state machine и conditional write; deployed activation повторно требует scanner-clean documents |
 
 ## Когда обновлять этот файл
 

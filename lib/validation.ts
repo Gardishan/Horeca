@@ -83,8 +83,5 @@ export const adminDecisionSchema = z.object({
 });
 
 export const adminCompanySchema = companyProfileSchema.partial().extend({
-  status: z.enum(["DRAFT", "PENDING_REVIEW", "ACTIVE", "BLOCKED", "REJECTED"]).optional(),
-  verificationStatus: z.enum(["NOT_STARTED", "PENDING", "APPROVED", "REJECTED", "REUPLOAD_REQUESTED"]).optional(),
   isRecommended: z.boolean().optional(),
-  isBlocked: z.boolean().optional(),
-});
+}).strict();

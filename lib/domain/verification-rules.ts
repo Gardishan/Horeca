@@ -1,4 +1,10 @@
-import type { DocumentStatus, DocumentType, LegalType, PaymentStatus } from "@prisma/client";
+import type {
+  AntivirusStatus,
+  DocumentStatus,
+  DocumentType,
+  LegalType,
+  PaymentStatus,
+} from "@prisma/client";
 import type { RuleResult } from "@/lib/domain/product-rules";
 
 export type CompanyProfileSnapshot = {
@@ -72,9 +78,23 @@ export function evaluateVerificationSubmission(input: VerificationSubmissionCont
 export type ActivationContext = {
   profile: CompanyProfileSnapshot;
   acceptedLegalTypes: LegalType[];
-  documentStatuses: DocumentStatus[];
+  documents: Array<{
+    status: DocumentStatus;
+    antivirusStatus: AntivirusStatus;
+  }>;
+  deployed: boolean;
   paymentStatus: PaymentStatus | null;
 };
+
+export function isDocumentSafeForApproval(
+  antivirusStatus: AntivirusStatus,
+  deployed: boolean,
+) {
+  return (
+    antivirusStatus === "CLEAN" ||
+    (!deployed && antivirusStatus === "SKIPPED_MOCK")
+  );
+}
 
 export function evaluateCompanyActivation(input: ActivationContext): RuleResult {
   const reasons: string[] = [];
@@ -82,10 +102,20 @@ export function evaluateCompanyActivation(input: ActivationContext): RuleResult 
   if (!input.acceptedLegalTypes.includes("OFFER") || !input.acceptedLegalTypes.includes("PRIVACY")) {
     reasons.push("Нет обязательных юридических согласий");
   }
-  if (!input.documentStatuses.length || input.documentStatuses.some((status) => status !== "APPROVED")) {
+  if (
+    !input.documents.length ||
+    input.documents.some((document) => document.status !== "APPROVED")
+  ) {
     reasons.push("Не все документы одобрены");
+  }
+  if (
+    input.documents.some(
+      (document) =>
+        !isDocumentSafeForApproval(document.antivirusStatus, input.deployed),
+    )
+  ) {
+    reasons.push("Не все документы прошли антивирусную проверку");
   }
   if (input.paymentStatus !== "CONFIRMED") reasons.push("Оплата не подтверждена");
   return { allowed: reasons.length === 0, reasons };
 }
-

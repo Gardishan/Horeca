@@ -144,6 +144,15 @@ async function run() {
   });
   assert(blockedPublish.response.status === 409 && blockedPublish.payload.error.details.reasons.length > 0, "Ineligible supplier published a product");
   checks.push("publication invariant");
+  const supersededPlan = await json("/api/dashboard/company/billing/select-plan", {
+    method: "POST",
+    headers: { Cookie: pendingCookie, Origin: origin, "Content-Type": "application/json" },
+    body: JSON.stringify({ planCode: "PREMIUM" }),
+  });
+  assert(
+    supersededPlan.response.ok && supersededPlan.payload.data.status === "PENDING_PAYMENT",
+    "Supplier could not supersede a pending plan",
+  );
 
   const request = await json("/api/buyer-requests", {
     method: "POST",
@@ -156,6 +165,35 @@ async function run() {
   const adminCookie = await login("admin@horeca.kz");
   const companies = await json("/api/admin/companies", { headers: { Cookie: adminCookie } });
   assert(companies.response.ok && companies.payload.data.length >= 2, "Admin companies API is unavailable");
+  const stateBypass = await json("/api/admin/companies/company-active", {
+    method: "PUT",
+    headers: { Cookie: adminCookie, Origin: origin, "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "ACTIVE", verificationStatus: "APPROVED", isBlocked: false }),
+  });
+  assert(
+    stateBypass.response.status === 422 &&
+      stateBypass.payload.error.code === "VALIDATION_ERROR",
+    "Generic company update accepted a critical state transition",
+  );
+  const reversedPayment = await json("/api/admin/payments/payment-active/reject", {
+    method: "POST",
+    headers: { Cookie: adminCookie, Origin: origin, "Content-Type": "application/json" },
+    body: JSON.stringify({ comment: "Smoke test must not reverse a confirmed payment" }),
+  });
+  assert(
+    reversedPayment.response.status === 409,
+    "Confirmed payment was reversed through the rejection endpoint",
+  );
+  const stalePayment = await json("/api/admin/payments/payment-pending/confirm", {
+    method: "POST",
+    headers: { Cookie: adminCookie, Origin: origin, "Content-Type": "application/json" },
+    body: JSON.stringify({ comment: "Superseded invoice must stay inactive" }),
+  });
+  assert(
+    stalePayment.response.status === 409,
+    "Payment for a superseded plan reactivated its cancelled subscription",
+  );
+  checks.push("privileged company and payment transition guards");
   const document = await fetch(`${origin}/api/admin/documents/document-registration-active/download`, {
     headers: { Cookie: adminCookie },
     signal: AbortSignal.timeout(10_000),

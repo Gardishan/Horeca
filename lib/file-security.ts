@@ -14,6 +14,7 @@ import { AntivirusStatus } from "@prisma/client";
 import { z } from "zod";
 import { MAX_UPLOAD_BYTES } from "@/lib/constants";
 import { AppError, NotFoundError } from "@/lib/errors";
+import { isDeployedApplicationEnvironment } from "@/lib/runtime-config";
 
 const malwareVerdictSchema = z.object({
   verdict: z.enum(["clean", "infected"]),
@@ -53,25 +54,22 @@ function privateStorageUnavailable() {
   );
 }
 
-function isDeployedEnvironment() {
-  return (
-    process.env.APP_ENV === "staging" ||
-    process.env.APP_ENV === "production" ||
-    (!process.env.APP_ENV && process.env.NODE_ENV === "production")
-  );
-}
-
 function malwareScanMode(): MalwareScanMode {
   const mode = process.env.MALWARE_SCAN_MODE;
   if (mode === "remote") return mode;
-  if ((mode === "mock" || !mode) && !isDeployedEnvironment()) return "mock";
+  if ((mode === "mock" || !mode) && !isDeployedApplicationEnvironment()) return "mock";
   throw malwareScanUnavailable();
 }
 
 function privateStorageMode(): PrivateStorageMode {
   const mode = process.env.PRIVATE_STORAGE_MODE;
   if (mode === "s3") return mode;
-  if ((mode === "filesystem" || !mode) && !isDeployedEnvironment()) return "filesystem";
+  if (
+    (mode === "filesystem" || !mode) &&
+    !isDeployedApplicationEnvironment()
+  ) {
+    return "filesystem";
+  }
   throw privateStorageUnavailable();
 }
 
