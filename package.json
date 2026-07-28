@@ -54,7 +54,7 @@
     "dotenv": "17.4.2",
     "eslint": "9.39.5",
     "eslint-config-next": "16.2.12",
-    "knip": "6.27.0",
+    "knip": "6.29.0",
     "prisma": "6.19.3",
     "tailwindcss": "4.3.3",
     "tsx": "^4.20.0",
