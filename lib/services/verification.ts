@@ -2,7 +2,12 @@ import type { AntivirusStatus, DocumentStatus, DocumentType, LegalType, Verifica
 import { LEGAL_VERSION } from "@/lib/constants";
 import { ConflictError, NotFoundError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
-import { evaluateCompanyActivation, evaluateVerificationSubmission } from "@/lib/domain/verification-rules";
+import {
+  evaluateCompanyActivation,
+  evaluateVerificationSubmission,
+  isDocumentSafeForApproval,
+} from "@/lib/domain/verification-rules";
+import { isDeployedApplicationEnvironment } from "@/lib/runtime-config";
 import { writeAuditLog } from "@/lib/services/audit";
 
 type ClientMeta = { ipAddress?: string | null; userAgent?: string | null };
@@ -170,6 +175,17 @@ export async function decideDocument(
   return prisma.$transaction(async (tx) => {
     const document = await tx.companyDocument.findUnique({ where: { id: documentId } });
     if (!document) throw new NotFoundError("Документ не найден");
+    if (
+      status === "APPROVED" &&
+      !isDocumentSafeForApproval(
+        document.antivirusStatus,
+        isDeployedApplicationEnvironment(),
+      )
+    ) {
+      throw new ConflictError(
+        "Документ нельзя одобрить без успешной антивирусной проверки",
+      );
+    }
     const updated = await tx.companyDocument.update({
       where: { id: documentId },
       data: { status, reviewedAt: new Date(), reviewedById: adminUserId, adminComment: comment || null },
@@ -197,7 +213,11 @@ export async function activateCompany(companyId: string, adminUserId: string, me
   const rule = evaluateCompanyActivation({
     profile: company,
     acceptedLegalTypes: company.legalAcceptances.map((item) => item.type),
-    documentStatuses: company.documents.map((document) => document.status),
+    documents: company.documents.map((document) => ({
+      status: document.status,
+      antivirusStatus: document.antivirusStatus,
+    })),
+    deployed: isDeployedApplicationEnvironment(),
     paymentStatus: company.payments[0]?.status ?? null,
   });
   if (!rule.allowed || company.verificationStatus !== "APPROVED") {

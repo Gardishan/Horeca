@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { evaluateCompanyActivation, evaluateVerificationSubmission, profileCompletion } from "@/lib/domain/verification-rules";
+import {
+  evaluateCompanyActivation,
+  evaluateVerificationSubmission,
+  isDocumentSafeForApproval,
+  profileCompletion,
+} from "@/lib/domain/verification-rules";
 
 const profile = {
   name: "Qazaq Supply",
@@ -43,11 +48,46 @@ describe("verification submission", () => {
 
 describe("company activation", () => {
   it("requires all reviewed documents and confirmed payment", () => {
-    const accepted = evaluateCompanyActivation({ profile, acceptedLegalTypes: ["OFFER", "PRIVACY"], documentStatuses: ["APPROVED", "APPROVED"], paymentStatus: "CONFIRMED" });
+    const accepted = evaluateCompanyActivation({
+      profile,
+      acceptedLegalTypes: ["OFFER", "PRIVACY"],
+      documents: [
+        { status: "APPROVED", antivirusStatus: "CLEAN" },
+        { status: "APPROVED", antivirusStatus: "CLEAN" },
+      ],
+      deployed: true,
+      paymentStatus: "CONFIRMED",
+    });
     expect(accepted.allowed).toBe(true);
-    const rejected = evaluateCompanyActivation({ profile, acceptedLegalTypes: ["OFFER", "PRIVACY"], documentStatuses: ["APPROVED", "UNDER_REVIEW"], paymentStatus: "PROOF_UPLOADED" });
+    const rejected = evaluateCompanyActivation({
+      profile,
+      acceptedLegalTypes: ["OFFER", "PRIVACY"],
+      documents: [
+        { status: "APPROVED", antivirusStatus: "CLEAN" },
+        { status: "UNDER_REVIEW", antivirusStatus: "CLEAN" },
+      ],
+      deployed: true,
+      paymentStatus: "PROOF_UPLOADED",
+    });
     expect(rejected.allowed).toBe(false);
     expect(rejected.reasons).toHaveLength(2);
+  });
+
+  it("rejects an approved legacy mock file in a deployed environment", () => {
+    const result = evaluateCompanyActivation({
+      profile,
+      acceptedLegalTypes: ["OFFER", "PRIVACY"],
+      documents: [
+        { status: "APPROVED", antivirusStatus: "SKIPPED_MOCK" },
+      ],
+      deployed: true,
+      paymentStatus: "CONFIRMED",
+    });
+
+    expect(result).toEqual({
+      allowed: false,
+      reasons: ["Не все документы прошли антивирусную проверку"],
+    });
   });
 
   it("computes profile completeness deterministically", () => {
@@ -56,3 +96,19 @@ describe("company activation", () => {
   });
 });
 
+describe("document antivirus approval", () => {
+  it("allows clean files everywhere and mock-scanned files only outside deployed environments", () => {
+    expect(isDocumentSafeForApproval("CLEAN", false)).toBe(true);
+    expect(isDocumentSafeForApproval("CLEAN", true)).toBe(true);
+    expect(isDocumentSafeForApproval("SKIPPED_MOCK", false)).toBe(true);
+    expect(isDocumentSafeForApproval("SKIPPED_MOCK", true)).toBe(false);
+  });
+
+  it.each(["PENDING", "SUSPICIOUS"] as const)(
+    "never approves %s files",
+    (status) => {
+      expect(isDocumentSafeForApproval(status, false)).toBe(false);
+      expect(isDocumentSafeForApproval(status, true)).toBe(false);
+    },
+  );
+});

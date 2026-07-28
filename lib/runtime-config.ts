@@ -17,6 +17,16 @@ const applicationEnvironments = new Set<ApplicationEnvironment>([
   "production",
 ]);
 
+export function isDeployedApplicationEnvironment(
+  environment: NodeJS.ProcessEnv = process.env,
+) {
+  return (
+    environment.APP_ENV === "staging" ||
+    environment.APP_ENV === "production" ||
+    (!environment.APP_ENV && environment.NODE_ENV === "production")
+  );
+}
+
 export class RuntimeConfigurationError extends Error {
   readonly issues: string[];
 
@@ -289,12 +299,7 @@ export function validateRuntimeConfiguration(
 }
 
 export function assertDemoSeedAllowed(environment: NodeJS.ProcessEnv = process.env) {
-  const appEnvironment = environment.APP_ENV;
-  if (
-    appEnvironment === "staging" ||
-    appEnvironment === "production" ||
-    (!appEnvironment && environment.NODE_ENV === "production")
-  ) {
+  if (isDeployedApplicationEnvironment(environment)) {
     throw new Error("Demo seed is disabled in staging and production");
   }
 }

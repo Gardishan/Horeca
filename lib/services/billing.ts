@@ -1,6 +1,7 @@
 import type { PlanCode } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ConflictError, NotFoundError } from "@/lib/errors";
+import { evaluatePaymentDecision } from "@/lib/domain/payment-rules";
 import { writeAuditLog } from "@/lib/services/audit";
 
 export function getCompanyBilling(companyId: string) {
@@ -172,18 +173,38 @@ export async function confirmPayment(
       include: { invoice: { include: { subscription: true } } },
     });
     if (!payment) throw new NotFoundError("Платёж не найден");
-    if (payment.status === "CONFIRMED") return payment;
+    const decision = evaluatePaymentDecision(payment.status, "CONFIRM");
+    if (!decision.allowed) {
+      throw new ConflictError(
+        "Подтвердить можно только платёж с загруженным подтверждением",
+      );
+    }
+    if (decision.idempotent) return payment;
+    if (payment.invoice.subscription.status !== "PENDING_PAYMENT") {
+      throw new ConflictError("Связанный тариф больше не ожидает оплату");
+    }
 
     const now = new Date();
     const endsAt = new Date(now);
     endsAt.setMonth(endsAt.getMonth() + 1);
+    const claim = await tx.payment.updateMany({
+      where: { id: paymentId, status: "PROOF_UPLOADED" },
+      data: {
+        status: "CONFIRMED",
+        confirmedAt: now,
+        adminComment: comment || null,
+      },
+    });
+    if (claim.count !== 1) {
+      const current = await tx.payment.findUnique({ where: { id: paymentId } });
+      if (!current) throw new NotFoundError("Платёж не найден");
+      const currentDecision = evaluatePaymentDecision(current.status, "CONFIRM");
+      if (currentDecision.allowed && currentDecision.idempotent) return current;
+      throw new ConflictError("Статус платежа уже изменён другим решением");
+    }
     await tx.subscription.updateMany({
       where: { companyId: payment.companyId, status: "ACTIVE", id: { not: payment.invoice.subscriptionId } },
       data: { status: "EXPIRED", endsAt: now },
-    });
-    const updated = await tx.payment.update({
-      where: { id: paymentId },
-      data: { status: "CONFIRMED", confirmedAt: now, adminComment: comment || null },
     });
     await Promise.all([
       tx.invoice.update({ where: { id: payment.invoiceId }, data: { status: "PAID" } }),
@@ -213,7 +234,7 @@ export async function confirmPayment(
         tx,
       ),
     ]);
-    return updated;
+    return tx.payment.findUniqueOrThrow({ where: { id: paymentId } });
   });
 }
 
@@ -223,14 +244,28 @@ export async function rejectPayment(
   comment: string,
   meta: { ipAddress?: string | null; userAgent?: string | null } = {},
 ) {
-  if (!comment.trim()) throw new ConflictError("Укажите причину отклонения платежа");
   return prisma.$transaction(async (tx) => {
     const payment = await tx.payment.findUnique({ where: { id: paymentId }, include: { invoice: true } });
     if (!payment) throw new NotFoundError("Платёж не найден");
-    const updated = await tx.payment.update({
-      where: { id: paymentId },
+    const decision = evaluatePaymentDecision(payment.status, "REJECT");
+    if (!decision.allowed) {
+      throw new ConflictError(
+        "Отклонить можно только платёж с загруженным подтверждением",
+      );
+    }
+    if (decision.idempotent) return payment;
+    if (!comment.trim()) throw new ConflictError("Укажите причину отклонения платежа");
+    const claim = await tx.payment.updateMany({
+      where: { id: paymentId, status: "PROOF_UPLOADED" },
       data: { status: "REJECTED", adminComment: comment, confirmedAt: null },
     });
+    if (claim.count !== 1) {
+      const current = await tx.payment.findUnique({ where: { id: paymentId } });
+      if (!current) throw new NotFoundError("Платёж не найден");
+      const currentDecision = evaluatePaymentDecision(current.status, "REJECT");
+      if (currentDecision.allowed && currentDecision.idempotent) return current;
+      throw new ConflictError("Статус платежа уже изменён другим решением");
+    }
     await Promise.all([
       tx.invoice.update({ where: { id: payment.invoiceId }, data: { status: "ISSUED" } }),
       tx.billingHistory.create({
@@ -255,6 +290,6 @@ export async function rejectPayment(
         tx,
       ),
     ]);
-    return updated;
+    return tx.payment.findUniqueOrThrow({ where: { id: paymentId } });
   });
 }
