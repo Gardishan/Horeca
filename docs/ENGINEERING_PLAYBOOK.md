@@ -177,7 +177,7 @@ Audit doc, activity count, touched complexity, число commits/deployments и
 ## 11. CI defense in depth
 
 - `Quality`: verify, PostgreSQL migration/seed, HTTP smoke и production dependency audit.
-- `Security`: dependency review на PR с `npm audit` fallback при недоступном Dependency Graph и CodeQL на PR/main/weekly schedule.
+- `Security`: dependency review на PR с policy-aware audit fallback при недоступном Dependency Graph, scheduled production-zero/full-allowlist audit и CodeQL на PR/main/weekly schedule.
 - Dependabot: сгруппированные npm minor/patch и GitHub Actions updates; npm major version updates выполняются отдельным совместимым migration PR и не занимают автоматическую очередь.
 - SBOM: CycloneDX artifact и signed GitHub attestation для `main`.
 - PR template: риск, rollback, schema/security impact и фактические доказательства.

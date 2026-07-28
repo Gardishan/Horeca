@@ -56,6 +56,22 @@ jobs:
       - if: steps.dependency_graph.outputs.enabled != 'true'
         run: npm run security:audit
 
+  dependency-audit:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check:repo
+      - run: npm run security:audit
+
   codeql:
     runs-on: ubuntu-latest
     timeout-minutes: 20

@@ -80,9 +80,10 @@
 - [x] Coverage thresholds применяются к критическим domain и HTTP helpers.
 - [x] CI применяет migration и seed на PostgreSQL 17 и запускает authenticated HTTP smoke.
 - [x] Production dependencies проверяются через `npm audit` на high/critical findings.
-- [x] PostCSS advisory устранён совместимым override на patched release; `npm audit` проверяет полный и production dependency graph.
+- [x] PostCSS advisory устранён совместимым override; Next.js и `sharp` обновлены до patched releases, production dependency audit равен нулю.
+- [x] Dev-only advisory без совместимого исправления имеет владельца, mitigations, tracking и автоматически проверяемый срок в `docs/security/advisories.json`; audit отклоняет новые, critical и уже исчезнувшие allowlist entries.
 - [x] Dependency Review блокирует новые high-risk зависимости в pull requests; до включения GitHub Dependency Graph автоматически используется `npm audit` fallback.
-- [x] CodeQL запускается для PR, `main` и по недельному расписанию.
+- [x] CodeQL запускается для PR, `main` и по недельному расписанию; schedule также повторяет production-zero/full-allowlist audit.
 - [x] Dependabot обновляет npm и GitHub Actions зависимости.
 - [x] Workflow permissions минимизированы; checkout не сохраняет credentials.
 - [ ] Включить branch protection для `main` с обязательными Quality и Security checks.

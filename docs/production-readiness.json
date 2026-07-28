@@ -2,7 +2,7 @@
   "version": 1,
   "product": "HoReCa KZ",
   "target": "commercial-production",
-  "updatedAt": "2026-07-20",
+  "updatedAt": "2026-07-28",
   "controls": [
     {
       "id": "mvp-critical-flows",
@@ -61,7 +61,7 @@
       "status": "blocked",
       "blocking": true,
       "owner": "Product owner + Platform/DevOps",
-      "evidence": ["Dockerfile", ".dockerignore", "instrumentation.ts", "app/api/health/live/route.ts", "app/api/health/ready/route.ts", "docs/DEPLOYMENT.md", "https://github.com/Gardishan/Horeca/issues/14"],
+      "evidence": ["Dockerfile", ".dockerignore", "next.config.ts", "scripts/check-standalone-artifact.mjs", "instrumentation.ts", "app/api/health/live/route.ts", "app/api/health/ready/route.ts", "docs/DEPLOYMENT.md", "https://github.com/Gardishan/Horeca/issues/14"],
       "nextAction": "Select a hosting target compatible with the verified standalone container, commit provider IaC, inject managed runtime configuration, deploy staging, rehearse rollback, then complete an authorized production cutover and observe window."
     },
     {

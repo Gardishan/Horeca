@@ -327,15 +327,18 @@ export async function savePrivateUpload(
     return { relativePath };
   }
 
-  const root = path.resolve(/* turbopackIgnore: true */ process.env.PRIVATE_STORAGE_ROOT ?? "./storage/private");
+  const root = path.resolve(process.env.PRIVATE_STORAGE_ROOT ?? "./storage/private");
   const directory = path.resolve(root, "company-documents", companyId);
   if (!directory.startsWith(`${root}${path.sep}`)) {
     throw new AppError("Небезопасный путь хранения", 400, "UNSAFE_STORAGE_PATH");
   }
   const absolutePath = path.resolve(root, relativePath);
   try {
-    await mkdir(directory, { recursive: true, mode: 0o700 });
-    await writeFile(absolutePath, file.buffer, { mode: 0o600, flag: "wx" });
+    await mkdir(/* turbopackIgnore: true */ directory, { recursive: true, mode: 0o700 });
+    await writeFile(/* turbopackIgnore: true */ absolutePath, file.buffer, {
+      mode: 0o600,
+      flag: "wx",
+    });
   } catch {
     throw privateStorageUnavailable();
   }
@@ -350,7 +353,8 @@ export async function readPrivateUpload(
 
   if (privateStorageMode() === "filesystem") {
     try {
-      return await readFile(resolvePrivatePath(relativePath));
+      const absolutePath = resolvePrivatePath(relativePath);
+      return await readFile(/* turbopackIgnore: true */ absolutePath);
     } catch (error) {
       if ((error as NodeJS.ErrnoException)?.code === "ENOENT") {
         throw new NotFoundError("Файл документа отсутствует в приватном хранилище");
@@ -400,7 +404,7 @@ export async function readPrivateUpload(
 
 export function resolvePrivatePath(relativePath: string) {
   assertSafeStorageKey(relativePath);
-  const root = path.resolve(/* turbopackIgnore: true */ process.env.PRIVATE_STORAGE_ROOT ?? "./storage/private");
+  const root = path.resolve(process.env.PRIVATE_STORAGE_ROOT ?? "./storage/private");
   const absolutePath = path.resolve(root, relativePath);
   if (!absolutePath.startsWith(`${root}${path.sep}`)) {
     throw new AppError("Небезопасный путь документа", 400, "UNSAFE_STORAGE_PATH");

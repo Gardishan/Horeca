@@ -55,7 +55,7 @@ flowchart TD
 
 ## Deployment boundary
 
-Приложение собирается в Next.js standalone OCI image и запускается non-root. Миграции отделены в one-shot image target, чтобы schema privileges не требовались runtime process. Один immutable image digest продвигается staging → production; rolling rollout требует backward-compatible migrations, readiness gating и возврат на предыдущий digest без destructive DB rollback.
+Приложение собирается в Next.js standalone OCI image и запускается non-root. Build применяет deny-by-default проверку верхнего уровня standalone artifact: исходники, тесты, coverage, документация и Android-проект не могут попасть в runtime image из-за ошибочного output tracing. Миграции отделены в one-shot image target, чтобы schema privileges не требовались runtime process. Один immutable image digest продвигается staging → production; rolling rollout требует backward-compatible migrations, readiness gating и возврат на предыдущий digest без destructive DB rollback.
 
 Cloud-specific IaC намеренно не выбран без owner decision. `docs/DEPLOYMENT.md` фиксирует переносимый runtime contract, а `docs/PRIVATE_OBJECT_STORAGE.md` — provider-compatible application boundary. Production provider, workload identity, TLS/WAF, managed PostgreSQL, реально созданные buckets/policies и observe evidence остаются внешними controls.
 
@@ -70,4 +70,4 @@ Cloud-specific IaC намеренно не выбран без owner decision. `
 
 ## Architecture fitness functions
 
-CI должен оставаться зелёным по runtime/repository/readiness gates, Prisma validate, strict TypeScript, coverage, ESLint, production build, migration/seed, authenticated HTTP smoke, dependency audit/review и CodeQL. Commercial launch дополнительно требует строгого readiness gate. Следующие fitness functions: dependency boundary linting, migration upgrade test с предыдущей версии, расширенные API contract tests и DAST.
+CI должен оставаться зелёным по runtime/repository/readiness gates, Prisma validate, strict TypeScript, coverage, ESLint, production build, standalone artifact composition, migration/seed, authenticated HTTP smoke, dependency audit/review и CodeQL. Scheduled Security требует нулевой high/critical production graph и точного совпадения полного high graph с непросроченным advisory allowlist; новый, critical или уже исправленный finding блокирует job без ожидания нового PR. Commercial launch дополнительно требует строгого readiness gate. Следующие fitness functions: dependency boundary linting, migration upgrade test с предыдущей версии, расширенные API contract tests и DAST.

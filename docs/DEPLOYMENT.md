@@ -10,6 +10,7 @@ HoReCa KZ поставляется как self-hosted Next.js 16 Node.js contain
 |---|---|
 | `Dockerfile` target `runner` | минимальный non-root standalone application image |
 | `Dockerfile` target `migration` | отдельный one-shot job для `prisma migrate deploy` |
+| `scripts/check-standalone-artifact.mjs` | fail-closed allowlist состава runtime artifact |
 | `instrumentation.ts` | fail-fast проверка runtime-конфигурации до приёма трафика |
 | `/api/health/live` | liveness: процесс способен отвечать HTTP |
 | `/api/health/ready` | readiness: конфигурация допустима и PostgreSQL отвечает |
@@ -41,6 +42,12 @@ docker build \
 ```
 
 `builder` использует только безопасные test/build placeholders. Реальные `DATABASE_URL`, `AUTH_SECRET` и integration tokens не передаются в `docker build`.
+
+`npm run build` завершается ошибкой, если Next.js output tracing переносит в
+`.next/standalone` исходники, тесты, coverage, документацию, Android-проект или
+другие файлы вне минимального runtime allowlist. Исключения tracing перечислены
+явно в `next.config.ts`; добавление нового runtime-файла требует осознанного
+расширения allowlist, а не отключения gate.
 
 Перед rollout secret store должен внедрить environment, после чего запустите безопасную preflight-команду в release job:
 

@@ -88,11 +88,14 @@ const requiredFiles = [
   "docs/security/advisories.json",
   "prisma/schema.prisma",
   "instrumentation.ts",
+  "lib/dependency-audit-policy.ts",
   "lib/health.ts",
   "lib/runtime-config.ts",
   "lib/runtime-startup.ts",
   "proxy.ts",
+  "scripts/audit-dependencies.ts",
   "scripts/check-readiness.ts",
+  "scripts/check-standalone-artifact.mjs",
   "scripts/prepare-standalone.mjs",
   "scripts/check-runtime.mjs",
 ];
@@ -227,6 +230,27 @@ if (fileSet.has("package.json")) {
   if (packageJson.scripts?.start !== "node .next/standalone/server.js") {
     failures.push("package.json start должен запускать проверенный standalone server");
   }
+  if (
+    packageJson.dependencies?.next !==
+    packageJson.devDependencies?.["eslint-config-next"]
+  ) {
+    failures.push("next и eslint-config-next должны использовать одну версию");
+  }
+  if (
+    !packageJson.scripts?.build?.includes(
+      "node scripts/check-standalone-artifact.mjs",
+    )
+  ) {
+    failures.push("package.json build должен проверять состав standalone artifact");
+  }
+  if (
+    packageJson.scripts?.["security:audit"] !==
+    "node --import tsx scripts/audit-dependencies.ts"
+  ) {
+    failures.push(
+      "security:audit должен применять production-zero и полный advisory allowlist",
+    );
+  }
   if (packageJson.overrides?.postcss !== "8.5.19") {
     failures.push("package.json должен закреплять исправленный PostCSS 8.5.19 до обновления Next.js dependency graph");
   }
@@ -258,6 +282,22 @@ if (fileSet.has(".github/dependabot.yml")) {
   }
 }
 
+if (fileSet.has(".github/workflows/security.yml")) {
+  const securityWorkflow = readFileSync(
+    path.join(root, ".github/workflows/security.yml"),
+    "utf8",
+  );
+  if (
+    !/dependency-audit:[\s\S]*if:\s*github\.event_name == 'schedule'[\s\S]*npm run check:repo[\s\S]*npm run security:audit/.test(
+      securityWorkflow,
+    )
+  ) {
+    failures.push(
+      "Security workflow должен по расписанию проверять advisory expiry и production dependencies",
+    );
+  }
+}
+
 if (fileSet.has("docs/knowledge/source-registry.json")) {
   try {
     const registry = JSON.parse(
@@ -276,14 +316,30 @@ if (fileSet.has("docs/security/advisories.json")) {
     const advisories = JSON.parse(
       readFileSync(path.join(root, "docs/security/advisories.json"), "utf8"),
     );
+    const exceptionIds = Array.isArray(advisories.exceptions)
+      ? advisories.exceptions.map((item) => item.id)
+      : [];
     if (
       advisories.version !== 1 ||
       !Array.isArray(advisories.exceptions) ||
+      new Set(exceptionIds).size !== exceptionIds.length ||
       advisories.exceptions.some(
-        (item) => !item.id || !item.owner || !item.reviewBy || !Array.isArray(item.mitigations),
+        (item) =>
+          !/^GHSA-[a-z0-9-]+$/i.test(item.id ?? "") ||
+          !item.package ||
+          item.severity !== "high" ||
+          !item.scope ||
+          !item.owner ||
+          !item.tracking ||
+          !item.rationale ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(item.reviewBy ?? "") ||
+          Number.isNaN(Date.parse(`${item.reviewBy}T00:00:00Z`)) ||
+          Date.parse(`${item.reviewBy}T23:59:59Z`) < Date.now() ||
+          !Array.isArray(item.mitigations) ||
+          item.mitigations.length === 0,
       )
     ) {
-      failures.push("Security advisory registry имеет неподдерживаемую структуру");
+      failures.push("Security advisory registry имеет неподдерживаемую или просроченную запись");
     }
   } catch {
     failures.push("Security advisory registry содержит невалидный JSON");
