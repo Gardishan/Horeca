@@ -66,15 +66,13 @@ npm run dev
 
 ## Demo-аккаунты
 
-Пароль для всех demo-аккаунтов: `demo123`.
+Локальный seed создаёт три role-based сценария: administrator, active supplier
+и pending supplier. После `npm run db:seed` выберите нужную роль кнопкой на
+`/login`; точные demo-credentials намеренно не публикуются в документации и
+не являются production-интерфейсом.
 
-| Роль | Email | Сценарий |
-|---|---|---|
-| Admin | `admin@horeca.kz` | Модерация, подтверждение оплаты, активация |
-| Active supplier | `supplier@horeca.kz` | Активная PRO-подписка и опубликованные товары |
-| Pending supplier | `pending@horeca.kz` | Документы и платёж ожидают проверки |
-
-Demo-пароли предназначены только для локальной/тестовой среды.
+Demo-доступ предназначен только для локальной/тестовой среды и отключается
+обязательной production-конфигурацией.
 
 ## Основные страницы
 
@@ -166,7 +164,7 @@ npm run check:readiness
 
 После `build`, миграции и seed можно выполнить HTTP smoke test: `npm run smoke:http`.
 
-GitHub Actions дополнительно поднимает PostgreSQL 17, применяет migration, выполняет seed и сквозной HTTP smoke. Отдельный security workflow запускает dependency review (или `npm audit`, пока Dependency Graph недоступен) и CodeQL; Dependabot обновляет npm и Actions зависимости.
+GitHub Actions дополнительно поднимает PostgreSQL 17, применяет migration, выполняет seed и сквозной HTTP smoke. Отдельный security workflow запускает dependency review (или policy-aware `npm audit`, пока Dependency Graph недоступен), еженедельно требует нулевой production graph и точного совпадения полного high-severity graph с непросроченным allowlist, а также запускает CodeQL; Dependabot обновляет npm и Actions зависимости.
 
 ## Deployable runtime
 

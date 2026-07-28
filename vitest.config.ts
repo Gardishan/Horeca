@@ -9,6 +9,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "json-summary", "html"],
       include: [
+        "lib/dependency-audit-policy.ts",
         "lib/domain/**/*.ts",
         "lib/file-security.ts",
         "lib/health.ts",

@@ -1,6 +1,6 @@
 # Project context
 
-Последнее обновление: 21.07.2026.
+Последнее обновление: 28.07.2026.
 
 Это долговременная память для следующего разработчика или coding agent. Она фиксирует текущее состояние, но не заменяет schema, tests и source code.
 
@@ -18,7 +18,7 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 - PostgreSQL/Prisma: `prisma/schema.prisma` и versioned migrations.
 - Private uploads: filesystem только dev/test; staging/production требуют S3-compatible boundary, никогда не `/public`.
 - Session: подписанная HMAC HttpOnly cookie.
-- Deployment: Next.js standalone non-root image, отдельный migration target, startup validation и split liveness/readiness.
+- Deployment: Next.js standalone non-root image, отдельный migration target, startup validation, split liveness/readiness и fail-closed проверка состава runtime artifact.
 
 Подробности: `docs/ARCHITECTURE.md`.
 
@@ -44,16 +44,21 @@ npm run check:readiness
 npm run runtime:validate
 ```
 
-CI выполняет этот путь на Node.js 22 и PostgreSQL 17. Security workflow отдельно запускает dependency review с `npm audit` fallback, CodeQL и формирует подписанный CycloneDX SBOM на `main`.
+CI выполняет этот путь на Node.js 22 и PostgreSQL 17. Security workflow отдельно запускает dependency review с policy-aware audit fallback, еженедельный production-zero/full-allowlist audit, CodeQL и формирует подписанный CycloneDX SBOM на `main`.
+
+Production dependency audit должен оставаться без известных уязвимостей.
+Временные исключения полного development graph допустимы только в
+`docs/security/advisories.json` с владельцем, mitigations, tracking и
+непросроченной датой повторной проверки. Gate отклоняет незарегистрированные
+high findings, любые critical findings и stale exception после исправления
+dependency graph.
 
 ## Demo state
 
-- `admin@horeca.kz`
-- `supplier@horeca.kz`
-- `pending@horeca.kz`
-- Локальный demo password: `demo123`
-
-Demo credentials запрещены в production. Seed создаёт только тестовые документы и данные.
+Локальный seed создаёт administrator, active-supplier и pending-supplier
+сценарии, доступные через role-buttons на `/login`. Точные demo-credentials
+не являются документируемым контрактом. Demo authentication запрещена в
+production; seed создаёт только тестовые документы и данные.
 
 ## Production readiness
 
@@ -91,6 +96,8 @@ MVP deliverable проверен, но commercial production readiness не за
 | Runtime/type major alignment | Node.js runtime, engine pins и `@types/node` остаются на одной major-ветке; repository gate блокирует drift |
 | Fail-closed malware boundary | Mock разрешён только dev/test; deployed runtime требует HTTPS scanner, а outage/unknown verdict блокирует upload до storage |
 | Fail-closed storage boundary | Deployed runtime запрещает filesystem; S3 outage/malformed body блокируют flow без утечки provider details |
+| Minimal standalone artifact | Явные tracing exclusions и build gate не допускают source/tests/docs/coverage в runtime image |
+| Time-bound advisory exception | Dev-only finding без совместимого исправления имеет expiry, mitigations и tracking; production audit остаётся блокирующим |
 
 ## Когда обновлять этот файл
 
