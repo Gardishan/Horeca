@@ -1,6 +1,6 @@
 import { requireSupplierCompany } from "@/lib/auth";
 import { apiHandler, assertSameOrigin, ok, parseJson } from "@/lib/http";
-import { productSchema } from "@/lib/validation";
+import { supplierProductSchema } from "@/lib/validation";
 import { createCompanyProduct, listCompanyProducts } from "@/lib/services/products";
 
 export async function GET() {
@@ -14,8 +14,7 @@ export async function POST(request: Request) {
   return apiHandler(async () => {
     assertSameOrigin(request);
     const { company } = await requireSupplierCompany();
-    const input = await parseJson(request, productSchema);
+    const input = await parseJson(request, supplierProductSchema);
     return ok(await createCompanyProduct(company.id, input), { status: 201 });
   });
 }
-

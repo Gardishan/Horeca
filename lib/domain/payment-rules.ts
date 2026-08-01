@@ -16,3 +16,11 @@ export function evaluatePaymentDecision(
   if (status === "PROOF_UPLOADED") return { allowed: true, idempotent: false };
   return { allowed: false, idempotent: false };
 }
+
+export function paymentStatusAfterSupplierPaidSignal(
+  status: PaymentStatus,
+): Exclude<PaymentStatus, "CONFIRMED"> | null {
+  if (status === "CONFIRMED") return null;
+  if (status === "PROOF_UPLOADED") return "PROOF_UPLOADED";
+  return "PENDING";
+}
