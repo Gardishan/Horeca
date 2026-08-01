@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { evaluatePaymentDecision } from "@/lib/domain/payment-rules";
+import {
+  evaluatePaymentDecision,
+  paymentStatusAfterSupplierPaidSignal,
+} from "@/lib/domain/payment-rules";
 
 describe("payment decision rules", () => {
   it("allows an admin decision only after a proof was uploaded", () => {
@@ -29,5 +32,12 @@ describe("payment decision rules", () => {
     });
     expect(evaluatePaymentDecision("CONFIRMED", "REJECT").allowed).toBe(false);
     expect(evaluatePaymentDecision("REJECTED", "CONFIRM").allowed).toBe(false);
+  });
+
+  it("does not resurrect a rejected proof from a supplier paid signal", () => {
+    expect(paymentStatusAfterSupplierPaidSignal("REJECTED")).toBe("PENDING");
+    expect(paymentStatusAfterSupplierPaidSignal("PENDING")).toBe("PENDING");
+    expect(paymentStatusAfterSupplierPaidSignal("PROOF_UPLOADED")).toBe("PROOF_UPLOADED");
+    expect(paymentStatusAfterSupplierPaidSignal("CONFIRMED")).toBeNull();
   });
 });

@@ -1,6 +1,27 @@
-import type { CompanyStatus, ProductStatus, VerificationStatus } from "@prisma/client";
+import type { CompanyStatus, Prisma, ProductStatus, VerificationStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { NotFoundError } from "@/lib/errors";
+
+const adminPaymentSelect = {
+  id: true,
+  companyId: true,
+  invoiceId: true,
+  amount: true,
+  currency: true,
+  method: true,
+  status: true,
+  proofFilePath: true,
+  adminComment: true,
+  paidAt: true,
+  confirmedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.PaymentSelect;
+
+function toAdminPaymentView<T extends { proofFilePath: string | null }>(payment: T) {
+  const { proofFilePath, ...safe } = payment;
+  return { ...safe, hasProof: Boolean(proofFilePath) };
+}
 
 export async function getAdminStats() {
   const [pendingCompanies, pendingPayments, pendingDocuments, activeSuppliers, blockedSuppliers, totalProducts, publishedProducts, draftProducts] =
@@ -17,8 +38,8 @@ export async function getAdminStats() {
   return { pendingCompanies, pendingPayments, pendingDocuments, activeSuppliers, blockedSuppliers, totalProducts, publishedProducts, draftProducts };
 }
 
-export function listAdminCompanies(query: { search?: string; status?: CompanyStatus; verification?: VerificationStatus } = {}) {
-  return prisma.company.findMany({
+export async function listAdminCompanies(query: { search?: string; status?: CompanyStatus; verification?: VerificationStatus } = {}) {
+  const companies = await prisma.company.findMany({
     where: {
       ...(query.status ? { status: query.status } : {}),
       ...(query.verification ? { verificationStatus: query.verification } : {}),
@@ -36,11 +57,15 @@ export function listAdminCompanies(query: { search?: string; status?: CompanySta
     include: {
       owner: { select: { name: true, email: true } },
       subscriptions: { include: { plan: true }, orderBy: { createdAt: "desc" }, take: 1 },
-      payments: { orderBy: { createdAt: "desc" }, take: 1 },
+      payments: { orderBy: { createdAt: "desc" }, take: 1, select: adminPaymentSelect },
       _count: { select: { products: true, documents: true } },
     },
     orderBy: { updatedAt: "desc" },
   });
+  return companies.map((company) => ({
+    ...company,
+    payments: company.payments.map(toAdminPaymentView),
+  }));
 }
 
 export async function getAdminCompany(companyId: string) {
@@ -61,6 +86,8 @@ export async function getAdminCompany(companyId: string) {
           paidAt: true,
           confirmedAt: true,
           createdAt: true,
+          updatedAt: true,
+          proofFilePath: true,
           invoice: { select: { id: true, invoiceNumber: true, status: true, issuedAt: true, dueAt: true } },
         },
       },
@@ -79,11 +106,14 @@ export async function getAdminCompany(companyId: string) {
     },
   });
   if (!company) throw new NotFoundError("Компания не найдена");
-  return company;
+  return {
+    ...company,
+    payments: company.payments.map(toAdminPaymentView),
+  };
 }
 
-export function listAdminVerifications(status?: VerificationStatus) {
-  return prisma.companyVerification.findMany({
+export async function listAdminVerifications(status?: VerificationStatus) {
+  const verifications = await prisma.companyVerification.findMany({
     where: status ? { status } : { status: { in: ["PENDING", "REUPLOAD_REQUESTED"] } },
     include: {
       company: {
@@ -91,13 +121,20 @@ export function listAdminVerifications(status?: VerificationStatus) {
           documents: {
             select: { id: true, type: true, originalName: true, status: true, antivirusStatus: true, uploadedAt: true, adminComment: true },
           },
-          payments: { orderBy: { createdAt: "desc" }, take: 1 },
+          payments: { orderBy: { createdAt: "desc" }, take: 1, select: adminPaymentSelect },
           subscriptions: { include: { plan: true }, orderBy: { createdAt: "desc" }, take: 1 },
         },
       },
     },
     orderBy: { submittedAt: "asc" },
   });
+  return verifications.map((verification) => ({
+    ...verification,
+    company: {
+      ...verification.company,
+      payments: verification.company.payments.map(toAdminPaymentView),
+    },
+  }));
 }
 
 export function listAdminProducts(query: { search?: string; status?: ProductStatus; companyId?: string; categoryId?: string } = {}) {

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   evaluateCompanyActivation,
+  evaluateDocumentDecision,
   evaluateVerificationSubmission,
+  evaluateVerificationDecision,
   isDocumentSafeForApproval,
   profileCompletion,
 } from "@/lib/domain/verification-rules";
@@ -111,4 +113,32 @@ describe("document antivirus approval", () => {
       expect(isDocumentSafeForApproval(status, true)).toBe(false);
     },
   );
+});
+
+describe("review decision state machines", () => {
+  it("allows verification decisions only from pending and keeps repeats idempotent", () => {
+    expect(evaluateVerificationDecision("PENDING", "APPROVED")).toEqual({
+      allowed: true,
+      idempotent: false,
+    });
+    expect(evaluateVerificationDecision("APPROVED", "APPROVED")).toEqual({
+      allowed: true,
+      idempotent: true,
+    });
+    expect(evaluateVerificationDecision("APPROVED", "REJECTED").allowed).toBe(false);
+    expect(evaluateVerificationDecision("NOT_STARTED", "APPROVED").allowed).toBe(false);
+  });
+
+  it("allows document decisions only from under review and prevents reversal", () => {
+    expect(evaluateDocumentDecision("UNDER_REVIEW", "APPROVED")).toEqual({
+      allowed: true,
+      idempotent: false,
+    });
+    expect(evaluateDocumentDecision("REJECTED", "REJECTED")).toEqual({
+      allowed: true,
+      idempotent: true,
+    });
+    expect(evaluateDocumentDecision("APPROVED", "REUPLOAD_REQUESTED").allowed).toBe(false);
+    expect(evaluateDocumentDecision("UPLOADED", "APPROVED").allowed).toBe(false);
+  });
 });

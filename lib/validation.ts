@@ -48,14 +48,14 @@ export const planSelectionSchema = z.object({ planCode: z.enum(["START", "PRO", 
 
 export const markPaidSchema = z.object({ invoiceId: z.string().min(1) });
 
-export const productSchema = z.object({
+export const supplierProductSchema = z.object({
   name: z.string().trim().min(3).max(180),
   sku: z.string().trim().min(2).max(80),
   categoryId: z.string().min(1),
   description: z.string().trim().min(30).max(6000),
   price: z.coerce.number().positive().max(1_000_000_000),
   wholesalePrice: z.coerce.number().positive().max(1_000_000_000).optional().nullable(),
-  currency: z.enum(["KZT", "USD"]).default("KZT"),
+  currency: z.enum(["KZT", "USD"]).optional(),
   unit: z.enum(["KG", "LITER", "PIECE", "BOX", "BAG", "PACKAGE"]),
   moq: z.coerce.number().int().positive().max(1_000_000),
   stock: z.coerce.number().int().nonnegative().max(1_000_000_000),
@@ -64,7 +64,10 @@ export const productSchema = z.object({
   deliveryCities: z.array(z.string().trim().min(2).max(80)).min(1).max(30),
   leadTimeDays: z.coerce.number().int().min(0).max(365),
   imageUrl: optionalUrl.nullable(),
-  isFeatured: z.boolean().default(false),
+}).strict();
+
+export const productSchema = supplierProductSchema.extend({
+  isFeatured: z.boolean().optional(),
 });
 
 export const buyerRequestSchema = z.object({

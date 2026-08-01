@@ -4,8 +4,32 @@ import type {
   DocumentType,
   LegalType,
   PaymentStatus,
+  VerificationStatus,
 } from "@prisma/client";
 import type { RuleResult } from "@/lib/domain/product-rules";
+
+export type ReviewDecisionResult = {
+  allowed: boolean;
+  idempotent: boolean;
+};
+
+export function evaluateVerificationDecision(
+  current: VerificationStatus,
+  target: Extract<VerificationStatus, "APPROVED" | "REJECTED" | "REUPLOAD_REQUESTED">,
+): ReviewDecisionResult {
+  if (current === target) return { allowed: true, idempotent: true };
+  if (current === "PENDING") return { allowed: true, idempotent: false };
+  return { allowed: false, idempotent: false };
+}
+
+export function evaluateDocumentDecision(
+  current: DocumentStatus,
+  target: Extract<DocumentStatus, "APPROVED" | "REJECTED" | "REUPLOAD_REQUESTED">,
+): ReviewDecisionResult {
+  if (current === target) return { allowed: true, idempotent: true };
+  if (current === "UNDER_REVIEW") return { allowed: true, idempotent: false };
+  return { allowed: false, idempotent: false };
+}
 
 export type CompanyProfileSnapshot = {
   name?: string | null;

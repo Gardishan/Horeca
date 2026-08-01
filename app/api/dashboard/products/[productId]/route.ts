@@ -1,6 +1,6 @@
 import { requireSupplierCompany } from "@/lib/auth";
 import { apiHandler, assertSameOrigin, ok, parseJson } from "@/lib/http";
-import { productSchema } from "@/lib/validation";
+import { supplierProductSchema } from "@/lib/validation";
 import { updateCompanyProduct } from "@/lib/services/products";
 
 export async function PUT(request: Request, context: { params: Promise<{ productId: string }> }) {
@@ -8,8 +8,7 @@ export async function PUT(request: Request, context: { params: Promise<{ product
     assertSameOrigin(request);
     const { company } = await requireSupplierCompany();
     const { productId } = await context.params;
-    const input = await parseJson(request, productSchema.partial());
+    const input = await parseJson(request, supplierProductSchema.partial());
     return ok(await updateCompanyProduct(company.id, productId, input));
   });
 }
-

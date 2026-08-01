@@ -4,7 +4,9 @@ import { ConflictError, NotFoundError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import {
   evaluateCompanyActivation,
+  evaluateDocumentDecision,
   evaluateVerificationSubmission,
+  evaluateVerificationDecision,
   isDocumentSafeForApproval,
 } from "@/lib/domain/verification-rules";
 import { isDeployedApplicationEnvironment } from "@/lib/runtime-config";
@@ -136,15 +138,27 @@ export async function decideVerification(
   return prisma.$transaction(async (tx) => {
     const verification = await tx.companyVerification.findUnique({ where: { id: verificationId } });
     if (!verification) throw new NotFoundError("Проверка не найдена");
-    const updated = await tx.companyVerification.update({
-      where: { id: verificationId },
+    const decision = evaluateVerificationDecision(verification.status, status);
+    if (!decision.allowed) {
+      throw new ConflictError("Решение возможно только для проверки в ожидании");
+    }
+    if (decision.idempotent) return verification;
+    const claim = await tx.companyVerification.updateMany({
+      where: { id: verificationId, status: "PENDING" },
       data: { status, reviewedAt: new Date(), reviewedById: adminUserId, adminComment: comment || null },
     });
+    if (claim.count !== 1) {
+      const current = await tx.companyVerification.findUnique({ where: { id: verificationId } });
+      if (!current) throw new NotFoundError("Проверка не найдена");
+      const currentDecision = evaluateVerificationDecision(current.status, status);
+      if (currentDecision.allowed && currentDecision.idempotent) return current;
+      throw new ConflictError("Статус проверки уже изменён другим решением");
+    }
     await tx.company.update({
       where: { id: verification.companyId },
       data: {
         verificationStatus: status,
-        ...(status === "APPROVED" ? { lastVerifiedAt: new Date() } : {}),
+        lastVerifiedAt: status === "APPROVED" ? new Date() : null,
       },
     });
     await writeAuditLog(
@@ -160,7 +174,7 @@ export async function decideVerification(
       },
       tx,
     );
-    return updated;
+    return tx.companyVerification.findUniqueOrThrow({ where: { id: verificationId } });
   });
 }
 
@@ -186,11 +200,32 @@ export async function decideDocument(
         "Документ нельзя одобрить без успешной антивирусной проверки",
       );
     }
-    const updated = await tx.companyDocument.update({
-      where: { id: documentId },
+    const decision = evaluateDocumentDecision(document.status, status);
+    if (!decision.allowed) {
+      throw new ConflictError("Решение возможно только для документа на проверке");
+    }
+    if (decision.idempotent) {
+      return tx.companyDocument.findUniqueOrThrow({
+        where: { id: documentId },
+        select: { id: true, type: true, originalName: true, status: true, adminComment: true, reviewedAt: true },
+      });
+    }
+    const claim = await tx.companyDocument.updateMany({
+      where: { id: documentId, status: "UNDER_REVIEW" },
       data: { status, reviewedAt: new Date(), reviewedById: adminUserId, adminComment: comment || null },
-      select: { id: true, type: true, originalName: true, status: true, adminComment: true, reviewedAt: true },
     });
+    if (claim.count !== 1) {
+      const current = await tx.companyDocument.findUnique({ where: { id: documentId } });
+      if (!current) throw new NotFoundError("Документ не найден");
+      const currentDecision = evaluateDocumentDecision(current.status, status);
+      if (currentDecision.allowed && currentDecision.idempotent) {
+        return tx.companyDocument.findUniqueOrThrow({
+          where: { id: documentId },
+          select: { id: true, type: true, originalName: true, status: true, adminComment: true, reviewedAt: true },
+        });
+      }
+      throw new ConflictError("Статус документа уже изменён другим решением");
+    }
     await writeAuditLog(
       {
         adminUserId,
@@ -204,7 +239,10 @@ export async function decideDocument(
       },
       tx,
     );
-    return updated;
+    return tx.companyDocument.findUniqueOrThrow({
+      where: { id: documentId },
+      select: { id: true, type: true, originalName: true, status: true, adminComment: true, reviewedAt: true },
+    });
   });
 }
 
@@ -226,10 +264,18 @@ export async function activateCompany(companyId: string, adminUserId: string, me
     throw new ConflictError("Компанию пока нельзя активировать", { reasons });
   }
   return prisma.$transaction(async (tx) => {
-    const updated = await tx.company.update({
-      where: { id: companyId },
+    const claim = await tx.company.updateMany({
+      where: {
+        id: companyId,
+        verificationStatus: "APPROVED",
+        isBlocked: false,
+        status: { not: "BLOCKED" },
+      },
       data: { status: "ACTIVE", isBlocked: false },
     });
+    if (claim.count !== 1) {
+      throw new ConflictError("Статус компании уже изменён другим действием");
+    }
     await writeAuditLog(
       {
         adminUserId,
@@ -243,7 +289,7 @@ export async function activateCompany(companyId: string, adminUserId: string, me
       },
       tx,
     );
-    return updated;
+    return tx.company.findUniqueOrThrow({ where: { id: companyId } });
   });
 }
 

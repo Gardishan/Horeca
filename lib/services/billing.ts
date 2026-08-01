@@ -1,7 +1,10 @@
 import type { PlanCode } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ConflictError, NotFoundError } from "@/lib/errors";
-import { evaluatePaymentDecision } from "@/lib/domain/payment-rules";
+import {
+  evaluatePaymentDecision,
+  paymentStatusAfterSupplierPaidSignal,
+} from "@/lib/domain/payment-rules";
 import { writeAuditLog } from "@/lib/services/audit";
 
 export function getCompanyBilling(companyId: string) {
@@ -113,12 +116,21 @@ export async function markInvoicePaid(companyId: string, invoiceId: string) {
     if (!invoice) throw new NotFoundError("Счёт не найден");
     if (["PAID", "CANCELLED"].includes(invoice.status)) throw new ConflictError("Статус счёта уже нельзя изменить");
 
-    const payment = invoice.payments[0]
-      ? await tx.payment.update({
-          where: { id: invoice.payments[0].id },
-          data: { paidAt: new Date(), status: invoice.payments[0].proofFilePath ? "PROOF_UPLOADED" : "PENDING" },
-        })
-      : await tx.payment.create({
+    let payment;
+    if (invoice.payments[0]) {
+      const current = invoice.payments[0];
+      const targetStatus = paymentStatusAfterSupplierPaidSignal(current.status);
+      if (!targetStatus) throw new ConflictError("Платёж уже подтверждён");
+      const claim = await tx.payment.updateMany({
+        where: { id: current.id, status: current.status },
+        data: { paidAt: new Date(), status: targetStatus },
+      });
+      if (claim.count !== 1) {
+        throw new ConflictError("Статус платежа уже изменён другим действием");
+      }
+      payment = await tx.payment.findUniqueOrThrow({ where: { id: current.id } });
+    } else {
+      payment = await tx.payment.create({
           data: {
             companyId,
             invoiceId,
@@ -128,6 +140,7 @@ export async function markInvoicePaid(companyId: string, invoiceId: string) {
             status: "PENDING",
           },
         });
+    }
     await tx.invoice.update({ where: { id: invoiceId }, data: { status: "PAID_PENDING_CONFIRMATION" } });
     return payment;
   });
@@ -144,10 +157,13 @@ export async function recordPaymentProof(companyId: string, invoiceId: string, p
     if (!payment) throw new ConflictError("Для счёта не создан платёж");
     if (payment.status === "CONFIRMED") throw new ConflictError("Платёж уже подтверждён");
 
-    const updated = await tx.payment.update({
-      where: { id: payment.id },
+    const claim = await tx.payment.updateMany({
+      where: { id: payment.id, status: { in: ["PENDING", "PROOF_UPLOADED", "REJECTED"] } },
       data: { proofFilePath, status: "PROOF_UPLOADED", paidAt: payment.paidAt ?? new Date() },
     });
+    if (claim.count !== 1) {
+      throw new ConflictError("Статус платежа уже изменён другим действием");
+    }
     await tx.invoice.update({ where: { id: invoice.id }, data: { status: "PAID_PENDING_CONFIRMATION" } });
     await tx.billingHistory.create({
       data: {
@@ -157,7 +173,7 @@ export async function recordPaymentProof(companyId: string, invoiceId: string, p
         description: `Загружено подтверждение оплаты по счёту ${invoice.invoiceNumber}`,
       },
     });
-    return updated;
+    return tx.payment.findUniqueOrThrow({ where: { id: payment.id } });
   });
 }
 

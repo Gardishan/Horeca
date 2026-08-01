@@ -41,8 +41,11 @@ npm run release:check   # strict commercial-production gate
 - Активация компании требует полного профиля, OFFER + PRIVACY, одобренных и безопасно просканированных документов, подтверждённой оплаты и одобренной verification.
 - Generic profile endpoints не меняют trust, block или billing status; критические переходы выполняются только специализированными use cases.
 - Admin подтверждает или отклоняет оплату только из `PROOF_UPLOADED`; terminal decisions идемпотентны и не могут быть обращены противоположным endpoint.
+- Отклонённое подтверждение оплаты нельзя повторно подать клиентским сигналом «Я оплатил»; нужен новый upload, а admin download всегда журналируется без раскрытия storage path.
+- Verification/document decision выполняется только из `PENDING`/`UNDER_REVIEW`; одинаковый terminal repeat идемпотентен, противоположный terminal transition запрещён.
 - Клиентские сигналы «Я оплатил» и «Опубликовать» не обходят server-side policy.
 - Supplier всегда ограничен своей компанией; admin endpoints всегда требуют роль `ADMIN`.
+- Supplier не управляет административным merchandising-флагом `isFeatured`.
 - Каждое критическое административное решение и скачивание приватного документа журналируется.
 
 Меняйте правила в `lib/domain` и `lib/services`, а не только в UI или Route Handler. Добавляйте позитивный и негативный тест каждого изменённого перехода.

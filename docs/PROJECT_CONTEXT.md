@@ -1,6 +1,6 @@
 # Project context
 
-Последнее обновление: 28.07.2026.
+Последнее обновление: 01.08.2026.
 
 Это долговременная память для следующего разработчика или coding agent. Она фиксирует текущее состояние, но не заменяет schema, tests и source code.
 
@@ -31,6 +31,9 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 5. Admin decisions и private downloads оставляют audit evidence.
 6. Client-side state никогда не является источником billing/trust решения.
 7. Generic profile update не меняет trust/block/billing status; payment decision возможен только из `PROOF_UPLOADED`, не обращает terminal status и атомарно конкурирует с противоположным решением.
+8. Featured-размещение товара управляется только администратором; supplier API не принимает `isFeatured`.
+9. Payment proof доступен администратору только через audited download; storage path не попадает в API, а отклонённый proof нельзя повторно подать сигналом «Я оплатил».
+10. Verification/document decisions используют conditional transition из review-состояния; terminal decision нельзя обратить противоположным endpoint.
 
 ## Проверенный путь качества
 
@@ -100,6 +103,8 @@ MVP deliverable проверен, но commercial production readiness не за
 | Minimal standalone artifact | Явные tracing exclusions и build gate не допускают source/tests/docs/coverage в runtime image |
 | Time-bound advisory exception | Dev-only finding без совместимого исправления имеет expiry, mitigations и tracking; production audit остаётся блокирующим |
 | Guarded privileged transitions | Generic profile update не меняет trust state; payment confirm/reject использует проверяемую state machine и conditional write; deployed activation повторно требует scanner-clean documents |
+| Audited payment proof boundary | Admin API возвращает только `hasProof`; скачивание проходит через object-level endpoint и audit, rejected proof требует нового upload |
+| Terminal review decisions | Verification/document decisions используют compare-and-swap; одинаковый повтор идемпотентен, reversal и конкурентное противоположное решение запрещены |
 
 ## Когда обновлять этот файл
 

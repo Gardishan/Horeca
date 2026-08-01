@@ -130,6 +130,16 @@ async function run() {
   const supplierCookie = await login("supplier@horeca.kz");
   const dashboard = await json("/api/dashboard/company", { headers: { Cookie: supplierCookie } });
   assert(dashboard.response.ok && dashboard.payload.data.company.status === "ACTIVE", "Supplier dashboard is unavailable");
+  const featuredBypass = await json("/api/dashboard/products/product-coffee", {
+    method: "PUT",
+    headers: { Cookie: supplierCookie, Origin: origin, "Content-Type": "application/json" },
+    body: JSON.stringify({ isFeatured: true }),
+  });
+  assert(
+    featuredBypass.response.status === 422 &&
+      featuredBypass.payload.error.code === "VALIDATION_ERROR",
+    "Supplier changed the admin-only featured flag",
+  );
   checks.push("supplier authenticated dashboard");
 
   const forbidden = await json("/api/admin/companies", { headers: { Cookie: supplierCookie } });
@@ -165,6 +175,12 @@ async function run() {
   const adminCookie = await login("admin@horeca.kz");
   const companies = await json("/api/admin/companies", { headers: { Cookie: adminCookie } });
   assert(companies.response.ok && companies.payload.data.length >= 2, "Admin companies API is unavailable");
+  const verifications = await json("/api/admin/verifications", { headers: { Cookie: adminCookie } });
+  assert(verifications.response.ok, "Admin verifications API is unavailable");
+  assert(
+    !JSON.stringify([companies.payload, verifications.payload]).includes("proofFilePath"),
+    "Admin API leaked a private payment proof storage path",
+  );
   const stateBypass = await json("/api/admin/companies/company-active", {
     method: "PUT",
     headers: { Cookie: adminCookie, Origin: origin, "Content-Type": "application/json" },
@@ -184,6 +200,48 @@ async function run() {
     reversedPayment.response.status === 409,
     "Confirmed payment was reversed through the rejection endpoint",
   );
+  const reversedDocument = await json("/api/admin/documents/document-registration-active/reject", {
+    method: "POST",
+    headers: { Cookie: adminCookie, Origin: origin, "Content-Type": "application/json" },
+    body: JSON.stringify({ comment: "Smoke test must not reverse an approved document" }),
+  });
+  assert(
+    reversedDocument.response.status === 409,
+    "Approved document was reversed through a terminal decision endpoint",
+  );
+  const reversedVerification = await json("/api/admin/verifications/verification-active/reject", {
+    method: "POST",
+    headers: { Cookie: adminCookie, Origin: origin, "Content-Type": "application/json" },
+    body: JSON.stringify({ comment: "Smoke test must not reverse an approved verification" }),
+  });
+  assert(
+    reversedVerification.response.status === 409,
+    "Approved verification was reversed through a terminal decision endpoint",
+  );
+  const paymentProof = await fetch(`${origin}/api/admin/payments/payment-pending/proof`, {
+    headers: { Cookie: adminCookie },
+    signal: AbortSignal.timeout(10_000),
+  });
+  const paymentProofBytes = Buffer.from(await paymentProof.arrayBuffer());
+  assert(
+    paymentProof.ok && paymentProofBytes.subarray(0, 5).toString() === "%PDF-",
+    "Admin could not review the private payment proof",
+  );
+  const rejectedPayment = await json("/api/admin/payments/payment-pending/reject", {
+    method: "POST",
+    headers: { Cookie: adminCookie, Origin: origin, "Content-Type": "application/json" },
+    body: JSON.stringify({ comment: "Smoke test rejects the stale proof" }),
+  });
+  assert(rejectedPayment.response.ok, "Uploaded payment proof could not be rejected");
+  const repeatedPaidSignal = await json("/api/dashboard/company/billing/mark-paid", {
+    method: "POST",
+    headers: { Cookie: pendingCookie, Origin: origin, "Content-Type": "application/json" },
+    body: JSON.stringify({ invoiceId: "invoice-pending" }),
+  });
+  assert(
+    repeatedPaidSignal.response.ok && repeatedPaidSignal.payload.data.status === "PENDING",
+    "Supplier paid signal resurrected a rejected payment proof",
+  );
   const stalePayment = await json("/api/admin/payments/payment-pending/confirm", {
     method: "POST",
     headers: { Cookie: adminCookie, Origin: origin, "Content-Type": "application/json" },
@@ -193,7 +251,15 @@ async function run() {
     stalePayment.response.status === 409,
     "Payment for a superseded plan reactivated its cancelled subscription",
   );
-  checks.push("privileged company and payment transition guards");
+  const auditedCompany = await json("/api/admin/companies/company-pending", {
+    headers: { Cookie: adminCookie },
+  });
+  assert(
+    auditedCompany.response.ok &&
+      auditedCompany.payload.data.auditLogs.some((entry) => entry.action === "PAYMENT_PROOF_DOWNLOADED"),
+    "Payment proof download did not create audit evidence",
+  );
+  checks.push("private payment proof review and terminal trust transition guards");
   const document = await fetch(`${origin}/api/admin/documents/document-registration-active/download`, {
     headers: { Cookie: adminCookie },
     signal: AbortSignal.timeout(10_000),
