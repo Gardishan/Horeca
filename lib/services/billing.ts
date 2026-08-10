@@ -7,6 +7,11 @@ import {
 } from "@/lib/domain/payment-rules";
 import { writeAuditLog } from "@/lib/services/audit";
 
+function toPaymentView<T extends { proofFilePath: string | null }>(payment: T) {
+  const { proofFilePath, ...safe } = payment;
+  return { ...safe, hasProof: Boolean(proofFilePath) };
+}
+
 export function getCompanyBilling(companyId: string) {
   return Promise.all([
     prisma.supplierPlan.findMany({ orderBy: { priceMonthly: "asc" } }),
@@ -142,7 +147,7 @@ export async function markInvoicePaid(companyId: string, invoiceId: string) {
         });
     }
     await tx.invoice.update({ where: { id: invoiceId }, data: { status: "PAID_PENDING_CONFIRMATION" } });
-    return payment;
+    return toPaymentView(payment);
   });
 }
 
@@ -173,7 +178,9 @@ export async function recordPaymentProof(companyId: string, invoiceId: string, p
         description: `Загружено подтверждение оплаты по счёту ${invoice.invoiceNumber}`,
       },
     });
-    return tx.payment.findUniqueOrThrow({ where: { id: payment.id } });
+    return toPaymentView(
+      await tx.payment.findUniqueOrThrow({ where: { id: payment.id } }),
+    );
   });
 }
 
@@ -195,7 +202,7 @@ export async function confirmPayment(
         "Подтвердить можно только платёж с загруженным подтверждением",
       );
     }
-    if (decision.idempotent) return payment;
+    if (decision.idempotent) return toPaymentView(payment);
     if (payment.invoice.subscription.status !== "PENDING_PAYMENT") {
       throw new ConflictError("Связанный тариф больше не ожидает оплату");
     }
@@ -215,7 +222,9 @@ export async function confirmPayment(
       const current = await tx.payment.findUnique({ where: { id: paymentId } });
       if (!current) throw new NotFoundError("Платёж не найден");
       const currentDecision = evaluatePaymentDecision(current.status, "CONFIRM");
-      if (currentDecision.allowed && currentDecision.idempotent) return current;
+      if (currentDecision.allowed && currentDecision.idempotent) {
+        return toPaymentView(current);
+      }
       throw new ConflictError("Статус платежа уже изменён другим решением");
     }
     await tx.subscription.updateMany({
@@ -250,7 +259,9 @@ export async function confirmPayment(
         tx,
       ),
     ]);
-    return tx.payment.findUniqueOrThrow({ where: { id: paymentId } });
+    return toPaymentView(
+      await tx.payment.findUniqueOrThrow({ where: { id: paymentId } }),
+    );
   });
 }
 
@@ -269,7 +280,7 @@ export async function rejectPayment(
         "Отклонить можно только платёж с загруженным подтверждением",
       );
     }
-    if (decision.idempotent) return payment;
+    if (decision.idempotent) return toPaymentView(payment);
     if (!comment.trim()) throw new ConflictError("Укажите причину отклонения платежа");
     const claim = await tx.payment.updateMany({
       where: { id: paymentId, status: "PROOF_UPLOADED" },
@@ -279,7 +290,9 @@ export async function rejectPayment(
       const current = await tx.payment.findUnique({ where: { id: paymentId } });
       if (!current) throw new NotFoundError("Платёж не найден");
       const currentDecision = evaluatePaymentDecision(current.status, "REJECT");
-      if (currentDecision.allowed && currentDecision.idempotent) return current;
+      if (currentDecision.allowed && currentDecision.idempotent) {
+        return toPaymentView(current);
+      }
       throw new ConflictError("Статус платежа уже изменён другим решением");
     }
     await Promise.all([
@@ -306,6 +319,8 @@ export async function rejectPayment(
         tx,
       ),
     ]);
-    return tx.payment.findUniqueOrThrow({ where: { id: paymentId } });
+    return toPaymentView(
+      await tx.payment.findUniqueOrThrow({ where: { id: paymentId } }),
+    );
   });
 }

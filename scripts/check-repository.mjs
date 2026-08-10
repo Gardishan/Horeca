@@ -251,8 +251,19 @@ if (fileSet.has("package.json")) {
       "security:audit должен применять production-zero и полный advisory allowlist",
     );
   }
-  if (packageJson.overrides?.postcss !== "8.5.19") {
-    failures.push("package.json должен закреплять исправленный PostCSS 8.5.19 до обновления Next.js dependency graph");
+  const requiredSecurityOverrides = {
+    "brace-expansion@^1.1.7": "1.1.18",
+    "brace-expansion@^5.0.5": "5.0.9",
+    "js-yaml": "4.3.1",
+    "nanoid": "3.3.17",
+    "postcss": "8.5.26",
+  };
+  for (const [dependency, version] of Object.entries(requiredSecurityOverrides)) {
+    if (packageJson.overrides?.[dependency] !== version) {
+      failures.push(
+        `package.json должен закреплять исправленный ${dependency} ${version}`,
+      );
+    }
   }
 }
 

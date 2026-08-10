@@ -6,7 +6,7 @@ import { AppError } from "@/lib/errors";
 export type ApiSuccess<T> = { ok: true; data: T };
 export type ApiFailure = {
   ok: false;
-  error: { code: string; message: string; details?: unknown };
+  error: { code: string; message: string; details?: unknown; requestId?: string };
 };
 
 export function ok<T>(data: T, init?: ResponseInit) {
@@ -94,13 +94,23 @@ export async function apiHandler(handler: () => Promise<Response>) {
       );
     }
 
-    console.error("Unhandled API error", error);
+    const requestId = crypto.randomUUID();
+    console.error(JSON.stringify({
+      level: "error",
+      event: "api.unhandled_error",
+      requestId,
+      errorType: error instanceof Error ? "Error" : "NonError",
+    }));
     return NextResponse.json<ApiFailure>(
       {
         ok: false,
-        error: { code: "INTERNAL_ERROR", message: "Внутренняя ошибка сервера" },
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Внутренняя ошибка сервера",
+          requestId,
+        },
       },
-      { status: 500 },
+      { status: 500, headers: { "X-Request-Id": requestId } },
     );
   }
 }

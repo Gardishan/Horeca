@@ -127,14 +127,26 @@ describe("HTTP boundary helpers", () => {
       error: { code: "BLOCKED", message: "blocked", details: { reason: "test" } },
     });
 
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const unexpected = await apiHandler(async () => {
       throw new Error("database password must never leak");
     });
     expect(unexpected.status).toBe(500);
+    const requestId = unexpected.headers.get("x-request-id");
+    expect(requestId).toMatch(/^[0-9a-f-]{36}$/);
     await expect(unexpected.json()).resolves.toEqual({
       ok: false,
-      error: { code: "INTERNAL_ERROR", message: "Внутренняя ошибка сервера" },
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "Внутренняя ошибка сервера",
+        requestId,
+      },
     });
+    expect(errorLog).toHaveBeenCalledTimes(1);
+    const serializedLog = errorLog.mock.calls.flat().join(" ");
+    expect(serializedLog).toContain(String(requestId));
+    expect(serializedLog).toContain('"event":"api.unhandled_error"');
+    expect(serializedLog).not.toContain("database password must never leak");
+    expect(serializedLog).not.toContain("stack");
   });
 });

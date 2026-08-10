@@ -52,16 +52,19 @@ export async function registerCompanyDocument(input: {
   antivirusStatus: AntivirusStatus;
 }) {
   return prisma.$transaction(async (tx) => {
-    let verification = await tx.companyVerification.findFirst({
-      where: { companyId: input.companyId, status: { in: ["NOT_STARTED", "REUPLOAD_REQUESTED"] } },
+    const latest = await tx.companyVerification.findFirst({
+      where: { companyId: input.companyId },
       orderBy: { createdAt: "desc" },
     });
-    verification ??= await tx.companyVerification.create({ data: { companyId: input.companyId } });
+    const verification =
+      latest && ["NOT_STARTED", "PENDING"].includes(latest.status)
+        ? latest
+        : await tx.companyVerification.create({ data: { companyId: input.companyId } });
     return tx.companyDocument.create({
       data: {
         ...input,
         verificationId: verification.id,
-        status: "UPLOADED",
+        status: verification.status === "PENDING" ? "UNDER_REVIEW" : "UPLOADED",
       },
       select: {
         id: true,
@@ -102,27 +105,49 @@ export async function submitCompanyVerification(companyId: string) {
     paymentStatus: company.payments[0]?.status ?? null,
   });
   if (!rule.allowed) throw new ConflictError("Компания пока не готова к проверке", { reasons: rule.reasons });
+  if (company.isBlocked || company.status === "BLOCKED") {
+    throw new ConflictError("Заблокированную компанию нельзя отправить на проверку");
+  }
+
+  const current = company.verifications[0];
+  if (current?.status === "PENDING") return current;
 
   return prisma.$transaction(async (tx) => {
-    const current = company.verifications[0];
-    const verification = current
-      ? await tx.companyVerification.update({
-          where: { id: current.id },
-          data: { status: "PENDING", submittedAt: new Date(), reviewedAt: null, reviewedById: null, adminComment: null },
-        })
-      : await tx.companyVerification.create({
-          data: { companyId, status: "PENDING", submittedAt: new Date() },
-        });
-    await Promise.all([
-      tx.company.update({
-        where: { id: companyId },
-        data: { status: "PENDING_REVIEW", verificationStatus: "PENDING" },
-      }),
-      tx.companyDocument.updateMany({
-        where: { companyId, status: { in: ["UPLOADED", "REUPLOAD_REQUESTED"] } },
-        data: { status: "UNDER_REVIEW", verificationId: verification.id },
-      }),
-    ]);
+    const submittedAt = new Date();
+    let verification;
+    if (current?.status === "NOT_STARTED") {
+      const attemptClaim = await tx.companyVerification.updateMany({
+        where: { id: current.id, status: "NOT_STARTED" },
+        data: { status: "PENDING", submittedAt },
+      });
+      if (attemptClaim.count !== 1) {
+        throw new ConflictError("Статус проверки уже изменён другим действием");
+      }
+      verification = await tx.companyVerification.findUniqueOrThrow({
+        where: { id: current.id },
+      });
+    } else {
+      verification = await tx.companyVerification.create({
+        data: { companyId, status: "PENDING", submittedAt },
+      });
+    }
+
+    const companyClaim = await tx.company.updateMany({
+      where: {
+        id: companyId,
+        status: company.status,
+        verificationStatus: company.verificationStatus,
+        isBlocked: false,
+      },
+      data: { status: "PENDING_REVIEW", verificationStatus: "PENDING" },
+    });
+    if (companyClaim.count !== 1) {
+      throw new ConflictError("Статус компании уже изменён другим действием");
+    }
+    await tx.companyDocument.updateMany({
+      where: { companyId, verificationId: verification.id, status: "UPLOADED" },
+      data: { status: "UNDER_REVIEW" },
+    });
     return verification;
   });
 }

@@ -1,6 +1,6 @@
 # Project context
 
-Последнее обновление: 01.08.2026.
+Последнее обновление: 10.08.2026.
 
 Это долговременная память для следующего разработчика или coding agent. Она фиксирует текущее состояние, но не заменяет schema, tests и source code.
 
@@ -34,6 +34,9 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 8. Featured-размещение товара управляется только администратором; supplier API не принимает `isFeatured`.
 9. Payment proof доступен администратору только через audited download; storage path не попадает в API, а отклонённый proof нельзя повторно подать сигналом «Я оплатил».
 10. Verification/document decisions используют conditional transition из review-состояния; terminal decision нельзя обратить противоположным endpoint.
+11. Все payment mutation responses используют безопасный view с `hasProof`; приватный locator не покидает service boundary.
+12. Завершённая verification attempt неизменяема: повторная подача создаёт новую попытку, `PENDING` submit идемпотентен, а aggregate company state меняется compare-and-swap.
+13. Неожиданный API 500 имеет один correlation ID в response/header/structured log и не журналирует raw error details.
 
 ## Проверенный путь качества
 
@@ -56,6 +59,9 @@ Production dependency audit должен оставаться без извес�
 непросроченной датой повторной проверки. Gate отклоняет незарегистрированные
 high findings, любые critical findings и stale exception после исправления
 dependency graph.
+
+На 10.08.2026 advisory registry пуст: совместимые security overrides закрывают
+известные high findings как в production, так и в полном dependency graph.
 
 ## Demo state
 
@@ -105,6 +111,9 @@ MVP deliverable проверен, но commercial production readiness не за
 | Guarded privileged transitions | Generic profile update не меняет trust state; payment confirm/reject использует проверяемую state machine и conditional write; deployed activation повторно требует scanner-clean documents |
 | Audited payment proof boundary | Admin API возвращает только `hasProof`; скачивание проходит через object-level endpoint и audit, rejected proof требует нового upload |
 | Terminal review decisions | Verification/document decisions используют compare-and-swap; одинаковый повтор идемпотентен, reversal и конкурентное противоположное решение запрещены |
+| Immutable verification attempts | Terminal review evidence не перезаписывается supplier submit/upload; новая подача создаёт отдельную attempt, а `PENDING` переиспользуется идемпотентно |
+| Safe payment mutation view | Billing mutations возвращают `hasProof` вместо приватного `proofFilePath` |
+| Correlated safe API failures | Generic 500 связывается одним request ID между клиентом и structured log без raw error details |
 
 ## Когда обновлять этот файл
 
