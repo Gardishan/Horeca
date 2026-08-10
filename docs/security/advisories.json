@@ -1,22 +1,5 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-28",
-  "exceptions": [
-    {
-      "id": "GHSA-mh99-v99m-4gvg",
-      "package": "brace-expansion",
-      "severity": "high",
-      "scope": "development-only transitive dependency of the ESLint toolchain",
-      "owner": "Engineering",
-      "reviewBy": "2026-08-11",
-      "tracking": "https://github.com/Gardishan/Horeca/issues/25",
-      "rationale": "The compatible ESLint 9 and eslint-config-next 16.2 lines still resolve minimatch 3, whose brace-expansion 1.x dependency has no patched release. Forcing brace-expansion 5 or minimatch 10 across incompatible ranges would be an unverified major override.",
-      "mitigations": [
-        "Production installs and the standalone image omit the development-only lint graph.",
-        "ESLint and minimatch process repository-controlled configuration and file patterns only; no request data reaches this dependency.",
-        "Production audit remains a blocking zero-vulnerability gate.",
-        "Re-evaluate the compatible ESLint/Next toolchain and remove this exception by the review date."
-      ]
-    }
-  ]
+  "updatedAt": "2026-08-10",
+  "exceptions": []
 }

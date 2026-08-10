@@ -42,7 +42,10 @@ npm run release:check   # strict commercial-production gate
 - Generic profile endpoints не меняют trust, block или billing status; критические переходы выполняются только специализированными use cases.
 - Admin подтверждает или отклоняет оплату только из `PROOF_UPLOADED`; terminal decisions идемпотентны и не могут быть обращены противоположным endpoint.
 - Отклонённое подтверждение оплаты нельзя повторно подать клиентским сигналом «Я оплатил»; нужен новый upload, а admin download всегда журналируется без раскрытия storage path.
+- Payment mutation responses возвращают только безопасный view с `hasProof` и никогда не раскрывают `proofFilePath`.
 - Verification/document decision выполняется только из `PENDING`/`UNDER_REVIEW`; одинаковый terminal repeat идемпотентен, противоположный terminal transition запрещён.
+- Завершённая verification attempt неизменяема; повторная подача создаёт новую попытку, а повторный submit в `PENDING` не создаёт дубль.
+- Неожиданный API 500 возвращает и безопасно журналирует один correlation ID без raw message, stack, SQL/Prisma details или секретов.
 - Клиентские сигналы «Я оплатил» и «Опубликовать» не обходят server-side policy.
 - Supplier всегда ограничен своей компанией; admin endpoints всегда требуют роль `ADMIN`.
 - Supplier не управляет административным merchandising-флагом `isFeatured`.

@@ -26,6 +26,7 @@
 3. Администраторская активация повторно проверяет документы, согласия и оплату.
 4. Подтверждение платежа атомарно изменяет Payment, Invoice, Subscription, BillingHistory и AuditLog.
 5. Блокировка компании атомарно скрывает её опубликованные товары.
+6. Terminal verification attempt не перезаписывается; повторная подача создаёт новую попытку, а aggregate company state меняется compare-and-swap.
 
 ## Потоки данных
 
@@ -42,6 +43,7 @@ flowchart TD
 ## Security boundaries
 
 - Browser не получает storage path и не имеет прямого доступа к файлам.
+- Billing mutations возвращают безопасный payment view с `hasProof`, но без `proofFilePath`.
 - Route Handler повторно проверяет роль и ownership для каждой операции.
 - File pipeline применяет allowlist, MIME/signature validation, UUID naming и fail-closed HTTPS malware scanner до сохранения; staging/production дополнительно требуют S3-compatible private storage с явным SSE/KMS mode.
 - Admin download создаёт неизменяемую запись доступа.
@@ -49,6 +51,7 @@ flowchart TD
 - Каждая HTML-страница получает уникальный CSP nonce; production CSP не допускает `unsafe-inline`/`unsafe-eval`.
 - Mutation API требует явный разрешённый Origin и отклоняет отсутствующий, opaque или cross-site Origin до use case.
 - API помечен `no-store`; HSTS и дополнительные browser isolation headers включаются в production build.
+- Generic API 500 возвращает correlation ID в body/header и пишет только безопасный structured log без raw error details.
 - Rate limit использует локальное состояние только в dev/test; production без HTTPS shared backend завершается fail-closed.
 - `instrumentation.ts` проверяет deployed runtime до приёма трафика и никогда не возвращает secret values.
 - Liveness не зависит от БД; readiness требует допустимую конфигурацию и успешный PostgreSQL probe.
