@@ -52,7 +52,7 @@ flowchart TD
 - Mutation API требует явный разрешённый Origin и отклоняет отсутствующий, opaque или cross-site Origin до use case.
 - API помечен `no-store`; HSTS и дополнительные browser isolation headers включаются в production build.
 - Generic API 500 возвращает correlation ID в body/header и пишет только безопасный structured log без raw error details.
-- Rate limit использует локальное состояние только в dev/test; production без HTTPS shared backend завершается fail-closed.
+- Rate limit использует локальное состояние только в dev/test или явно access-gated single-replica Beta; production без HTTPS shared backend завершается fail-closed.
 - `instrumentation.ts` проверяет deployed runtime до приёма трафика и никогда не возвращает secret values.
 - Liveness не зависит от БД; readiness требует допустимую конфигурацию и успешный PostgreSQL probe.
 

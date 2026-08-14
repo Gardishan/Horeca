@@ -1,6 +1,6 @@
 # Private object storage contract
 
-HoReCa KZ сохраняет проверенные документы через S3-compatible boundary в `lib/file-security.ts`. `filesystem` остаётся только локальным режимом для development/test; staging и production запускаются только с `PRIVATE_STORAGE_MODE=s3`.
+HoReCa KZ сохраняет проверенные документы через S3-compatible boundary в `lib/file-security.ts`. `filesystem` остаётся локальным режимом для development/test и access-gated demo-only single-replica Beta; staging и production запускаются только с `PRIVATE_STORAGE_MODE=s3`.
 
 Этот application-side контракт не означает, что issue #15 закрыта. До production нужны реально созданные private buckets, IAM/KMS policy readback, lifecycle/retention approval, malware-scanner deployment, staging negative paths, rollback и observe-window evidence.
 
@@ -8,7 +8,7 @@ HoReCa KZ сохраняет проверенные документы чере�
 
 | Имя | Требование |
 |---|---|
-| `PRIVATE_STORAGE_MODE` | `filesystem` только dev/test; `s3` обязательно staging/production |
+| `PRIVATE_STORAGE_MODE` | `filesystem` только dev/test или demo-only single-replica Beta; `s3` обязательно staging/production |
 | `PRIVATE_STORAGE_ROOT` | локальный путь только для filesystem mode |
 | `PRIVATE_STORAGE_S3_ENDPOINT` | HTTPS origin S3-compatible service без path, query и credentials |
 | `PRIVATE_STORAGE_S3_REGION` | явный region identifier провайдера |

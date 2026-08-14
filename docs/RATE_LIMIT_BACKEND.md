@@ -1,6 +1,6 @@
 # Distributed rate-limit backend contract
 
-HoReCa KZ uses an in-process limiter only in development and explicit local smoke tests. A production process fails closed with `RATE_LIMIT_UNAVAILABLE` until an HTTPS backend is configured.
+HoReCa KZ uses an in-process limiter only in development, explicit local smoke tests and an access-gated single-replica controlled Beta with `RATE_LIMIT_ALLOW_IN_MEMORY=true`. A production process fails closed with `RATE_LIMIT_UNAVAILABLE` until an HTTPS backend is configured.
 
 ## Environment
 

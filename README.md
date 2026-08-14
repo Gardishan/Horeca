@@ -50,7 +50,7 @@ npm run dev
 | `AUTH_SECRET` | Секрет подписи cookie, минимум 32 случайных символа |
 | `APP_URL` | Серверный origin для проверки mutation-запросов |
 | `NEXT_PUBLIC_APP_URL` | Публичный URL приложения |
-| `PRIVATE_STORAGE_MODE` | `filesystem` только dev/test; `s3` обязательно staging/production |
+| `PRIVATE_STORAGE_MODE` | `filesystem` для dev/test или demo-only single-replica Beta; `s3` обязательно staging/production |
 | `PRIVATE_STORAGE_ROOT` | Корень локального хранилища в filesystem mode |
 | `PRIVATE_STORAGE_S3_*` | HTTPS endpoint, region, bucket, addressing style и явный SSE/KMS contract |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` | Optional SDK credentials; в deployment предпочтительна workload identity |
@@ -59,10 +59,10 @@ npm run dev
 | `BETA_ACCESS_TOKEN` | Секрет приглашения controlled Beta, минимум 32 символа |
 | `BETA_DEMO_ONLY` | В Beta обязательно `true`: реальные документы и платежи запрещены |
 | `BETA_REGISTRATION_ENABLED` | Явно открывает регистрацию внутри access-gated Beta; default `false` |
-| `RATE_LIMIT_MODE` | `memory` только для local dev/test; production использует remote backend |
+| `RATE_LIMIT_MODE` | `memory` для local dev/test или controlled single-replica Beta; production использует remote backend |
 | `RATE_LIMIT_BACKEND_URL` | HTTPS endpoint атомарного shared limiter contract |
 | `RATE_LIMIT_BACKEND_TOKEN` | Bearer secret shared limiter из managed secret store |
-| `RATE_LIMIT_ALLOW_IN_MEMORY` | Test-only override; в production должен быть `false` |
+| `RATE_LIMIT_ALLOW_IN_MEMORY` | Dev/test/controlled-Beta override; в production должен быть `false` |
 
 Для генерации секрета можно использовать `openssl rand -base64 48`.
 

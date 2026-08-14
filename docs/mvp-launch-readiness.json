@@ -13,26 +13,30 @@
       "evidence": [
         "scripts/smoke-http.mjs",
         ".github/workflows/quality.yml",
-        "https://github.com/Gardishan/Horeca/actions/runs/31396692909"
+        "https://github.com/Gardishan/Horeca/commit/410c98ef80ace5e5c12e30552229a4f8a1d5df40",
+        "https://github.com/Gardishan/Horeca/actions/runs/31822731617"
       ],
-      "verifiedAt": "2026-08-10T14:10:06Z",
+      "verifiedAt": "2026-08-14T17:12:42Z",
       "environment": "ci-postgresql-17",
-      "notes": "Authenticated HTTP smoke, migration, seed, container build and dependency audit passed on main c3f6fec5. Re-verify on the launch commit."
+      "notes": "Post-merge Quality #61 passed authenticated HTTP smoke, PostgreSQL 17 migration/seed, immutable container build and dependency audit on main 410c98ef."
     },
     {
       "id": "controlled-beta-safety",
       "title": "Controlled Beta access, kill switch, demo-only data policy and noindex are enforced server-side",
-      "status": "in_progress",
+      "status": "done",
       "blocking": true,
       "owner": "Engineering",
       "evidence": [
         "lib/beta-safety.ts",
         "tests/beta-safety.test.ts",
-        "proxy.ts"
+        "proxy.ts",
+        "https://github.com/Gardishan/Horeca/pull/45",
+        "https://github.com/Gardishan/Horeca/actions/runs/31822731617",
+        "https://github.com/Gardishan/Horeca/actions/runs/31822731478"
       ],
-      "verifiedAt": null,
-      "environment": "release-candidate",
-      "notes": "Complete the full Node 22 gate, merge through CI and record the merge SHA before changing this control to done."
+      "verifiedAt": "2026-08-14T17:12:42Z",
+      "environment": "main-ci",
+      "notes": "PR #45 merged as main 410c98ef after green Quality/Security; post-merge Quality #61, Security #63 and the signed-expiry/kill-switch policy tests passed."
     },
     {
       "id": "beta-database",
@@ -40,10 +44,15 @@
       "status": "blocked",
       "blocking": true,
       "owner": "Product owner + Platform/DevOps",
-      "evidence": ["prisma/schema.prisma", "prisma/migrations", "prisma/seed.ts"],
+      "evidence": [
+        "prisma/schema.prisma",
+        "prisma/migrations",
+        "prisma/seed.ts",
+        "https://github.com/Gardishan/Horeca/issues/44"
+      ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "Select or provide a PostgreSQL Beta environment and DATABASE_URL secret, then run migration/seed, restart and persistence readback."
+      "notes": "Quality #61 proves the migration and seed against disposable CI PostgreSQL only. Issue #44 remains blocked until a managed Beta DATABASE_URL exists and restart persistence is read back."
     },
     {
       "id": "beta-deployment",
@@ -51,7 +60,11 @@
       "status": "blocked",
       "blocking": true,
       "owner": "Product owner + Platform/DevOps",
-      "evidence": ["Dockerfile", "docs/DEPLOYMENT.md"],
+      "evidence": [
+        "Dockerfile",
+        "docs/DEPLOYMENT.md",
+        "https://github.com/Gardishan/Horeca/issues/44"
+      ],
       "verifiedAt": null,
       "environment": "beta",
       "notes": "No GitHub Environment, deployment, runtime secret or existing hosting provider is configured. Connect one container-capable Beta target and inject the documented runtime values."
@@ -62,7 +75,10 @@
       "status": "blocked",
       "blocking": true,
       "owner": "Engineering + Platform/DevOps",
-      "evidence": ["scripts/smoke-http.mjs"],
+      "evidence": [
+        "scripts/smoke-http.mjs",
+        "https://github.com/Gardishan/Horeca/issues/44"
+      ],
       "verifiedAt": null,
       "environment": "beta",
       "notes": "Run only after beta-deployment has a real provider URL; attach timestamp, commit/image digest and happy plus forbidden-path evidence."
@@ -70,35 +86,50 @@
     {
       "id": "android-debug-artifact",
       "title": "A debug APK built from the launch commit is available as a CI or release artifact",
-      "status": "planned",
+      "status": "in_progress",
       "blocking": true,
       "owner": "Engineering",
-      "evidence": ["android/app/build.gradle.kts", "android/app/src/main/java/kz/horeca/app/MainActivity.java"],
+      "evidence": [
+        "android/app/build.gradle.kts",
+        "android/app/src/main/java/kz/horeca/app/MainActivity.java",
+        "https://github.com/Gardishan/Horeca/actions/runs/31822731617",
+        "https://github.com/Gardishan/Horeca/actions/runs/31822731617/artifacts/9227617669"
+      ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "Build and attach the debug APK after the external Beta URL is known; do not create a production signing key."
+      "notes": "Main 410c98ef reproducibly produced debug artifact 9227617669 (SHA-256 f86c154c711f4e79e6330993722ce3c9edfca03e208bd3a0aaef00888596bbb2) for the local emulator. Rebuild it with the external Beta origin after issue #44 is unblocked; do not create a production signing key."
     },
     {
       "id": "release-identity",
       "title": "Main SHA, image digest, migration, SBOM, tag and prerelease notes identify one launch candidate",
-      "status": "planned",
+      "status": "in_progress",
       "blocking": true,
       "owner": "Release manager",
-      "evidence": [".github/workflows/security.yml", "docs/DEPLOYMENT.md"],
+      "evidence": [
+        ".github/workflows/security.yml",
+        "docs/DEPLOYMENT.md",
+        "https://github.com/Gardishan/Horeca/commit/410c98ef80ace5e5c12e30552229a4f8a1d5df40",
+        "https://github.com/Gardishan/Horeca/actions/runs/31822731478/artifacts/9227592566"
+      ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "Create the prerelease tag and GitHub Release only after merge, deployment and external smoke are successful."
+      "notes": "Main SHA and SBOM artifact 9227592566 are recorded. Image digest, deployed migration evidence, tag and prerelease remain intentionally absent until issue #44 and external smoke are complete."
     },
     {
       "id": "beta-operations",
       "title": "Rollback, monitoring access and the Beta kill-switch procedure are verified",
-      "status": "planned",
+      "status": "in_progress",
       "blocking": true,
       "owner": "Platform/DevOps + Release manager",
-      "evidence": ["docs/DEPLOYMENT.md", "lib/beta-safety.ts"],
+      "evidence": [
+        "docs/DEPLOYMENT.md",
+        "lib/beta-safety.ts",
+        "tests/beta-safety.test.ts",
+        "https://github.com/Gardishan/Horeca/issues/44"
+      ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "Record the previous image digest, execute a rollback rehearsal, verify BETA_ENABLED=false and document the observation window."
+      "notes": "The application kill switch passed policy and local runtime smoke. Provider rollback, previous image digest, monitoring access and an observation window remain blocked on issue #44."
     }
   ]
 }
