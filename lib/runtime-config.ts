@@ -1,6 +1,6 @@
 import path from "node:path";
 
-type ApplicationEnvironment = "development" | "test" | "staging" | "production";
+type ApplicationEnvironment = "development" | "test" | "beta" | "staging" | "production";
 export type RuntimeConfigurationSummary = {
   appEnvironment: ApplicationEnvironment;
   appOrigin: string;
@@ -13,6 +13,7 @@ export type RuntimeConfigurationSummary = {
 const applicationEnvironments = new Set<ApplicationEnvironment>([
   "development",
   "test",
+  "beta",
   "staging",
   "production",
 ]);
@@ -66,7 +67,7 @@ function resolveApplicationEnvironment(
     return configured as ApplicationEnvironment;
   }
   if (configured) {
-    issues.push("APP_ENV must be development, test, staging or production");
+    issues.push("APP_ENV must be development, test, beta, staging or production");
     return "development";
   }
   if (environment.NODE_ENV === "production") {
@@ -106,11 +107,12 @@ export function validateRuntimeConfiguration(
 ): RuntimeConfigurationSummary {
   const issues: string[] = [];
   const appEnvironment = resolveApplicationEnvironment(environment, issues);
-  const deployed = appEnvironment === "staging" || appEnvironment === "production";
+  const publicRuntime = ["beta", "staging", "production"].includes(appEnvironment);
+  const commercialRuntime = appEnvironment === "staging" || appEnvironment === "production";
 
   const deploymentVersion = environment.DEPLOYMENT_VERSION?.trim() || "local";
-  if (deployed && deploymentVersion === "local") {
-    issues.push("DEPLOYMENT_VERSION is required in staging and production");
+  if (publicRuntime && deploymentVersion === "local") {
+    issues.push("DEPLOYMENT_VERSION is required in beta, staging and production");
   }
 
   const databaseUrlValue = required(environment, "DATABASE_URL", issues);
@@ -118,10 +120,10 @@ export function validateRuntimeConfiguration(
   if (databaseUrl && !["postgres:", "postgresql:"].includes(databaseUrl.protocol)) {
     issues.push("DATABASE_URL must use the PostgreSQL protocol");
   }
-  if (databaseUrl && deployed) {
+  if (databaseUrl && publicRuntime) {
     const sslMode = databaseUrl.searchParams.get("sslmode");
     if (!sslMode || !["require", "verify-ca", "verify-full"].includes(sslMode)) {
-      issues.push("DATABASE_URL must require TLS in staging and production");
+      issues.push("DATABASE_URL must require TLS in beta, staging and production");
     }
   }
 
@@ -136,8 +138,8 @@ export function validateRuntimeConfiguration(
     required(environment, "NEXT_PUBLIC_APP_URL", issues),
     issues,
   );
-  validateApplicationUrl("APP_URL", appUrl, deployed, issues);
-  validateApplicationUrl("NEXT_PUBLIC_APP_URL", publicAppUrl, deployed, issues);
+  validateApplicationUrl("APP_URL", appUrl, publicRuntime, issues);
+  validateApplicationUrl("NEXT_PUBLIC_APP_URL", publicAppUrl, publicRuntime, issues);
   if (appUrl && publicAppUrl && appUrl.origin !== publicAppUrl.origin) {
     issues.push("APP_URL and NEXT_PUBLIC_APP_URL must have the same origin");
   }
@@ -147,15 +149,15 @@ export function validateRuntimeConfiguration(
   if (configuredStorageMode && !["filesystem", "s3"].includes(configuredStorageMode)) {
     issues.push("PRIVATE_STORAGE_MODE must be filesystem or s3");
   }
-  if (deployed && storageMode !== "s3") {
+  if (commercialRuntime && storageMode !== "s3") {
     issues.push("PRIVATE_STORAGE_MODE must be s3 in staging and production");
   }
 
   const storageRoot = storageMode === "filesystem"
     ? required(environment, "PRIVATE_STORAGE_ROOT", issues)
     : environment.PRIVATE_STORAGE_ROOT?.trim() ?? "";
-  if (storageRoot && deployed && !path.isAbsolute(storageRoot)) {
-    issues.push("PRIVATE_STORAGE_ROOT must be absolute in staging and production");
+  if (storageRoot && publicRuntime && !path.isAbsolute(storageRoot)) {
+    issues.push("PRIVATE_STORAGE_ROOT must be absolute in beta, staging and production");
   }
 
   const s3VariableNames = [
@@ -219,10 +221,10 @@ export function validateRuntimeConfiguration(
   if (configuredRateLimitMode && !["memory", "remote"].includes(configuredRateLimitMode)) {
     issues.push("RATE_LIMIT_MODE must be memory or remote");
   }
-  if (deployed && rateLimitMode !== "remote") {
+  if (commercialRuntime && rateLimitMode !== "remote") {
     issues.push("RATE_LIMIT_MODE must be remote in staging and production");
   }
-  if (deployed && environment.RATE_LIMIT_ALLOW_IN_MEMORY !== "false") {
+  if (commercialRuntime && environment.RATE_LIMIT_ALLOW_IN_MEMORY !== "false") {
     issues.push("RATE_LIMIT_ALLOW_IN_MEMORY must be false in staging and production");
   }
 
@@ -241,7 +243,7 @@ export function validateRuntimeConfiguration(
     }
   }
 
-  if (deployed && environment.DEMO_AUTH_ENABLED !== "false") {
+  if (commercialRuntime && environment.DEMO_AUTH_ENABLED !== "false") {
     issues.push("DEMO_AUTH_ENABLED must be false in staging and production");
   }
 
@@ -250,7 +252,7 @@ export function validateRuntimeConfiguration(
   if (configuredMalwareScanMode && !["mock", "remote"].includes(configuredMalwareScanMode)) {
     issues.push("MALWARE_SCAN_MODE must be mock or remote");
   }
-  if (deployed && malwareScanMode !== "remote") {
+  if (commercialRuntime && malwareScanMode !== "remote") {
     issues.push("MALWARE_SCAN_MODE must be remote in staging and production");
   }
 
@@ -283,6 +285,25 @@ export function validateRuntimeConfiguration(
       scannerTimeoutMs > 60_000
     ) {
       issues.push("MALWARE_SCAN_TIMEOUT_MS must be an integer from 1000 to 60000");
+    }
+  }
+
+  if (appEnvironment === "beta") {
+    if (!["true", "false"].includes(environment.BETA_ENABLED ?? "")) {
+      issues.push("BETA_ENABLED must be true or false in beta");
+    }
+    const betaAccessToken = required(environment, "BETA_ACCESS_TOKEN", issues);
+    if (betaAccessToken && betaAccessToken.length < 32) {
+      issues.push("BETA_ACCESS_TOKEN must contain at least 32 characters");
+    }
+    if (environment.BETA_DEMO_ONLY !== "true") {
+      issues.push("BETA_DEMO_ONLY must be true in beta");
+    }
+    if (!["true", "false"].includes(environment.BETA_REGISTRATION_ENABLED ?? "")) {
+      issues.push("BETA_REGISTRATION_ENABLED must be true or false in beta");
+    }
+    if (rateLimitMode === "memory" && environment.RATE_LIMIT_ALLOW_IN_MEMORY !== "true") {
+      issues.push("RATE_LIMIT_ALLOW_IN_MEMORY must be true for the controlled single-replica Beta memory limiter");
     }
   }
 

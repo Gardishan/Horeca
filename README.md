@@ -44,7 +44,7 @@ npm run dev
 
 | Переменная | Назначение |
 |---|---|
-| `APP_ENV` | Явная среда: `development`, `test`, `staging` или `production` |
+| `APP_ENV` | Явная среда: `development`, `test`, `beta`, `staging` или `production` |
 | `DEPLOYMENT_VERSION` | Commit SHA/release ID для health evidence |
 | `DATABASE_URL` | PostgreSQL connection string |
 | `AUTH_SECRET` | Секрет подписи cookie, минимум 32 случайных символа |
@@ -55,6 +55,10 @@ npm run dev
 | `PRIVATE_STORAGE_S3_*` | HTTPS endpoint, region, bucket, addressing style и явный SSE/KMS contract |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` | Optional SDK credentials; в deployment предпочтительна workload identity |
 | `DEMO_AUTH_ENABLED` | Резерв для отключения demo-режима перед production |
+| `BETA_ENABLED` | Операторский kill switch; `true` только во время разрешённого Beta-окна |
+| `BETA_ACCESS_TOKEN` | Секрет приглашения controlled Beta, минимум 32 символа |
+| `BETA_DEMO_ONLY` | В Beta обязательно `true`: реальные документы и платежи запрещены |
+| `BETA_REGISTRATION_ENABLED` | Явно открывает регистрацию внутри access-gated Beta; default `false` |
 | `RATE_LIMIT_MODE` | `memory` только для local dev/test; production использует remote backend |
 | `RATE_LIMIT_BACKEND_URL` | HTTPS endpoint атомарного shared limiter contract |
 | `RATE_LIMIT_BACKEND_TOKEN` | Bearer secret shared limiter из managed secret store |
@@ -62,7 +66,7 @@ npm run dev
 
 Для генерации секрета можно использовать `openssl rand -base64 48`.
 
-В staging/production конфигурация проверяется до приёма трафика: HTTPS origins, PostgreSQL TLS, S3-compatible private storage с явным encryption mode, отключённый demo mode, remote limiter и remote malware scanner обязательны. Проверить тот же контракт вручную: `npm run runtime:validate`. Полный inventory без значений — `docs/SECRETS.md`.
+В `beta` конфигурация до приёма трафика требует HTTPS origins, PostgreSQL TLS, access token, demo-only policy и явный kill switch. Controlled Beta может использовать одну replica с memory limiter, mock scanner и private filesystem только для синтетических файлов; это не commercial production. В staging/production дополнительно обязательны S3-compatible private storage с явным encryption mode, отключённый demo mode, remote limiter и remote malware scanner. Проверить контракт вручную: `npm run runtime:validate`. Полный inventory без значений — `docs/SECRETS.md`.
 
 ## Demo-аккаунты
 
@@ -156,12 +160,13 @@ npm run quality:quick
 npm run verify
 npm run check:unused
 npm run security:audit
+npm run mvp:check-readiness
 npm run check:readiness
 ```
 
 `npm run validate` сохранён как alias полного `verify`. Gate проверяет состав репозитория, неиспользуемый код и прямые зависимости, Prisma schema, strict TypeScript, coverage thresholds, ESLint и production build.
 
-`npm run release:check` — отдельный strict gate коммерческого запуска. Он намеренно остаётся красным, пока machine-readable registry содержит открытые blocking controls; зелёный MVP CI не подменяет production readiness.
+`npm run mvp:release-check` — strict gate внешнего MVP Beta launch по `docs/mvp-launch-readiness.json`; он остаётся красным без реального HTTPS URL, external smoke, Android artifact и release evidence. `npm run release:check` — отдельный более строгий gate коммерческого запуска. Зелёный Beta не подменяет production readiness.
 
 После `build`, миграции и seed можно выполнить HTTP smoke test: `npm run smoke:http`.
 
@@ -174,6 +179,7 @@ GitHub Actions дополнительно поднимает PostgreSQL 17, пр
 - `/api/health/ready` проверяет runtime policy и PostgreSQL, при отказе безопасно возвращает `503`.
 - `instrumentation.ts` валидирует environment на старте и не печатает secret values.
 - Demo seed жёстко запрещён в staging/production.
+- Controlled Beta защищена приглашением, noindex, demo-only upload/payment policy и runtime kill switch; выключенный switch делает readiness красным.
 
 Provider-neutral rollout, migration и rollback contract описаны в `docs/DEPLOYMENT.md`. Наличие image не означает завершённый production launch: нужны выбранная платформа, secret store, managed DB, WAF/shared limiter, staging readback и cutover evidence из readiness registry.
 
@@ -185,27 +191,27 @@ Provider-neutral rollout, migration и rollback contract описаны в `docs
 - `docs/DEFINITION_OF_DONE.md` — технический и управленческий DoD без fake done.
 - `docs/KNOWLEDGE_POLICY.md` — authority источников и правила evidence.
 - `docs/PRODUCTION_READINESS.md` — текущий commercial launch status.
+- `docs/mvp-launch-readiness.json` — отдельный проверяемый статус Controlled MVP Beta.
 - `CONTRIBUTING.md` — воспроизводимый процесс изменения и PR.
 
 Процесс адаптирован из MIT-проекта [Everything Claude Code / ECC](https://github.com/affaan-m/ECC); атрибуция сохранена в `THIRD_PARTY_NOTICES.md`.
 
 ## Android WebView APK
 
-Android-проект находится в `android/`. Откройте его в Android Studio или создайте wrapper и соберите:
+Android-проект находится в `android/`. Откройте его в Android Studio или используйте совместимый Gradle 8.11.1:
 
 ```bash
 cd android
-gradle wrapper
-./gradlew assembleDebug -PwebAppUrl=http://10.0.2.2:3000
+gradle :app:assembleDebug -PwebAppUrl=http://10.0.2.2:3000
 ```
 
 Production URL:
 
 ```bash
-./gradlew assembleRelease -PwebAppUrl=https://horeca.kz
+gradle :app:assembleRelease -PwebAppUrl=https://horeca.kz
 ```
 
-Подробности — в `android/README.md`. Wrapper включает JavaScript и DOM storage, back navigation, loading indicator, cookie session, запрет file/content access и отсутствие JavaScript bridge.
+Quality CI собирает debug APK и сохраняет его как artifact на каждом PR/main SHA. Подробности — в `android/README.md`. Wrapper включает JavaScript и DOM storage, back navigation, loading indicator, cookie session, запрет file/content access и отсутствие JavaScript bridge.
 
 ## Структура
 

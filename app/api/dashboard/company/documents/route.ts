@@ -4,6 +4,7 @@ import { apiHandler, assertSameOrigin, ok } from "@/lib/http";
 import { antivirusCheck, savePrivateUpload, validateUpload } from "@/lib/file-security";
 import { AppError } from "@/lib/errors";
 import { listCompanyDocuments, registerCompanyDocument } from "@/lib/services/verification";
+import { assertBetaDemoMaterial } from "@/lib/beta-safety";
 
 export async function GET() {
   return apiHandler(async () => {
@@ -17,6 +18,7 @@ export async function POST(request: Request) {
     assertSameOrigin(request);
     const { company } = await requireSupplierCompany();
     const form = await request.formData();
+    assertBetaDemoMaterial(form);
     const file = form.get("file");
     const rawType = String(form.get("type") ?? "");
     if (!(file instanceof File)) throw new AppError("Выберите документ", 422, "FILE_REQUIRED");
@@ -40,4 +42,3 @@ export async function POST(request: Request) {
     return ok(document, { status: 201 });
   });
 }
-

@@ -32,6 +32,7 @@ npm run dev
 npm run quality:quick
 npm run verify
 npm run security:audit
+npm run mvp:check-readiness
 npm run check:readiness
 ```
 
@@ -47,6 +48,8 @@ npm run smoke:http
 CI повторяет full verification на PostgreSQL 17, включая migration, seed и HTTP smoke.
 
 `npm run release:check` предназначен для commercial production candidate и остаётся красным, пока registry содержит blocking controls.
+
+`npm run mvp:release-check` является отдельным strict gate для фактически развёрнутой Controlled MVP Beta и остаётся красным без внешнего HTTPS smoke и release evidence.
 
 ## Runtime и сбои окружения
 

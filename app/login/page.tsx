@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { BadgeCheck, BarChart3, FileLock2 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
@@ -5,10 +6,13 @@ import { LoginForm } from "@/components/forms/login-form";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function LoginPage() {
   const user = await getCurrentUser();
   if (user) redirect(user.role === "ADMIN" ? "/admin" : user.role === "SUPPLIER" ? "/dashboard/company" : "/catalog");
+  const betaRegistrationClosed =
+    process.env.APP_ENV === "beta" && process.env.BETA_REGISTRATION_ENABLED !== "true";
   return (
     <main className="app-shell grid min-h-[calc(100vh-4rem)] items-center gap-10 py-12 lg:grid-cols-[1.15fr_0.85fr]">
       <section className="hidden max-w-2xl lg:block">
@@ -26,7 +30,13 @@ export default async function LoginPage() {
         <h2 className="mt-2 text-2xl font-extrabold tracking-tight">Вход в HoReCa KZ</h2>
         <p className="mb-6 mt-2 text-sm text-slate-500">Выберите роль или используйте учётные данные.</p>
         <LoginForm />
-        <p className="mt-6 text-center text-sm text-slate-500">Новый поставщик? <Link href="/register" className="font-bold text-brand-800 hover:underline">Создать кабинет</Link></p>
+        {betaRegistrationClosed ? (
+          <p className="mt-6 text-center text-sm text-slate-500">
+            В контролируемой Beta новые кабинеты создаёт оператор по приглашению.
+          </p>
+        ) : (
+          <p className="mt-6 text-center text-sm text-slate-500">Новый поставщик? <Link href="/register" className="font-bold text-brand-800 hover:underline">Создать кабинет</Link></p>
+        )}
       </section>
     </main>
   );

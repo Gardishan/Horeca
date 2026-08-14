@@ -143,6 +143,64 @@ describe("runtime configuration", () => {
     });
   });
 
+  it("accepts a controlled HTTPS beta with demo-only local boundaries", () => {
+    expect(
+      validateRuntimeConfiguration({
+        NODE_ENV: "production",
+        APP_ENV: "beta",
+        DEPLOYMENT_VERSION: "beta-candidate",
+        DATABASE_URL:
+          "postgresql://horeca:secret@db.example.kz:5432/horeca?sslmode=require",
+        AUTH_SECRET: "beta-auth-secret-with-at-least-thirty-two-characters",
+        APP_URL: "https://beta.example.kz",
+        NEXT_PUBLIC_APP_URL: "https://beta.example.kz",
+        PRIVATE_STORAGE_MODE: "filesystem",
+        PRIVATE_STORAGE_ROOT: "/tmp/horeca-beta-private",
+        DEMO_AUTH_ENABLED: "true",
+        RATE_LIMIT_MODE: "memory",
+        RATE_LIMIT_ALLOW_IN_MEMORY: "true",
+        MALWARE_SCAN_MODE: "mock",
+        BETA_ENABLED: "true",
+        BETA_ACCESS_TOKEN: "beta-access-token-with-at-least-thirty-two-characters",
+        BETA_DEMO_ONLY: "true",
+        BETA_REGISTRATION_ENABLED: "false",
+      }),
+    ).toMatchObject({
+      appEnvironment: "beta",
+      appOrigin: "https://beta.example.kz",
+      malwareScanMode: "mock",
+      rateLimitMode: "memory",
+      storageMode: "filesystem",
+    });
+  });
+
+  it("rejects an open or real-data beta configuration", () => {
+    const environment: NodeJS.ProcessEnv = {
+      NODE_ENV: "production",
+      APP_ENV: "beta",
+      DEPLOYMENT_VERSION: "beta-candidate",
+      DATABASE_URL:
+        "postgresql://horeca:secret@db.example.kz:5432/horeca?sslmode=require",
+      AUTH_SECRET: "beta-auth-secret-with-at-least-thirty-two-characters",
+      APP_URL: "https://beta.example.kz",
+      NEXT_PUBLIC_APP_URL: "https://beta.example.kz",
+      PRIVATE_STORAGE_MODE: "filesystem",
+      PRIVATE_STORAGE_ROOT: "/tmp/horeca-beta-private",
+      DEMO_AUTH_ENABLED: "true",
+      RATE_LIMIT_MODE: "memory",
+      RATE_LIMIT_ALLOW_IN_MEMORY: "true",
+      MALWARE_SCAN_MODE: "mock",
+      BETA_ENABLED: "yes",
+      BETA_ACCESS_TOKEN: "short",
+      BETA_DEMO_ONLY: "false",
+      BETA_REGISTRATION_ENABLED: "public",
+    };
+
+    expect(() => validateRuntimeConfiguration(environment)).toThrowError(
+      /BETA_ENABLED|BETA_ACCESS_TOKEN|BETA_DEMO_ONLY|BETA_REGISTRATION_ENABLED/,
+    );
+  });
+
   it("requires an explicit APP_ENV for a production Node process", () => {
     const environment = productionEnvironment();
     delete environment.APP_ENV;

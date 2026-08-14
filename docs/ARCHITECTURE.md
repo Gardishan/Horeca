@@ -62,6 +62,10 @@ flowchart TD
 
 Cloud-specific IaC намеренно не выбран без owner decision. `docs/DEPLOYMENT.md` фиксирует переносимый runtime contract, а `docs/PRIVATE_OBJECT_STORAGE.md` — provider-compatible application boundary. Production provider, workload identity, TLS/WAF, managed PostgreSQL, реально созданные buckets/policies и observe evidence остаются внешними controls.
 
+## Controlled Beta boundary
+
+`APP_ENV=beta` является отдельной launch-средой, а не ослабленной production. До приложения стоит HMAC-подписанная access cookie, выдаваемая только после сравнения secret invitation token; `BETA_ENABLED=false` немедленно блокирует traffic и readiness. По умолчанию self-service registration закрыта. Если используются filesystem/mock scanner/manual payment, UI и API требуют demo-only policy и явное acknowledgement для каждого upload/payment signal. Proxy выставляет `noindex`, а `robots.txt` запрещает индексировать всю Beta. Эти ограничения позволяют проверить реальные B2B flows на синтетических данных, но не закрывают commercial storage, payment, identity или Legal controls.
+
 ## Эволюция на 3–6 месяцев
 
 1. Добавить outbox table для надёжных уведомлений и аналитических событий.
