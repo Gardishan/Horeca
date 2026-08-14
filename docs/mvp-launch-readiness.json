@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "product": "HoReCa KZ",
+  "target": "mvp-beta",
+  "updatedAt": "2026-08-14",
+  "controls": [
+    {
+      "id": "critical-flows",
+      "title": "Buyer, supplier, admin, billing, verification and private-document flows are reproducible",
+      "status": "done",
+      "blocking": true,
+      "owner": "Engineering",
+      "evidence": [
+        "scripts/smoke-http.mjs",
+        ".github/workflows/quality.yml",
+        "https://github.com/Gardishan/Horeca/actions/runs/31396692909"
+      ],
+      "verifiedAt": "2026-08-10T14:10:06Z",
+      "environment": "ci-postgresql-17",
+      "notes": "Authenticated HTTP smoke, migration, seed, container build and dependency audit passed on main c3f6fec5. Re-verify on the launch commit."
+    },
+    {
+      "id": "controlled-beta-safety",
+      "title": "Controlled Beta access, kill switch, demo-only data policy and noindex are enforced server-side",
+      "status": "in_progress",
+      "blocking": true,
+      "owner": "Engineering",
+      "evidence": [
+        "lib/beta-safety.ts",
+        "tests/beta-safety.test.ts",
+        "proxy.ts"
+      ],
+      "verifiedAt": null,
+      "environment": "release-candidate",
+      "notes": "Complete the full Node 22 gate, merge through CI and record the merge SHA before changing this control to done."
+    },
+    {
+      "id": "beta-database",
+      "title": "The Beta database is migrated, seeded with demo-only data and persists across restart",
+      "status": "blocked",
+      "blocking": true,
+      "owner": "Product owner + Platform/DevOps",
+      "evidence": ["prisma/schema.prisma", "prisma/migrations", "prisma/seed.ts"],
+      "verifiedAt": null,
+      "environment": "beta",
+      "notes": "Select or provide a PostgreSQL Beta environment and DATABASE_URL secret, then run migration/seed, restart and persistence readback."
+    },
+    {
+      "id": "beta-deployment",
+      "title": "An immutable application image is deployed at an external HTTPS provider URL",
+      "status": "blocked",
+      "blocking": true,
+      "owner": "Product owner + Platform/DevOps",
+      "evidence": ["Dockerfile", "docs/DEPLOYMENT.md"],
+      "verifiedAt": null,
+      "environment": "beta",
+      "notes": "No GitHub Environment, deployment, runtime secret or existing hosting provider is configured. Connect one container-capable Beta target and inject the documented runtime values."
+    },
+    {
+      "id": "external-https-smoke",
+      "title": "A clean external client verifies TLS, health, catalog, authentication and protected routes",
+      "status": "blocked",
+      "blocking": true,
+      "owner": "Engineering + Platform/DevOps",
+      "evidence": ["scripts/smoke-http.mjs"],
+      "verifiedAt": null,
+      "environment": "beta",
+      "notes": "Run only after beta-deployment has a real provider URL; attach timestamp, commit/image digest and happy plus forbidden-path evidence."
+    },
+    {
+      "id": "android-debug-artifact",
+      "title": "A debug APK built from the launch commit is available as a CI or release artifact",
+      "status": "planned",
+      "blocking": true,
+      "owner": "Engineering",
+      "evidence": ["android/app/build.gradle.kts", "android/app/src/main/java/kz/horeca/app/MainActivity.java"],
+      "verifiedAt": null,
+      "environment": "beta",
+      "notes": "Build and attach the debug APK after the external Beta URL is known; do not create a production signing key."
+    },
+    {
+      "id": "release-identity",
+      "title": "Main SHA, image digest, migration, SBOM, tag and prerelease notes identify one launch candidate",
+      "status": "planned",
+      "blocking": true,
+      "owner": "Release manager",
+      "evidence": [".github/workflows/security.yml", "docs/DEPLOYMENT.md"],
+      "verifiedAt": null,
+      "environment": "beta",
+      "notes": "Create the prerelease tag and GitHub Release only after merge, deployment and external smoke are successful."
+    },
+    {
+      "id": "beta-operations",
+      "title": "Rollback, monitoring access and the Beta kill-switch procedure are verified",
+      "status": "planned",
+      "blocking": true,
+      "owner": "Platform/DevOps + Release manager",
+      "evidence": ["docs/DEPLOYMENT.md", "lib/beta-safety.ts"],
+      "verifiedAt": null,
+      "environment": "beta",
+      "notes": "Record the previous image digest, execute a rollback rehearsal, verify BETA_ENABLED=false and document the observation window."
+    }
+  ]
+}

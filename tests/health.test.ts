@@ -38,6 +38,30 @@ describe("readiness", () => {
     expect(databaseProbe).not.toHaveBeenCalled();
   });
 
+  it("keeps Beta readiness down while the operator kill switch is off", async () => {
+    const databaseProbe = vi.fn().mockResolvedValue([{ result: 1 }]);
+    const betaEnvironment: NodeJS.ProcessEnv = {
+      ...testEnvironment,
+      NODE_ENV: "production",
+      APP_ENV: "beta",
+      DEPLOYMENT_VERSION: "beta-candidate",
+      DATABASE_URL:
+        "postgresql://horeca:secret@db.example.kz:5432/horeca?sslmode=require",
+      APP_URL: "https://beta.example.kz",
+      NEXT_PUBLIC_APP_URL: "https://beta.example.kz",
+      PRIVATE_STORAGE_ROOT: "/tmp/horeca-beta-private",
+      BETA_ENABLED: "false",
+      BETA_ACCESS_TOKEN: "beta-access-token-with-at-least-thirty-two-characters",
+      BETA_DEMO_ONLY: "true",
+      BETA_REGISTRATION_ENABLED: "false",
+    };
+
+    await expect(
+      checkReadiness({ environment: betaEnvironment, databaseProbe }),
+    ).resolves.toEqual({ ready: false, failure: "configuration" });
+    expect(databaseProbe).not.toHaveBeenCalled();
+  });
+
   it("fails safely when the database is unavailable", async () => {
     const databaseProbe = vi.fn().mockRejectedValue(new Error("database password leak"));
 

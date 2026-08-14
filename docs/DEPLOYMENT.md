@@ -30,6 +30,20 @@ HoReCa KZ поставляется как self-hosted Next.js 16 Node.js contain
 - Managed secret store внедряет секреты только во время запуска; они не являются build args, image labels или IaC outputs.
 - Bucket/IAM/KMS/lifecycle/quarantine policies и data residency подтверждаются runtime readback; наличие SDK boundary не закрывает issue #15.
 
+## Controlled MVP Beta profile
+
+До выбора commercial platform разрешён один controlled Beta deployment на существующем container-capable provider. Это отдельный профиль:
+
+- `APP_ENV=beta`, HTTPS `APP_URL`/`NEXT_PUBLIC_APP_URL` и PostgreSQL TLS обязательны;
+- `BETA_ACCESS_TOKEN` хранится только как runtime secret, access выдаётся HMAC-подписанной HttpOnly cookie;
+- `BETA_ENABLED` является kill switch; `false` возвращает `503` и снимает readiness;
+- `BETA_DEMO_ONLY=true` обязателен, а UI/API требуют acknowledgement для document/payment uploads;
+- `BETA_REGISTRATION_ENABLED=false` по умолчанию; открывать её можно только внутри access-gated Beta;
+- одна replica может использовать `RATE_LIMIT_MODE=memory`, `PRIVATE_STORAGE_MODE=filesystem` и `MALWARE_SCAN_MODE=mock` только для синтетических данных; реальная PII и реальные документы запрещены;
+- demo seed разрешён только в этой контролируемой disposable/demo среде и никогда не переносится в staging/production.
+
+Минимальный Beta rollout: применить migration, выполнить demo seed, включить access gate при выключенном traffic switch, проверить readiness, установить `BETA_ENABLED=true`, выполнить внешний happy/forbidden smoke, перезапустить replica и доказать DB persistence. Откат — `BETA_ENABLED=false`, возврат предыдущего image digest и повторный health/smoke. Канонический статус хранится в `docs/mvp-launch-readiness.json`; commercial registry не изменяется.
+
 ## Build и preflight
 
 Собирайте один immutable image на commit и продвигайте тот же digest между средами:

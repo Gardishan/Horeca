@@ -11,10 +11,10 @@
 
 ## Debug APK
 
-Если Gradle wrapper ещё не создан, выполните в папке `android` команду `gradle wrapper`, затем:
+Используйте JDK 17 и совместимый с AGP 8.9.2 Gradle 8.11.1, затем из папки `android`:
 
 ```bash
-./gradlew assembleDebug -PwebAppUrl=http://10.0.2.2:3000
+gradle :app:assembleDebug -PwebAppUrl=http://10.0.2.2:3000
 ```
 
 APK появится в `android/app/build/outputs/apk/debug/app-debug.apk`.
@@ -22,8 +22,7 @@ APK появится в `android/app/build/outputs/apk/debug/app-debug.apk`.
 Для production используйте HTTPS URL:
 
 ```bash
-./gradlew assembleRelease -PwebAppUrl=https://horeca.kz
+gradle :app:assembleRelease -PwebAppUrl=https://horeca.kz
 ```
 
-Перед публикацией настройте signing config, иконки, deep links, Firebase Crashlytics и политику обновления WebView.
-
+Quality CI собирает unsigned debug APK для локального emulator URL и сохраняет его как artifact конкретного commit SHA. WebView оставляет внутри приложения только configured origin; внешние HTTP(S), `mailto:` и `tel:` ссылки передаются системному обработчику, остальные схемы блокируются. Перед production-публикацией нужен утверждённый HTTPS origin и существующий защищённый signing config; этот репозиторий не генерирует production key.

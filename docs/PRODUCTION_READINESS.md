@@ -2,6 +2,8 @@
 
 HoReCa KZ имеет проверенный MVP и deployable container baseline, но на 28.07.2026 не является готовым к коммерческому production-запуску. Канонический machine-readable статус находится в `docs/production-readiness.json`.
 
+Controlled MVP Beta имеет отдельный, более узкий registry `docs/mvp-launch-readiness.json` и команды `npm run mvp:check-readiness` / `npm run mvp:release-check`. Beta-статусы не переводят commercial controls в `done`.
+
 ## Команды
 
 ```bash

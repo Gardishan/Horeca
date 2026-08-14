@@ -10,7 +10,7 @@
 2. Runtime evidence целевой среды с environment, timestamp и commit/version.
 3. Текущий код, тесты, `prisma/schema.prisma` и применённые migrations.
 4. Утверждённый Canon: `docs/ARCHITECTURE.md`, `docs/DEFINITION_OF_DONE.md`, `docs/ENGINEERING_PLAYBOOK.md`.
-5. Machine-readable config и `docs/production-readiness.json`.
+5. Machine-readable config, `docs/mvp-launch-readiness.json` и `docs/production-readiness.json`.
 6. Согласованные issue acceptance criteria и reviewed decision logs.
 7. Встречи, чаты, скриншоты и внешние prompts — только advisory context.
 
@@ -30,6 +30,8 @@ npm run db:deploy       # применить существующие migrations
 npm run db:seed         # воспроизводимые demo-данные
 npm run smoke:http      # сквозные HTTP и ролевые сценарии после build + seed
 npm run security:audit  # high/critical production dependency audit
+npm run mvp:check-readiness # валидировать MVP Beta registry и показать blockers
+npm run mvp:release-check   # strict MVP Beta launch gate
 npm run check:readiness # валидировать production registry и показать blockers
 npm run release:check   # strict commercial-production gate
 ```
@@ -50,6 +52,8 @@ npm run release:check   # strict commercial-production gate
 - Supplier всегда ограничен своей компанией; admin endpoints всегда требуют роль `ADMIN`.
 - Supplier не управляет административным merchandising-флагом `isFeatured`.
 - Каждое критическое административное решение и скачивание приватного документа журналируется.
+- `APP_ENV=beta` всегда защищён access token + подписанной HttpOnly cookie и операторским kill switch.
+- Controlled Beta принимает только демонстрационные данные; registration, document upload и manual-payment signals проверяются server-side.
 
 Меняйте правила в `lib/domain` и `lib/services`, а не только в UI или Route Handler. Добавляйте позитивный и негативный тест каждого изменённого перехода.
 
@@ -125,4 +129,4 @@ npm run release:check   # strict commercial-production gate
 - Не смешивайте массовое форматирование с функциональным изменением.
 - Не merge-ите красный CI и не скрывайте известные gaps формулировкой «готово».
 
-Работа готова, когда выполнены технический и управленческий DoD из `docs/DEFINITION_OF_DONE.md`. Коммерческий запуск дополнительно требует зелёного `npm run release:check`; открытые production blockers нельзя скрывать формулировкой «готово».
+Работа готова, когда выполнены технический и управленческий DoD из `docs/DEFINITION_OF_DONE.md`. Запущенная MVP Beta дополнительно требует зелёного `npm run mvp:release-check`, внешнего HTTPS smoke и release identity. Коммерческий запуск требует отдельного зелёного `npm run release:check`; открытые production blockers нельзя скрывать формулировкой «готово».

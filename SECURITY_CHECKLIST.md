@@ -1,6 +1,6 @@
 # Security checklist
 
-Статус MVP на 20.07.2026. `[x]` означает, что контроль реализован в коде; `[ ]` — обязательная production-задача. Канонический launch status: `docs/production-readiness.json`.
+Статус MVP на 14.08.2026. `[x]` означает, что контроль реализован в коде; `[ ]` — обязательная runtime/production-задача. Beta и commercial launch status разделены между `docs/mvp-launch-readiness.json` и `docs/production-readiness.json`.
 
 ## Документы и файлы
 
@@ -28,6 +28,7 @@
 - [x] Supplier-операции привязаны к `ownerId`; admin API требует роль `ADMIN`.
 - [x] Каталог не доверяет UI и повторно фильтрует все trust/status условия в БД.
 - [x] Demo seed fail-closed запрещён в staging/production; test identities не могут быть случайно загружены release job.
+- [x] Controlled Beta защищена invitation token, подписанной HttpOnly cookie и server-side kill switch.
 - [ ] Подключить полноценный identity provider / Auth.js, email verification и password reset.
 - [ ] Добавить MFA для администраторов, session rotation, device/session revocation.
 - [ ] Ввести least-privilege admin roles (billing reviewer, document reviewer, catalog moderator).
@@ -40,6 +41,7 @@
 - [x] Добавлены per-request nonce CSP, production HSTS, API `no-store`, nosniff, frame deny, referrer, permissions и isolation headers.
 - [x] Есть honeypot и rate-limit для login/register/buyer-request; production использует HTTPS shared contract и fail closed, memory разрешена только dev/test.
 - [x] API использует единый безопасный error envelope без stack traces.
+- [x] Beta и private/auth/admin paths имеют `noindex`; Beta `robots.txt` запрещает полную индексацию.
 - [ ] Развернуть Redis/edge/shared limiter по документированному contract и применить edge abuse policy ко всем sensitive endpoints.
 - [ ] Настроить WAF/bot protection и abuse monitoring.
 - [ ] Провести SAST, dependency scanning, secret scanning, DAST и pentest.
@@ -47,6 +49,7 @@
 ## Биллинг и бизнес-логика
 
 - [x] «Я оплатил» не активирует подписку.
+- [x] Beta document/payment uploads требуют server-side demo-only acknowledgement.
 - [x] Только admin confirmation переводит payment/invoice/subscription в подтверждённое состояние.
 - [x] Критичные изменения выполняются транзакционно.
 - [x] Биллинг и административные решения пишутся в append-style history/audit tables.
@@ -79,6 +82,7 @@
 - [x] Repository gate блокирует `.env`, private uploads, generated artifacts и high-confidence secrets.
 - [x] Coverage thresholds применяются к критическим domain и HTTP helpers.
 - [x] CI применяет migration и seed на PostgreSQL 17 и запускает authenticated HTTP smoke.
+- [x] CI собирает unsigned debug APK с configurable WebView URL; production signing key не создаётся.
 - [x] Production dependencies проверяются через `npm audit` на high/critical findings.
 - [x] PostCSS advisory устранён совместимым override; Next.js и `sharp` обновлены до patched releases, production dependency audit равен нулю.
 - [x] Production и полный dependency graph не содержат high/critical advisory; registry исключений пуст, а audit отклоняет новые, critical и stale allowlist entries.

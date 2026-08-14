@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
+import { BetaBanner } from "@/components/beta-banner";
 
 export const metadata: Metadata = {
   title: { default: "HoReCa KZ — проверенные B2B-поставщики", template: "%s · HoReCa KZ" },
@@ -14,6 +15,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang="ru">
       <body>
         <SiteHeader />
+        <BetaBanner />
         {children}
       </body>
     </html>

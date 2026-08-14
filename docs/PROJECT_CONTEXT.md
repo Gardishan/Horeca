@@ -1,6 +1,6 @@
 # Project context
 
-Последнее обновление: 10.08.2026.
+Последнее обновление: 14.08.2026.
 
 Это долговременная память для следующего разработчика или coding agent. Она фиксирует текущее состояние, но не заменяет schema, tests и source code.
 
@@ -19,6 +19,7 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 - Private uploads: filesystem только dev/test; staging/production требуют S3-compatible boundary, никогда не `/public`.
 - Session: подписанная HMAC HttpOnly cookie.
 - Deployment: Next.js standalone non-root image, отдельный migration target, startup validation, split liveness/readiness и fail-closed проверка состава runtime artifact.
+- Controlled Beta: access token → подписанная HttpOnly cookie, runtime kill switch, noindex и demo-only upload/payment policy.
 
 Подробности: `docs/ARCHITECTURE.md`.
 
@@ -37,6 +38,8 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 11. Все payment mutation responses используют безопасный view с `hasProof`; приватный locator не покидает service boundary.
 12. Завершённая verification attempt неизменяема: повторная подача создаёт новую попытку, `PENDING` submit идемпотентен, а aggregate company state меняется compare-and-swap.
 13. Неожиданный API 500 имеет один correlation ID в response/header/structured log и не журналирует raw error details.
+14. `APP_ENV=beta` не обслуживает traffic без `BETA_ENABLED=true` и валидной access cookie; health/readiness сохраняют операторский контроль.
+15. Controlled Beta не принимает upload/payment signal без server-side подтверждения demo-only policy; public registration закрыта по умолчанию.
 
 ## Проверенный путь качества
 
@@ -48,6 +51,7 @@ npm run db:deploy
 npm run db:seed
 npm run smoke:http
 npm run check:readiness
+npm run mvp:check-readiness
 npm run runtime:validate
 ```
 
@@ -75,6 +79,10 @@ production; seed создаёт только тестовые документы
 MVP deliverable проверен, но commercial production readiness не заявлена. Канонические статусы, владельцы и exact next actions находятся в `docs/production-readiness.json`; человекочитаемое объяснение — в `docs/PRODUCTION_READINESS.md`.
 
 `npm run check:readiness` валидирует registry. `npm run release:check` является строгим launch gate и должен оставаться красным до закрытия всех blocking controls.
+
+## MVP Beta launch readiness
+
+`docs/mvp-launch-readiness.json` отдельно учитывает controlled Beta. Application-side access gate, kill switch, noindex и demo-only policy готовы в release candidate. GitHub live-readback на 14.08.2026 не показывает Environment, Deployment, Actions secrets/variables, tag или Release; поэтому внешний HTTPS URL, deployed database, external smoke, rollback и release identity остаются незакрытыми и `npm run mvp:release-check` обязан быть красным.
 
 ## Известные production gaps
 
@@ -114,6 +122,7 @@ MVP deliverable проверен, но commercial production readiness не за
 | Immutable verification attempts | Terminal review evidence не перезаписывается supplier submit/upload; новая подача создаёт отдельную attempt, а `PENDING` переиспользуется идемпотентно |
 | Safe payment mutation view | Billing mutations возвращают `hasProof` вместо приватного `proofFilePath` |
 | Correlated safe API failures | Generic 500 связывается одним request ID между клиентом и structured log без raw error details |
+| Separate controlled Beta | Beta проверяет продукт на синтетических данных за access gate; её evidence не повышает commercial readiness |
 
 ## Когда обновлять этот файл
 

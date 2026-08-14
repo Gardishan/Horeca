@@ -55,6 +55,20 @@ Activity signals можно использовать только для оце�
 
 ## Product completion
 
+### MVP Beta launch
+
+`npm run mvp:check-readiness` валидирует отдельный `docs/mvp-launch-readiness.json`. `npm run mvp:release-check` выполняет тот же code/security gate, но strict-режим остаётся красным, пока нет одновременно:
+
+- launch commit в `main` и зелёного post-merge CI;
+- внешнего HTTPS URL и timestamped smoke с чистого клиента;
+- deployed PostgreSQL migration/seed/persistence readback;
+- controlled access, demo-only disclosure, kill-switch и rollback evidence;
+- Android debug artifact, image digest, SBOM и prerelease identity.
+
+Без внешнего URL и external smoke допустима только формулировка `Release candidate completed, launch externally blocked`. Она не равна `MVP Beta launched`.
+
+### Commercial production
+
 `npm run check:readiness` проверяет структуру и evidence production registry. `npm run release:check` — строгий коммерческий gate: он обязан оставаться красным, пока в `docs/production-readiness.json` есть blocking controls без статуса `done`.
 
 Это намеренное различие:

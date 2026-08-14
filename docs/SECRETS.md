@@ -8,6 +8,7 @@
 |---|---:|---|---|
 | `DATABASE_URL` | да | Prisma runtime и migration job | новый least-privilege DB credential → deploy → revoke старый |
 | `AUTH_SECRET` | да | HMAC session cookie | controlled rotation с принудительным повторным login |
+| `BETA_ACCESS_TOKEN` | да | invitation boundary controlled Beta | выдать новый token → проверить новый доступ → отозвать старый через redeploy |
 | `RATE_LIMIT_BACKEND_TOKEN` | да | shared limiter client | backend принимает old+new → deploy new → revoke old |
 | `MALWARE_SCAN_BACKEND_TOKEN` | да | remote malware scanner client | scanner принимает old+new → deploy new → revoke old |
 | `AWS_ACCESS_KEY_ID` | да | optional S3 static credential | предпочесть workload identity; иначе issue new pair → deploy → revoke old |
@@ -17,8 +18,8 @@
 | `DEPLOYMENT_VERSION` | нет | readiness/evidence | commit SHA или release identifier |
 | `APP_URL` | нет | same-origin policy | меняется вместе с approved domain/cutover |
 | `NEXT_PUBLIC_APP_URL` | нет | public origin contract | тот же origin, что `APP_URL` |
-| `PRIVATE_STORAGE_MODE` | нет | private file boundary | `s3` в staging/production; `filesystem` только dev/test |
-| `PRIVATE_STORAGE_ROOT` | нет | local filesystem mode | используется только dev/test |
+| `PRIVATE_STORAGE_MODE` | нет | private file boundary | `s3` в staging/production; `filesystem` только dev/test или demo-only single-replica Beta |
+| `PRIVATE_STORAGE_ROOT` | нет | local filesystem mode | dev/test или demo-only single-replica Beta; в Beta абсолютный путь |
 | `PRIVATE_STORAGE_S3_ENDPOINT` | нет | S3 client | HTTPS service origin без credentials/path/query |
 | `PRIVATE_STORAGE_S3_REGION` | нет | S3 client | явный provider region |
 | `PRIVATE_STORAGE_S3_BUCKET` | нет | S3 client | отдельный private bucket для среды |
@@ -26,14 +27,17 @@
 | `PRIVATE_STORAGE_S3_SSE` | нет | S3 write policy | явное `AES256` или `aws:kms` |
 | `PRIVATE_STORAGE_S3_KMS_KEY_ID` | нет | KMS encryption selector | обязателен только для `aws:kms`; identifier не является secret, но не логируется |
 | `DEMO_AUTH_ENABLED` | нет | demo account guard | всегда `false` в staging/production |
-| `RATE_LIMIT_MODE` | нет | abuse boundary | всегда `remote` в staging/production |
-| `RATE_LIMIT_ALLOW_IN_MEMORY` | нет | test-only override | всегда `false` в staging/production |
+| `BETA_ENABLED` | нет | operator traffic kill switch | `true` только во время разрешённого Beta-окна |
+| `BETA_DEMO_ONLY` | нет | upload/payment policy | всегда `true` в `APP_ENV=beta` |
+| `BETA_REGISTRATION_ENABLED` | нет | self-service registration | default `false`; включать только внутри access-gated Beta |
+| `RATE_LIMIT_MODE` | нет | abuse boundary | всегда `remote` в staging/production; `memory` допустим только для access-gated single-replica Beta |
+| `RATE_LIMIT_ALLOW_IN_MEMORY` | нет | local/Beta override | `true` только dev/test или controlled single-replica Beta; `false` в staging/production |
 | `RATE_LIMIT_BACKEND_URL` | нет | limiter endpoint | HTTPS only |
-| `MALWARE_SCAN_MODE` | нет | file security boundary | `remote` в staging/production; `mock` только dev/test |
+| `MALWARE_SCAN_MODE` | нет | file security boundary | `remote` в staging/production; `mock` только dev/test или demo-only controlled Beta |
 | `MALWARE_SCAN_BACKEND_URL` | нет | malware scanner endpoint | HTTPS only; URL не содержит credentials |
 | `MALWARE_SCAN_TIMEOUT_MS` | нет | scanner availability bound | явное значение 1000–60000 ms |
 
-`lib/runtime-config.ts` проверяет inventory при запуске и возвращает только безопасный summary. Ошибки перечисляют имена нарушенных controls и не включают secret values.
+`lib/runtime-config.ts` проверяет inventory при запуске и возвращает только безопасный summary. Ошибки перечисляют имена нарушенных controls и не включают secret values. `BETA_ACCESS_TOKEN` не является GitHub variable, build arg или release note; он вводится через secret store/runtime secret injection.
 
 ## Storage policy
 

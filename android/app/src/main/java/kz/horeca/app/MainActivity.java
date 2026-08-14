@@ -16,6 +16,7 @@ import android.widget.ProgressBar;
 public final class MainActivity extends Activity {
     private WebView webView;
     private ProgressBar progressBar;
+    private Uri trustedAppUri;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,6 +25,7 @@ public final class MainActivity extends Activity {
 
         webView = findViewById(R.id.web_view);
         progressBar = findViewById(R.id.progress_bar);
+        trustedAppUri = Uri.parse(BuildConfig.WEB_APP_URL);
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -50,13 +52,20 @@ public final class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 String scheme = uri.getScheme();
-                if ("http".equals(scheme) || "https".equals(scheme)) {
+                if (isTrustedAppUri(uri)) {
                     return false;
                 }
-                try {
-                    startActivity(new Intent(Intent.ACTION_VIEW, uri));
-                } catch (Exception ignored) {
-                    // Unsupported external scheme: remain in the app.
+                if (
+                    "http".equals(scheme) ||
+                    "https".equals(scheme) ||
+                    "mailto".equals(scheme) ||
+                    "tel".equals(scheme)
+                ) {
+                    try {
+                        startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                    } catch (Exception ignored) {
+                        // No safe external handler is installed: remain in the app.
+                    }
                 }
                 return true;
             }
@@ -67,6 +76,14 @@ public final class MainActivity extends Activity {
         } else {
             webView.restoreState(savedInstanceState);
         }
+    }
+
+    private boolean isTrustedAppUri(Uri uri) {
+        return trustedAppUri.getScheme() != null
+            && trustedAppUri.getScheme().equals(uri.getScheme())
+            && trustedAppUri.getHost() != null
+            && trustedAppUri.getHost().equalsIgnoreCase(uri.getHost())
+            && trustedAppUri.getPort() == uri.getPort();
     }
 
     @Override
@@ -84,4 +101,3 @@ public final class MainActivity extends Activity {
         }
     }
 }
-

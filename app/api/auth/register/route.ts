@@ -4,10 +4,12 @@ import { setSession } from "@/lib/auth";
 import { apiHandler, assertSameOrigin, clientMeta, ok, parseJson } from "@/lib/http";
 import { supplierRegistrationSchema } from "@/lib/validation";
 import { assertRateLimit } from "@/lib/rate-limit";
+import { assertBetaRegistrationAllowed } from "@/lib/beta-safety";
 
 export async function POST(request: Request) {
   return apiHandler(async () => {
     assertSameOrigin(request);
+    assertBetaRegistrationAllowed();
     const meta = clientMeta(request);
     await assertRateLimit(`register:${meta.ipAddress ?? "unknown"}`, 5, 60 * 60 * 1000);
     const input = await parseJson(request, supplierRegistrationSchema);

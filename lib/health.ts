@@ -38,6 +38,10 @@ export async function checkReadiness({
     return { ready: false, failure: "configuration" };
   }
 
+  if (configuration.appEnvironment === "beta" && environment.BETA_ENABLED !== "true") {
+    return { ready: false, failure: "configuration" };
+  }
+
   try {
     await withTimeout(databaseProbe, timeoutMs);
   } catch {

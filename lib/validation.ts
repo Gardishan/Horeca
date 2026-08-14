@@ -46,7 +46,14 @@ export const legalAcceptanceSchema = z.object({
 
 export const planSelectionSchema = z.object({ planCode: z.enum(["START", "PRO", "PREMIUM"]) });
 
-export const markPaidSchema = z.object({ invoiceId: z.string().min(1) });
+export const markPaidSchema = z.object({
+  invoiceId: z.string().min(1),
+  betaDemoAcknowledged: z.boolean().optional(),
+});
+
+export const betaAccessSchema = z.object({
+  accessToken: z.string().min(1).max(512),
+});
 
 export const supplierProductSchema = z.object({
   name: z.string().trim().min(3).max(180),

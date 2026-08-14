@@ -59,3 +59,27 @@ jobs:
       - run: npm run db:seed
       - run: npm run smoke:http
       - run: npm run security:audit
+
+  android-debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "8.11.1"
+      - name: Build local-emulator debug APK
+        working-directory: android
+        run: gradle :app:assembleDebug -PwebAppUrl=http://10.0.2.2:3000
+      - uses: actions/upload-artifact@v7
+        with:
+          name: horeca-kz-debug-${{ github.sha }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
