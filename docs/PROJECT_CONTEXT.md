@@ -16,7 +16,7 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 - HTTP boundaries: `app/api` + `lib/http.ts`.
 - Web perimeter: strict Origin, nonce CSP, production HSTS/API `no-store` и fail-closed remote rate-limit contract.
 - PostgreSQL/Prisma: `prisma/schema.prisma` и versioned migrations.
-- Private uploads: filesystem только dev/test; staging/production требуют S3-compatible boundary, никогда не `/public`.
+- Private uploads: filesystem разрешён в dev/test и demo-only single-replica Beta; staging/production требуют S3-compatible boundary, никогда не `/public`.
 - Session: подписанная HMAC HttpOnly cookie.
 - Deployment: Next.js standalone non-root image, отдельный migration target, startup validation, split liveness/readiness и fail-closed проверка состава runtime artifact.
 - Controlled Beta: access token → подписанная HttpOnly cookie, runtime kill switch, noindex и demo-only upload/payment policy.
@@ -64,7 +64,7 @@ Production dependency audit должен оставаться без извес�
 high findings, любые critical findings и stale exception после исправления
 dependency graph.
 
-На 10.08.2026 advisory registry пуст: совместимые security overrides закрывают
+На 14.08.2026 advisory registry пуст: совместимые security overrides закрывают
 известные high findings как в production, так и в полном dependency graph.
 
 ## Demo state
@@ -82,13 +82,13 @@ MVP deliverable проверен, но commercial production readiness не за
 
 ## MVP Beta launch readiness
 
-`docs/mvp-launch-readiness.json` отдельно учитывает controlled Beta. Application-side access gate, kill switch, noindex и demo-only policy готовы в release candidate. GitHub live-readback на 14.08.2026 не показывает Environment, Deployment, Actions secrets/variables, tag или Release; поэтому внешний HTTPS URL, deployed database, external smoke, rollback и release identity остаются незакрытыми и `npm run mvp:release-check` обязан быть красным.
+`docs/mvp-launch-readiness.json` отдельно учитывает controlled Beta. Application-side access gate, kill switch, noindex и demo-only policy merged в `main` 410c98ef через PR #45; post-merge Quality #61 и Security #63 зелёные, debug APK и SBOM приложены к точному SHA. GitHub live-readback на 14.08.2026 не показывает Environment, Deployment, Actions secrets/variables, tag или Release; внешний HTTPS URL, managed Beta database, external smoke, rollback и release identity остаются незакрытыми в issue #44, поэтому `npm run mvp:release-check` обязан быть красным.
 
 ## Известные production gaps
 
 - Application-side S3-compatible storage boundary готов; нужно создать private buckets, IAM/KMS/lifecycle/retention controls и приложить staging evidence.
 - Fail-closed HTTPS contract для `antivirusCheck()` готов; нужно развернуть реальный malware scanner и согласованный quarantine/clean flow, затем приложить staging evidence.
-- Нужно развернуть shared rate-limit backend по `docs/RATE_LIMIT_BACKEND.md`, WAF и проверить несколько реплик в staging; memory mode разрешён только dev/test.
+- Нужно развернуть shared rate-limit backend по `docs/RATE_LIMIT_BACKEND.md`, WAF и проверить несколько реплик в staging; memory mode разрешён только dev/test или access-gated single-replica Beta.
 - Manual payment flow нужно заменить/дополнить подписанными идемпотентными provider webhooks.
 - Нужны password reset, MFA для admin, session rotation/revocation.
 - Legal/privacy/refund тексты требуют проверки юристом в Казахстане.
@@ -102,7 +102,7 @@ MVP deliverable проверен, но commercial production readiness не за
 | Modular monolith | Быстрый MVP без преждевременной distributed complexity |
 | Central domain policies | UI/API не должны расходиться в trust и billing rules |
 | Manual admin payment confirmation | Клиентский сигнал не активирует subscription |
-| Private S3-compatible storage boundary | Filesystem ограничен dev/test; deployed runtime fail-fast требует private object storage и явный SSE/KMS mode |
+| Private S3-compatible storage boundary | Filesystem ограничен dev/test и demo-only single-replica Beta; commercial deployed runtime fail-fast требует private object storage и явный SSE/KMS mode |
 | Deterministic gates + CI | Качество подтверждается командами, а не самоотчётом агента |
 | Fact-first incremental delivery | Callers и контракты проверяются до правки; несогласованные defaults/fallbacks и неиспользуемый код блокируются |
 | Evidence-driven DoD | Review-ready, merge и runtime completion нельзя смешивать |
@@ -112,7 +112,7 @@ MVP deliverable проверен, но commercial production readiness не за
 | Split health probes | Liveness управляет restart, readiness не пускает traffic без config + PostgreSQL |
 | Dependabot minor/patch automation | Major toolchain upgrades требуют совместимой migration всей матрицы; security updates остаются независимыми |
 | Runtime/type major alignment | Node.js runtime, engine pins и `@types/node` остаются на одной major-ветке; repository gate блокирует drift |
-| Fail-closed malware boundary | Mock разрешён только dev/test; deployed runtime требует HTTPS scanner, а outage/unknown verdict блокирует upload до storage |
+| Fail-closed malware boundary | Mock разрешён только dev/test и demo-only controlled Beta; commercial deployed runtime требует HTTPS scanner, а outage/unknown verdict блокирует upload до storage |
 | Fail-closed storage boundary | Deployed runtime запрещает filesystem; S3 outage/malformed body блокируют flow без утечки provider details |
 | Minimal standalone artifact | Явные tracing exclusions и build gate не допускают source/tests/docs/coverage в runtime image |
 | Time-bound advisory exception | Dev-only finding без совместимого исправления имеет expiry, mitigations и tracking; production audit остаётся блокирующим |

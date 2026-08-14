@@ -39,7 +39,7 @@
 - [x] Mutation endpoints требуют допустимый Origin и отклоняют missing/opaque/cross-site запросы; статический тест покрывает все state-changing routes.
 - [x] Cookie не доступна JavaScript.
 - [x] Добавлены per-request nonce CSP, production HSTS, API `no-store`, nosniff, frame deny, referrer, permissions и isolation headers.
-- [x] Есть honeypot и rate-limit для login/register/buyer-request; production использует HTTPS shared contract и fail closed, memory разрешена только dev/test.
+- [x] Есть honeypot и rate-limit для login/register/buyer-request; production использует HTTPS shared contract и fail closed, memory разрешена только dev/test или access-gated single-replica Beta.
 - [x] API использует единый безопасный error envelope без stack traces.
 - [x] Beta и private/auth/admin paths имеют `noindex`; Beta `robots.txt` запрещает полную индексацию.
 - [ ] Развернуть Redis/edge/shared limiter по документированному contract и применить edge abuse policy ко всем sensitive endpoints.
