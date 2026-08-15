@@ -2,7 +2,7 @@
   "version": 1,
   "product": "HoReCa KZ",
   "target": "mvp-beta",
-  "updatedAt": "2026-08-14",
+  "updatedAt": "2026-08-15",
   "controls": [
     {
       "id": "critical-flows",
@@ -48,11 +48,13 @@
         "prisma/schema.prisma",
         "prisma/migrations",
         "prisma/seed.ts",
+        ".github/workflows/beta-launch.yml",
+        "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
         "https://github.com/Gardishan/Horeca/issues/44"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "Quality #61 proves the migration and seed against disposable CI PostgreSQL only. Issue #44 remains blocked until a managed Beta DATABASE_URL exists and restart persistence is read back."
+      "notes": "Beta Launch #1 attempts 1 and 2 stopped at the GitHub Environment secret-presence check before any Railway command executed. Migration, demo seed and persistence readback remain blocked until the beta job receives RAILWAY_TOKEN and BETA_ACCESS_TOKEN."
     },
     {
       "id": "beta-deployment",
@@ -63,11 +65,15 @@
       "evidence": [
         "Dockerfile",
         "docs/DEPLOYMENT.md",
+        ".github/workflows/beta-launch.yml",
+        "https://github.com/Gardishan/Horeca/pull/47",
+        "https://github.com/Gardishan/Horeca/commit/7ca30e415b6ccf90f8c44c48800c5047e9e9f1c4",
+        "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
         "https://github.com/Gardishan/Horeca/issues/44"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "No GitHub Environment, deployment, runtime secret or existing hosting provider is configured. Connect one container-capable Beta target and inject the documented runtime values."
+      "notes": "GitHub Environment beta and the provider resources exist, but the environment-scoped RAILWAY_TOKEN and BETA_ACCESS_TOKEN expressions both resolved to empty strings on two live attempts from main 7ca30e41. The fail-closed workflow exited before provider readback or mutation."
     },
     {
       "id": "external-https-smoke",
@@ -77,11 +83,13 @@
       "owner": "Engineering + Platform/DevOps",
       "evidence": [
         "scripts/smoke-http.mjs",
+        "scripts/smoke-beta-external.mjs",
+        "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
         "https://github.com/Gardishan/Horeca/issues/44"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "Run only after beta-deployment has a real provider URL; attach timestamp, commit/image digest and happy plus forbidden-path evidence."
+      "notes": "The external smoke implementation is merged, but Beta Launch #1 correctly stopped before provider discovery because both GitHub Environment secret contexts were empty; no external request was attempted."
     },
     {
       "id": "android-debug-artifact",
@@ -97,7 +105,7 @@
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "Main 410c98ef reproducibly produced debug artifact 9227617669 (SHA-256 f86c154c711f4e79e6330993722ce3c9edfca03e208bd3a0aaef00888596bbb2) for the local emulator. Rebuild it with the external Beta origin after issue #44 is unblocked; do not create a production signing key."
+      "notes": "Main 410c98ef reproducibly produced debug artifact 9227617669 (SHA-256 f86c154c711f4e79e6330993722ce3c9edfca03e208bd3a0aaef00888596bbb2) for the local emulator. Beta Launch #1 stopped before provider URL discovery, so no external-origin APK or checksum was produced; do not create a production signing key."
     },
     {
       "id": "release-identity",
@@ -107,13 +115,15 @@
       "owner": "Release manager",
       "evidence": [
         ".github/workflows/security.yml",
+        ".github/workflows/beta-launch.yml",
         "docs/DEPLOYMENT.md",
+        "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
         "https://github.com/Gardishan/Horeca/commit/410c98ef80ace5e5c12e30552229a4f8a1d5df40",
         "https://github.com/Gardishan/Horeca/actions/runs/31822731478/artifacts/9227592566"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "Main SHA and SBOM artifact 9227592566 are recorded. Image digest, deployed migration evidence, tag and prerelease remain intentionally absent until issue #44 and external smoke are complete."
+      "notes": "The fail-closed launch workflow is merged on main 7ca30e41. Image digest, deployed migration evidence, external-origin APK, tag and prerelease remain intentionally absent because Beta Launch #1 received no environment secrets and stopped before Railway access."
     },
     {
       "id": "beta-operations",
@@ -123,13 +133,15 @@
       "owner": "Platform/DevOps + Release manager",
       "evidence": [
         "docs/DEPLOYMENT.md",
+        ".github/workflows/beta-launch.yml",
         "lib/beta-safety.ts",
         "tests/beta-safety.test.ts",
+        "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
         "https://github.com/Gardishan/Horeca/issues/44"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "The application kill switch passed policy and local runtime smoke. Provider rollback, previous image digest, monitoring access and an observation window remain blocked on issue #44."
+      "notes": "The application kill switch passed policy and local runtime smoke. Beta Launch #1 stopped before provider readback, so Railway rollback, persistence verification and final-candidate restore were not attempted."
     }
   ]
 }
