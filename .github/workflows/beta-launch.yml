@@ -1,14 +1,13 @@
 name: Beta Launch
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/beta-launch.yml
-      - scripts/check-beta-persistence.mjs
-      - scripts/smoke-beta-external.mjs
-      - scripts/validate-beta-runtime.mjs
   workflow_dispatch:
+
+# Temporary Beta-only fallback while GitHub Environment secret injection remains
+# tracked as defective. Repository secrets have broader workflow scope, so this
+# workflow is manual-only. BETA_RAILWAY_PROJECT_TOKEN is limited to the Railway
+# Beta project/environment; rotate or remove both fallback secrets after
+# Environment injection is repaired without removing the authenticated rollback path.
 
 permissions:
   contents: read
@@ -24,8 +23,6 @@ jobs:
     timeout-minutes: 75
     env:
       CI: "true"
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-      BETA_ACCESS_TOKEN: ${{ secrets.BETA_ACCESS_TOKEN }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -46,6 +43,9 @@ jobs:
 
       - name: Verify main and inspect Railway read-only state
         id: provider
+        env:
+          RAILWAY_TOKEN: ${{ secrets.BETA_RAILWAY_PROJECT_TOKEN }}
+          BETA_ACCESS_TOKEN: ${{ secrets.BETA_SMOKE_ACCESS_TOKEN }}
         run: |
           set -euo pipefail
           umask 077
@@ -114,6 +114,9 @@ jobs:
 
       - name: Configure, deploy, migrate, seed, enable and prove persistence
         id: candidate
+        env:
+          RAILWAY_TOKEN: ${{ secrets.BETA_RAILWAY_PROJECT_TOKEN }}
+          BETA_ACCESS_TOKEN: ${{ secrets.BETA_SMOKE_ACCESS_TOKEN }}
         run: |
           set -euo pipefail
           umask 077
@@ -334,6 +337,9 @@ jobs:
 
       - name: Rehearse Railway rollback and restore final candidate
         id: rollback
+        env:
+          RAILWAY_TOKEN: ${{ secrets.BETA_RAILWAY_PROJECT_TOKEN }}
+          BETA_ACCESS_TOKEN: ${{ secrets.BETA_SMOKE_ACCESS_TOKEN }}
         run: |
           set -euo pipefail
           umask 077
