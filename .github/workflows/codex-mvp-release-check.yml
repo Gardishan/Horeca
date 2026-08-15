@@ -1,0 +1,24 @@
+name: Strict MVP Release Gate Evidence
+
+on:
+  push:
+    branches:
+      - agent/record-fresh-beta-secret-blocker
+    paths:
+      - .github/workflows/codex-mvp-release-check.yml
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run mvp:release-check
