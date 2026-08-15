@@ -50,11 +50,13 @@
         "prisma/seed.ts",
         ".github/workflows/beta-launch.yml",
         "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
-        "https://github.com/Gardishan/Horeca/issues/44"
+        "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
+        "https://github.com/Gardishan/Horeca/actions/runs/31877000013",
+        "https://github.com/Gardishan/Horeca/issues/44#issuecomment-5301594684"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "Beta Launch #1 attempts 1 and 2 stopped at the GitHub Environment secret-presence check before any Railway command executed. Migration, demo seed and persistence readback remain blocked until the beta job receives RAILWAY_TOKEN and BETA_ACCESS_TOKEN."
+      "notes": "Fresh workflow_dispatch run 31876896260 targeted exact main 1a7781b1 with environment beta after the owner reported re-saving both exact secret names, but both expressions were still empty. User-authored read-only probe 31877000013 reproduced the result; no Railway command executed, so migration, demo seed and persistence readback remain blocked."
     },
     {
       "id": "beta-deployment",
@@ -69,11 +71,13 @@
         "https://github.com/Gardishan/Horeca/pull/47",
         "https://github.com/Gardishan/Horeca/commit/7ca30e415b6ccf90f8c44c48800c5047e9e9f1c4",
         "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
-        "https://github.com/Gardishan/Horeca/issues/44"
+        "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
+        "https://github.com/Gardishan/Horeca/actions/runs/31877000013",
+        "https://github.com/Gardishan/Horeca/issues/44#issuecomment-5301594684"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "GitHub Environment beta and the provider resources exist, but the environment-scoped RAILWAY_TOKEN and BETA_ACCESS_TOKEN expressions both resolved to empty strings on two live attempts from main 7ca30e41. The fail-closed workflow exited before provider readback or mutation."
+      "notes": "GitHub attached environment beta to fresh exact-main run 31876896260, but both environment-scoped secret expressions resolved empty. Independent actor Gardishan probe 31877000013 reproduced the result, proving the failure is not specific to the bot-origin workflow dispatch. The fail-closed workflow exited before Railway readback or mutation."
     },
     {
       "id": "external-https-smoke",
@@ -85,11 +89,12 @@
         "scripts/smoke-http.mjs",
         "scripts/smoke-beta-external.mjs",
         "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
-        "https://github.com/Gardishan/Horeca/issues/44"
+        "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
+        "https://github.com/Gardishan/Horeca/issues/44#issuecomment-5301594684"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "The external smoke implementation is merged, but Beta Launch #1 correctly stopped before provider discovery because both GitHub Environment secret contexts were empty; no external request was attempted."
+      "notes": "The external smoke implementation is merged, but fresh exact-main Beta Launch run 31876896260 correctly stopped before provider discovery because both GitHub Environment secret expressions were empty; no Railway or external HTTPS request was attempted."
     },
     {
       "id": "android-debug-artifact",
@@ -101,11 +106,12 @@
         "android/app/build.gradle.kts",
         "android/app/src/main/java/kz/horeca/app/MainActivity.java",
         "https://github.com/Gardishan/Horeca/actions/runs/31822731617",
-        "https://github.com/Gardishan/Horeca/actions/runs/31822731617/artifacts/9227617669"
+        "https://github.com/Gardishan/Horeca/actions/runs/31822731617/artifacts/9227617669",
+        "https://github.com/Gardishan/Horeca/actions/runs/31876896260"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "Main 410c98ef reproducibly produced debug artifact 9227617669 (SHA-256 f86c154c711f4e79e6330993722ce3c9edfca03e208bd3a0aaef00888596bbb2) for the local emulator. Beta Launch #1 stopped before provider URL discovery, so no external-origin APK or checksum was produced; do not create a production signing key."
+      "notes": "Main 410c98ef reproducibly produced debug artifact 9227617669 (SHA-256 f86c154c711f4e79e6330993722ce3c9edfca03e208bd3a0aaef00888596bbb2) for the local emulator. Fresh exact-main run 31876896260 stopped before provider URL discovery, so no external-origin APK or checksum was produced; do not create a production signing key."
     },
     {
       "id": "release-identity",
@@ -118,12 +124,14 @@
         ".github/workflows/beta-launch.yml",
         "docs/DEPLOYMENT.md",
         "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
+        "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
+        "https://github.com/Gardishan/Horeca/actions/runs/31877000013",
         "https://github.com/Gardishan/Horeca/commit/410c98ef80ace5e5c12e30552229a4f8a1d5df40",
         "https://github.com/Gardishan/Horeca/actions/runs/31822731478/artifacts/9227592566"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "The fail-closed launch workflow is merged on main 7ca30e41. Image digest, deployed migration evidence, external-origin APK, tag and prerelease remain intentionally absent because Beta Launch #1 received no environment secrets and stopped before Railway access."
+      "notes": "The fail-closed launch workflow ran via workflow_dispatch on exact main 1a7781b1. Image digest, deployed migration evidence, external-origin APK, tag and prerelease remain intentionally absent because fresh run 31876896260 and independent probe 31877000013 both received empty beta Environment secret expressions."
     },
     {
       "id": "beta-operations",
@@ -137,11 +145,12 @@
         "lib/beta-safety.ts",
         "tests/beta-safety.test.ts",
         "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
-        "https://github.com/Gardishan/Horeca/issues/44"
+        "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
+        "https://github.com/Gardishan/Horeca/issues/44#issuecomment-5301594684"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "The application kill switch passed policy and local runtime smoke. Beta Launch #1 stopped before provider readback, so Railway rollback, persistence verification and final-candidate restore were not attempted."
+      "notes": "The application kill switch passed policy and local runtime smoke. Fresh exact-main run 31876896260 stopped at empty beta Environment secret expressions before provider readback, so Railway rollback, persistence verification and final-candidate restore were not attempted."
     }
   ]
 }
