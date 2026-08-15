@@ -1,0 +1,504 @@
+name: Beta Launch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/beta-launch.yml
+      - scripts/check-beta-persistence.mjs
+      - scripts/smoke-beta-external.mjs
+      - scripts/validate-beta-runtime.mjs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: controlled-beta-launch
+  cancel-in-progress: false
+
+jobs:
+  launch:
+    environment: beta
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      CI: "true"
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      BETA_ACCESS_TOKEN: ${{ secrets.BETA_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install pinned dependencies and Railway CLI
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --global @railway/cli@5.41.2
+          railway --version
+
+      - name: Verify main and inspect Railway read-only state
+        id: provider
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "${RAILWAY_TOKEN}"
+          test -n "${BETA_ACCESS_TOKEN}"
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          remote_main="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" refs/heads/main | cut -f1)"
+          test "${remote_main}" = "${GITHUB_SHA}"
+
+          state_dir="${RUNNER_TEMP}/horeca-beta-launch"
+          mkdir -p "${state_dir}"
+          chmod 700 "${state_dir}"
+
+          railway status --environment beta --json > "${state_dir}/status.json"
+          railway service list --environment beta --json > "${state_dir}/services.json"
+          railway deployment list --environment beta --service "$(
+            jq -r '[.[] | select(((.source.repo // "") | ascii_downcase) == "gardishan/horeca")] | if length == 1 then .[0].id else empty end' \
+              "${state_dir}/services.json"
+          )" --json > "${state_dir}/deployments-before.json"
+
+          project_matches="$(jq '[.. | strings | select(. == "horeca-kz-beta")] | length' "${state_dir}/status.json")"
+          environment_matches="$(jq '[.. | strings | select(. == "beta")] | length' "${state_dir}/status.json")"
+          app_count="$(jq '[.[] | select(((.source.repo // "") | ascii_downcase) == "gardishan/horeca")] | length' "${state_dir}/services.json")"
+          database_count="$(jq '[.[] | select((((.name // "") | ascii_downcase) | test("postgres")) or ((((.source.image // "") | ascii_downcase) | test("postgres"))))] | length' "${state_dir}/services.json")"
+          test "${project_matches}" -ge 1
+          test "${environment_matches}" -ge 1
+          test "${app_count}" -eq 1
+          test "${database_count}" -eq 1
+
+          app_service_id="$(jq -r '[.[] | select(((.source.repo // "") | ascii_downcase) == "gardishan/horeca")][0].id' "${state_dir}/services.json")"
+          app_service_name="$(jq -r --arg id "${app_service_id}" '.[] | select(.id == $id) | .name' "${state_dir}/services.json")"
+          database_service_id="$(jq -r '[.[] | select((((.name // "") | ascii_downcase) | test("postgres")) or ((((.source.image // "") | ascii_downcase) | test("postgres"))))][0].id' "${state_dir}/services.json")"
+          database_service_name="$(jq -r --arg id "${database_service_id}" '.[] | select(.id == $id) | .name' "${state_dir}/services.json")"
+          test -n "${app_service_id}"
+          test -n "${database_service_id}"
+          test "${app_service_id}" != "${database_service_id}"
+
+          railway domain list --environment beta --service "${app_service_id}" --json > "${state_dir}/domains.json"
+          beta_domain="$(jq -r '[.domains[] | select((.domain // "") | endswith(".up.railway.app"))][0].domain // empty' "${state_dir}/domains.json")"
+          test -n "${beta_domain}"
+          beta_base_url="https://${beta_domain}"
+
+          jq -n \
+            --arg baselineMainSha "${{ github.event.before }}" \
+            --arg launchCommit "${GITHUB_SHA}" \
+            --arg project "horeca-kz-beta" \
+            --arg environment "beta" \
+            --arg appServiceId "${app_service_id}" \
+            --arg appServiceName "${app_service_name}" \
+            --arg databaseServiceId "${database_service_id}" \
+            --arg databaseServiceName "${database_service_name}" \
+            --arg betaBaseUrl "${beta_base_url}" \
+            --argjson priorDeploymentCount "$(jq 'length' "${state_dir}/deployments-before.json")" \
+            '{baselineMainSha: $baselineMainSha, launchCommit: $launchCommit, project: $project, environment: $environment, appService: {id: $appServiceId, name: $appServiceName}, databaseService: {id: $databaseServiceId, name: $databaseServiceName}, betaBaseUrl: $betaBaseUrl, priorDeploymentCount: $priorDeploymentCount}' \
+            > "${state_dir}/provider-readonly.json"
+          cat "${state_dir}/provider-readonly.json"
+
+          {
+            echo "BETA_STATE_DIR=${state_dir}"
+            echo "APP_SERVICE_ID=${app_service_id}"
+            echo "APP_SERVICE_NAME=${app_service_name}"
+            echo "DATABASE_SERVICE_ID=${database_service_id}"
+            echo "DATABASE_SERVICE_NAME=${database_service_name}"
+            echo "BETA_BASE_URL=${beta_base_url}"
+          } >> "${GITHUB_ENV}"
+
+      - name: Configure, deploy, migrate, seed, enable and prove persistence
+        id: candidate
+        run: |
+          set -euo pipefail
+          umask 077
+
+          wait_for_new_success() {
+            local before_file="$1"
+            local label="$2"
+            local current_file="${BETA_STATE_DIR}/deployments-current.json"
+            local deployment_id=""
+            for attempt in $(seq 1 90); do
+              railway deployment list --environment beta --service "${APP_SERVICE_ID}" --json > "${current_file}"
+              deployment_id="$(jq -r --slurpfile before "${before_file}" '
+                ($before[0] | map(.id)) as $known |
+                [.[] | select(.id as $id | ($known | index($id) | not))] |
+                sort_by(.createdAt) | reverse |
+                [ .[] | select(.status == "SUCCESS") ][0].id // empty
+              ' "${current_file}")"
+              if [ -n "${deployment_id}" ]; then
+                echo "${label} deployment succeeded: ${deployment_id}" >&2
+                printf '%s' "${deployment_id}"
+                return 0
+              fi
+              new_count="$(jq -r --slurpfile before "${before_file}" '($before[0] | map(.id)) as $known | [.[] | select(.id as $id | ($known | index($id) | not))] | length' "${current_file}")"
+              pending_count="$(jq -r --slurpfile before "${before_file}" '($before[0] | map(.id)) as $known | [.[] | select(.id as $id | ($known | index($id) | not)) | select(.status | IN("INITIALIZING", "BUILDING", "DEPLOYING", "WAITING", "QUEUED"))] | length' "${current_file}")"
+              if [ "${new_count}" -gt 0 ] && [ "${pending_count}" -eq 0 ]; then
+                echo "${label} deployment reached a terminal non-success state" >&2
+                return 1
+              fi
+              sleep 10
+            done
+            echo "Timed out waiting for ${label} deployment" >&2
+            return 1
+          }
+
+          snapshot_deployments() {
+            railway deployment list --environment beta --service "${APP_SERVICE_ID}" --json > "$1"
+          }
+
+          railway variable set \
+            --environment beta \
+            --service "${APP_SERVICE_ID}" \
+            --skip-deploys \
+            --json \
+            "APP_ENV=beta" \
+            "DEPLOYMENT_VERSION=${GITHUB_SHA}" \
+            "APP_URL=${BETA_BASE_URL}" \
+            "NEXT_PUBLIC_APP_URL=${BETA_BASE_URL}" \
+            "PRIVATE_STORAGE_MODE=filesystem" \
+            "PRIVATE_STORAGE_ROOT=/app/storage/private" \
+            "DEMO_AUTH_ENABLED=true" \
+            "BETA_ENABLED=false" \
+            "BETA_DEMO_ONLY=true" \
+            "BETA_REGISTRATION_ENABLED=false" \
+            "RATE_LIMIT_MODE=memory" \
+            "RATE_LIMIT_ALLOW_IN_MEMORY=true" \
+            "MALWARE_SCAN_MODE=mock" \
+            > "${BETA_STATE_DIR}/safe-variable-set.json"
+
+          railway variable list --environment beta --service "${APP_SERVICE_ID}" --json > "${BETA_STATE_DIR}/runtime-variables.json"
+          node --import tsx scripts/validate-beta-runtime.mjs \
+            "${BETA_STATE_DIR}/runtime-variables.json" \
+            "${BETA_STATE_DIR}/normalized-database-url" \
+            | tee "${BETA_STATE_DIR}/runtime-validation-before-deploy.json"
+          railway variable set DATABASE_URL \
+            --environment beta \
+            --service "${APP_SERVICE_ID}" \
+            --stdin \
+            --skip-deploys \
+            --json \
+            < "${BETA_STATE_DIR}/normalized-database-url" \
+            > "${BETA_STATE_DIR}/database-variable-set.json"
+          railway variable list --environment beta --service "${APP_SERVICE_ID}" --json > "${BETA_STATE_DIR}/runtime-variables.json"
+          node --import tsx scripts/validate-beta-runtime.mjs \
+            "${BETA_STATE_DIR}/runtime-variables.json" \
+            | tee "${BETA_STATE_DIR}/runtime-validation.json"
+
+          snapshot_deployments "${BETA_STATE_DIR}/before-initial-deploy.json"
+          railway up . \
+            --ci \
+            --environment beta \
+            --service "${APP_SERVICE_ID}" \
+            --message "Controlled Beta ${GITHUB_SHA}"
+          initial_deployment_id="$(wait_for_new_success "${BETA_STATE_DIR}/before-initial-deploy.json" "initial candidate")"
+
+          tunnel_log="${BETA_STATE_DIR}/database-tunnel.log"
+          railway connect "${DATABASE_SERVICE_NAME}" \
+            --environment beta \
+            --ssh \
+            --tunnel-only \
+            --port 15432 \
+            > "${tunnel_log}" 2>&1 &
+          tunnel_pid=$!
+          trap 'kill "${tunnel_pid}" 2>/dev/null || true' EXIT
+          tunnel_ready=false
+          for attempt in $(seq 1 60); do
+            if (echo > /dev/tcp/127.0.0.1/15432) 2>/dev/null; then
+              tunnel_ready=true
+              break
+            fi
+            if ! kill -0 "${tunnel_pid}" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if [ "${tunnel_ready}" != "true" ]; then
+            echo "Railway private PostgreSQL tunnel failed without exposing its connection output" >&2
+            exit 1
+          fi
+
+          node - "${BETA_STATE_DIR}/runtime-variables.json" "${BETA_STATE_DIR}/tunnel-database-url" <<'NODE'
+          const fs = require("node:fs");
+          const variables = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+          const url = new URL(variables.DATABASE_URL);
+          url.hostname = "127.0.0.1";
+          url.port = "15432";
+          url.searchParams.set("sslmode", "disable");
+          fs.writeFileSync(process.argv[3], url.toString(), { mode: 0o600 });
+          NODE
+          export DATABASE_URL="$(< "${BETA_STATE_DIR}/tunnel-database-url")"
+          export APP_ENV=beta
+          export BETA_DEMO_ONLY=true
+          export PRIVATE_STORAGE_ROOT="${RUNNER_TEMP}/horeca-beta-seed-private"
+
+          if npm run db:deploy > "${BETA_STATE_DIR}/migration.log" 2>&1; then
+            echo "Prisma migrate deploy completed inside the Railway private-network tunnel"
+          else
+            echo "Prisma migrate deploy failed; raw output remains redacted" >&2
+            exit 1
+          fi
+          if npm run db:seed > "${BETA_STATE_DIR}/seed.log" 2>&1; then
+            echo "Demo-only seed completed inside the Railway private-network tunnel"
+          else
+            echo "Demo-only seed failed; raw output remains redacted" >&2
+            exit 1
+          fi
+
+          EXPECTED_DEPLOYMENT_VERSION="${GITHUB_SHA}" node scripts/smoke-beta-external.mjs preflight \
+            | tee "${BETA_STATE_DIR}/external-preflight.json"
+
+          railway variable set "BETA_ENABLED=true" \
+            --environment beta \
+            --service "${APP_SERVICE_ID}" \
+            --skip-deploys \
+            --json \
+            > "${BETA_STATE_DIR}/enable-variable-set.json"
+          railway variable list --environment beta --service "${APP_SERVICE_ID}" --json > "${BETA_STATE_DIR}/runtime-variables-enabled.json"
+          node --import tsx scripts/validate-beta-runtime.mjs "${BETA_STATE_DIR}/runtime-variables-enabled.json" \
+            | tee "${BETA_STATE_DIR}/runtime-validation-enabled.json"
+
+          snapshot_deployments "${BETA_STATE_DIR}/before-enable-deploy.json"
+          railway redeploy --environment beta --service "${APP_SERVICE_ID}" --yes --json \
+            > "${BETA_STATE_DIR}/enable-redeploy.json"
+          enabled_deployment_id="$(wait_for_new_success "${BETA_STATE_DIR}/before-enable-deploy.json" "enabled candidate")"
+          EXPECTED_DEPLOYMENT_VERSION="${GITHUB_SHA}" node scripts/smoke-beta-external.mjs full \
+            | tee "${BETA_STATE_DIR}/external-smoke-enabled.json"
+
+          export BETA_MARKER_PATH="${BETA_STATE_DIR}/persistence-marker.json"
+          node scripts/smoke-beta-external.mjs create-marker \
+            | tee "${BETA_STATE_DIR}/marker-created.json"
+          BETA_PERSISTENCE_PHASE=before-redeploy \
+            BETA_PERSISTENCE_RESULT_PATH="${BETA_STATE_DIR}/persistence-before-redeploy.json" \
+            node scripts/check-beta-persistence.mjs
+
+          snapshot_deployments "${BETA_STATE_DIR}/before-candidate-redeploy.json"
+          railway redeploy --environment beta --service "${APP_SERVICE_ID}" --yes --json \
+            > "${BETA_STATE_DIR}/candidate-redeploy.json"
+          candidate_deployment_id="$(wait_for_new_success "${BETA_STATE_DIR}/before-candidate-redeploy.json" "persistence candidate")"
+          EXPECTED_DEPLOYMENT_VERSION="${GITHUB_SHA}" node scripts/smoke-beta-external.mjs verify-marker \
+            | tee "${BETA_STATE_DIR}/external-marker-after-redeploy.json"
+          BETA_PERSISTENCE_PHASE=after-redeploy \
+            BETA_PERSISTENCE_RESULT_PATH="${BETA_STATE_DIR}/persistence-after-redeploy.json" \
+            node scripts/check-beta-persistence.mjs
+          EXPECTED_DEPLOYMENT_VERSION="${GITHUB_SHA}" node scripts/smoke-beta-external.mjs full \
+            | tee "${BETA_STATE_DIR}/external-smoke-candidate.json"
+
+          {
+            echo "INITIAL_DEPLOYMENT_ID=${initial_deployment_id}"
+            echo "ENABLED_DEPLOYMENT_ID=${enabled_deployment_id}"
+            echo "CANDIDATE_DEPLOYMENT_ID=${candidate_deployment_id}"
+            echo "BETA_MARKER_PATH=${BETA_MARKER_PATH}"
+          } >> "${GITHUB_ENV}"
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Build external-Beta debug APK and SHA-256
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/horeca-beta-artifacts"
+          (
+            cd android
+            gradle :app:assembleDebug -PwebAppUrl="${BETA_BASE_URL}"
+          )
+          cp android/app/build/outputs/apk/debug/app-debug.apk \
+            "${RUNNER_TEMP}/horeca-beta-artifacts/horeca-kz-beta-debug.apk"
+          unzip -p "${RUNNER_TEMP}/horeca-beta-artifacts/horeca-kz-beta-debug.apk" classes.dex \
+            | strings \
+            | grep --fixed-strings "${BETA_BASE_URL}" \
+            > /dev/null
+          apk_sha256="$(sha256sum "${RUNNER_TEMP}/horeca-beta-artifacts/horeca-kz-beta-debug.apk" | cut -d' ' -f1)"
+          printf '%s  %s\n' "${apk_sha256}" "horeca-kz-beta-debug.apk" \
+            > "${RUNNER_TEMP}/horeca-beta-artifacts/APK_SHA256SUMS"
+          echo "APK_SHA256=${apk_sha256}" >> "${GITHUB_ENV}"
+          echo "Debug APK SHA-256: ${apk_sha256}"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: horeca-kz-beta-debug-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/horeca-beta-artifacts/horeca-kz-beta-debug.apk
+            ${{ runner.temp }}/horeca-beta-artifacts/APK_SHA256SUMS
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Rehearse Railway rollback and restore final candidate
+        id: rollback
+        run: |
+          set -euo pipefail
+          umask 077
+
+          wait_for_new_success() {
+            local before_file="$1"
+            local label="$2"
+            local current_file="${BETA_STATE_DIR}/deployments-rollback-current.json"
+            local deployment_id=""
+            for attempt in $(seq 1 90); do
+              railway deployment list --environment beta --service "${APP_SERVICE_ID}" --json > "${current_file}"
+              deployment_id="$(jq -r --slurpfile before "${before_file}" '
+                ($before[0] | map(.id)) as $known |
+                [.[] | select(.id as $id | ($known | index($id) | not))] |
+                sort_by(.createdAt) | reverse |
+                [ .[] | select(.status == "SUCCESS") ][0].id // empty
+              ' "${current_file}")"
+              if [ -n "${deployment_id}" ]; then
+                echo "${label} deployment succeeded: ${deployment_id}" >&2
+                printf '%s' "${deployment_id}"
+                return 0
+              fi
+              new_count="$(jq -r --slurpfile before "${before_file}" '($before[0] | map(.id)) as $known | [.[] | select(.id as $id | ($known | index($id) | not))] | length' "${current_file}")"
+              pending_count="$(jq -r --slurpfile before "${before_file}" '($before[0] | map(.id)) as $known | [.[] | select(.id as $id | ($known | index($id) | not)) | select(.status | IN("INITIALIZING", "BUILDING", "DEPLOYING", "WAITING", "QUEUED"))] | length' "${current_file}")"
+              if [ "${new_count}" -gt 0 ] && [ "${pending_count}" -eq 0 ]; then
+                echo "${label} deployment reached a terminal non-success state" >&2
+                return 1
+              fi
+              sleep 10
+            done
+            echo "Timed out waiting for ${label} deployment" >&2
+            return 1
+          }
+
+          query_deployment() {
+            local deployment_id="$1"
+            local output_path="$2"
+            railway api --compact \
+              --raw-var "id=${deployment_id}" \
+              'query DeploymentForRollback($id: String!) { deployment(id: $id) { id status canRollback meta } }' \
+              > "${output_path}"
+          }
+
+          query_deployment "${ENABLED_DEPLOYMENT_ID}" "${BETA_STATE_DIR}/rollback-target-query.json"
+          test "$(jq -r '.data.deployment.canRollback' "${BETA_STATE_DIR}/rollback-target-query.json")" = "true"
+          railway deployment list --environment beta --service "${APP_SERVICE_ID}" --json \
+            > "${BETA_STATE_DIR}/before-rollback.json"
+          railway api --compact \
+            --raw-var "id=${ENABLED_DEPLOYMENT_ID}" \
+            'mutation RollbackDeployment($id: String!) { deploymentRollback(id: $id) { id status } }' \
+            > "${BETA_STATE_DIR}/rollback-mutation.json"
+          rollback_deployment_id="$(wait_for_new_success "${BETA_STATE_DIR}/before-rollback.json" "rollback")"
+
+          EXPECTED_DEPLOYMENT_VERSION="${GITHUB_SHA}" node scripts/smoke-beta-external.mjs full \
+            | tee "${BETA_STATE_DIR}/external-smoke-rollback.json"
+          EXPECTED_DEPLOYMENT_VERSION="${GITHUB_SHA}" node scripts/smoke-beta-external.mjs verify-marker \
+            | tee "${BETA_STATE_DIR}/external-marker-rollback.json"
+
+          tunnel_log="${BETA_STATE_DIR}/database-tunnel-rollback.log"
+          railway connect "${DATABASE_SERVICE_NAME}" \
+            --environment beta \
+            --ssh \
+            --tunnel-only \
+            --port 15433 \
+            > "${tunnel_log}" 2>&1 &
+          tunnel_pid=$!
+          trap 'kill "${tunnel_pid}" 2>/dev/null || true' EXIT
+          tunnel_ready=false
+          for attempt in $(seq 1 60); do
+            if (echo > /dev/tcp/127.0.0.1/15433) 2>/dev/null; then
+              tunnel_ready=true
+              break
+            fi
+            if ! kill -0 "${tunnel_pid}" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if [ "${tunnel_ready}" != "true" ]; then
+            echo "Railway private PostgreSQL tunnel failed during rollback verification" >&2
+            exit 1
+          fi
+          railway variable list --environment beta --service "${APP_SERVICE_ID}" --json \
+            > "${BETA_STATE_DIR}/runtime-variables-rollback.json"
+          node - "${BETA_STATE_DIR}/runtime-variables-rollback.json" "${BETA_STATE_DIR}/tunnel-database-url-rollback" <<'NODE'
+          const fs = require("node:fs");
+          const variables = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+          const url = new URL(variables.DATABASE_URL);
+          url.hostname = "127.0.0.1";
+          url.port = "15433";
+          url.searchParams.set("sslmode", "disable");
+          fs.writeFileSync(process.argv[3], url.toString(), { mode: 0o600 });
+          NODE
+          export DATABASE_URL="$(< "${BETA_STATE_DIR}/tunnel-database-url-rollback")"
+          BETA_PERSISTENCE_PHASE=rollback \
+            BETA_PERSISTENCE_RESULT_PATH="${BETA_STATE_DIR}/persistence-rollback.json" \
+            node scripts/check-beta-persistence.mjs
+
+          query_deployment "${CANDIDATE_DEPLOYMENT_ID}" "${BETA_STATE_DIR}/restore-target-query.json"
+          test "$(jq -r '.data.deployment.canRollback' "${BETA_STATE_DIR}/restore-target-query.json")" = "true"
+          railway deployment list --environment beta --service "${APP_SERVICE_ID}" --json \
+            > "${BETA_STATE_DIR}/before-restore.json"
+          railway api --compact \
+            --raw-var "id=${CANDIDATE_DEPLOYMENT_ID}" \
+            'mutation RestoreDeployment($id: String!) { deploymentRollback(id: $id) { id status } }' \
+            > "${BETA_STATE_DIR}/restore-mutation.json"
+          restored_deployment_id="$(wait_for_new_success "${BETA_STATE_DIR}/before-restore.json" "candidate restore")"
+
+          EXPECTED_DEPLOYMENT_VERSION="${GITHUB_SHA}" node scripts/smoke-beta-external.mjs full \
+            | tee "${BETA_STATE_DIR}/external-smoke-restored.json"
+          EXPECTED_DEPLOYMENT_VERSION="${GITHUB_SHA}" node scripts/smoke-beta-external.mjs verify-marker \
+            | tee "${BETA_STATE_DIR}/external-marker-restored.json"
+          BETA_PERSISTENCE_PHASE=restored \
+            BETA_PERSISTENCE_RESULT_PATH="${BETA_STATE_DIR}/persistence-restored.json" \
+            node scripts/check-beta-persistence.mjs
+
+          query_deployment "${restored_deployment_id}" "${BETA_STATE_DIR}/restored-deployment-query.json"
+          image_digest="$(jq -r '[.data.deployment.meta | .. | strings | select(test("^sha256:[0-9a-f]{64}$"))][0] // empty' "${BETA_STATE_DIR}/restored-deployment-query.json")"
+          if [ -z "${image_digest}" ]; then
+            image_digest="unavailable-from-provider-api"
+          fi
+
+          marker_id="$(jq -r '.id' "${BETA_MARKER_PATH}")"
+          marker_label_sha256="$(jq -r '.markerLabelSha256' "${BETA_STATE_DIR}/persistence-restored.json")"
+          mkdir -p "${RUNNER_TEMP}/horeca-beta-artifacts"
+          jq -n \
+            --arg result "LAUNCHED_BETA" \
+            --arg launchCommit "${GITHUB_SHA}" \
+            --arg baselineMainSha "${{ github.event.before }}" \
+            --arg workflowRunUrl "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --arg project "horeca-kz-beta" \
+            --arg environment "beta" \
+            --arg appServiceId "${APP_SERVICE_ID}" \
+            --arg appServiceName "${APP_SERVICE_NAME}" \
+            --arg databaseServiceId "${DATABASE_SERVICE_ID}" \
+            --arg databaseServiceName "${DATABASE_SERVICE_NAME}" \
+            --arg betaBaseUrl "${BETA_BASE_URL}" \
+            --arg initialDeploymentId "${INITIAL_DEPLOYMENT_ID}" \
+            --arg enabledDeploymentId "${ENABLED_DEPLOYMENT_ID}" \
+            --arg candidateDeploymentId "${CANDIDATE_DEPLOYMENT_ID}" \
+            --arg rollbackDeploymentId "${rollback_deployment_id}" \
+            --arg restoredDeploymentId "${restored_deployment_id}" \
+            --arg imageDigest "${image_digest}" \
+            --arg markerId "${marker_id}" \
+            --arg markerLabelSha256 "${marker_label_sha256}" \
+            --arg apkSha256 "${APK_SHA256}" \
+            --arg verifiedAt "$(date --utc +%Y-%m-%dT%H:%M:%SZ)" \
+            '{result: $result, launchCommit: $launchCommit, baselineMainSha: $baselineMainSha, workflowRunUrl: $workflowRunUrl, provider: {project: $project, environment: $environment, appService: {id: $appServiceId, name: $appServiceName}, databaseService: {id: $databaseServiceId, name: $databaseServiceName}, betaBaseUrl: $betaBaseUrl}, runtime: {secretsValidatedWithoutValues: true, railwayTokenAbsentFromRuntime: true, betaTokenParity: true, databaseTlsRequired: true}, migration: {command: "npm run db:deploy", status: "passed"}, seed: {profile: "demo-only", status: "passed"}, deployments: {initial: $initialDeploymentId, enabled: $enabledDeploymentId, persistenceCandidate: $candidateDeploymentId, rollback: $rollbackDeploymentId, restored: $restoredDeploymentId, imageDigest: $imageDigest}, externalSmoke: {invite: "passed", authentication: "passed", authorization: "passed", https: "passed"}, persistence: {markerId: $markerId, markerLabelSha256: $markerLabelSha256, afterRedeploy: "passed", afterRollback: "passed", afterRestore: "passed"}, android: {variant: "debug", baseUrl: $betaBaseUrl, sha256: $apkSha256}, verifiedAt: $verifiedAt}' \
+            > "${RUNNER_TEMP}/horeca-beta-artifacts/beta-launch-evidence.json"
+          cat "${RUNNER_TEMP}/horeca-beta-artifacts/beta-launch-evidence.json"
+
+          {
+            echo "### Controlled Beta launch"
+            echo
+            echo "- Result: LAUNCHED_BETA"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- HTTPS origin: ${BETA_BASE_URL}"
+            echo "- Migration and demo-only seed: passed"
+            echo "- Invite/auth/authorization smoke: passed"
+            echo "- PostgreSQL marker across redeploy, rollback and restore: passed"
+            echo "- Debug APK SHA-256: \`${APK_SHA256}\`"
+            echo "- Commercial production readiness: not declared"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: beta-launch-evidence-${{ github.sha }}
+          path: ${{ runner.temp }}/horeca-beta-artifacts/beta-launch-evidence.json
+          if-no-files-found: error
+          retention-days: 90
