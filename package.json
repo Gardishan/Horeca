@@ -37,11 +37,11 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1096.0",
+    "@aws-sdk/client-s3": "3.1110.0",
     "@prisma/client": "6.19.3",
     "bcryptjs": "3.0.3",
-    "lucide-react": "1.27.0",
-    "next": "16.2.12",
+    "lucide-react": "1.31.0",
+    "next": "16.3.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "0.0.1",
