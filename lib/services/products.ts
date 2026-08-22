@@ -100,7 +100,7 @@ export async function publishCompanyProduct(companyId: string, productId: string
       subscriptionStatus: subscription?.status ?? null,
       paymentStatus: subscription?.invoices[0]?.payments[0]?.status ?? null,
       publishedCount,
-      maxProducts: subscription?.plan.maxProducts ?? 0,
+      maxProducts: subscription ? subscription.plan.maxProducts : 0,
       productAlreadyPublished: product.status === "PUBLISHED",
     });
     if (!rule.allowed) throw new ConflictError("Товар пока нельзя опубликовать", { reasons: rule.reasons });

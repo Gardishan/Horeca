@@ -22,6 +22,19 @@ describe("product publication policy", () => {
     expect(result.reasons.join(" ")).toContain("Лимит тарифа");
   });
 
+  it("treats a null plan limit as unlimited (PREMIUM)", () => {
+    // Регрессия: lib/services/products.ts коэрсил null -> 0 через `?? 0`,
+    // из-за чего самый дорогой тариф не мог опубликовать ни одного товара.
+    expect(evaluateProductPublication({ ...valid, publishedCount: 5000, maxProducts: null }))
+      .toEqual({ allowed: true, reasons: [] });
+  });
+
+  it("treats a zero plan limit as no subscription, not unlimited", () => {
+    const result = evaluateProductPublication({ ...valid, publishedCount: 0, maxProducts: 0 });
+    expect(result.allowed).toBe(false);
+    expect(result.reasons.join(" ")).toContain("Лимит тарифа");
+  });
+
   it("does not double-count an already published product", () => {
     expect(evaluateProductPublication({ ...valid, publishedCount: 10, productAlreadyPublished: true }).allowed).toBe(true);
   });
