@@ -30,7 +30,7 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 
 1. Public catalog не показывает товар неподтверждённой/заблокированной компании или без активной подписки.
 2. Publication требует verification, current subscription, confirmed payment и plan capacity.
-3. Activation требует profile + legal acceptance + approved текущие documents с допустимым antivirus verdict (включая approved `REGISTRATION`/`BIN_IIN`) + confirmed payment + approved verification; `REJECTED`/`REUPLOAD_REQUESTED` документ перестаёт учитываться только после более нового upload того же типа.
+3. Activation требует незаблокированную компанию, profile + legal acceptance + approved текущие documents с допустимым antivirus verdict (включая approved `REGISTRATION`/`BIN_IIN`) + confirmed payment + approved verification; `REJECTED`/`REUPLOAD_REQUESTED` документ перестаёт учитываться только после более нового upload того же типа.
 4. Supplier не управляет чужой компанией или товаром.
 5. Admin decisions и private downloads оставляют audit evidence.
 6. Client-side state никогда не является источником billing/trust решения.
@@ -44,6 +44,7 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 14. `APP_ENV=beta` не обслуживает traffic без `BETA_ENABLED=true` и валидной access cookie; health/readiness сохраняют операторский контроль.
 15. Controlled Beta не принимает upload/payment signal без server-side подтверждения demo-only policy; public registration закрыта по умолчанию.
 16. `ACTIVE` компания не может повторно отправить verification; повторная подача остаётся после `REJECTED`/`REUPLOAD_REQUESTED` и до активации.
+17. Block/unblock — идемпотентные audited admin use cases с compare-and-swap; unblock возвращает `DRAFT`/`PENDING_REVIEW`, никогда `ACTIVE`, и не публикует скрытые блокировкой товары.
 
 ## Проверенный путь качества
 

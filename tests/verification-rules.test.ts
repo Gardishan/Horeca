@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  companyStatusAfterUnblock,
   evaluateCompanyActivation,
   evaluateDocumentDecision,
   evaluateVerificationSubmission,
   evaluateVerificationDecision,
+  isCompanyBlocked,
   isDocumentSafeForApproval,
   isVerificationSubmissionLocked,
   profileCompletion,
@@ -184,6 +186,20 @@ describe("company lifecycle guards", () => {
     expect(isVerificationSubmissionLocked("ACTIVE")).toBe(true);
     for (const status of ["DRAFT", "PENDING_REVIEW", "REJECTED", "BLOCKED"] as const) {
       expect(isVerificationSubmissionLocked(status)).toBe(false);
+    }
+  });
+
+  it("treats either block marker as blocked", () => {
+    expect(isCompanyBlocked({ status: "BLOCKED", isBlocked: true })).toBe(true);
+    expect(isCompanyBlocked({ status: "ACTIVE", isBlocked: true })).toBe(true);
+    expect(isCompanyBlocked({ status: "BLOCKED", isBlocked: false })).toBe(true);
+    expect(isCompanyBlocked({ status: "ACTIVE", isBlocked: false })).toBe(false);
+  });
+
+  it("returns an unblocked company to a non-public review state, never ACTIVE", () => {
+    expect(companyStatusAfterUnblock("NOT_STARTED")).toBe("DRAFT");
+    for (const status of ["PENDING", "APPROVED", "REJECTED", "REUPLOAD_REQUESTED"] as const) {
+      expect(companyStatusAfterUnblock(status)).toBe("PENDING_REVIEW");
     }
   });
 });

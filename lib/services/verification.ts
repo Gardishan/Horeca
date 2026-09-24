@@ -3,10 +3,12 @@ import { LEGAL_VERSION } from "@/lib/constants";
 import { ConflictError, NotFoundError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import {
+  companyStatusAfterUnblock,
   evaluateCompanyActivation,
   evaluateDocumentDecision,
   evaluateVerificationSubmission,
   evaluateVerificationDecision,
+  isCompanyBlocked,
   isDocumentSafeForApproval,
   isVerificationSubmissionLocked,
 } from "@/lib/domain/verification-rules";
@@ -109,7 +111,7 @@ export async function submitCompanyVerification(companyId: string) {
     paymentStatus: company.payments[0]?.status ?? null,
   });
   if (!rule.allowed) throw new ConflictError("Компания пока не готова к проверке", { reasons: rule.reasons });
-  if (company.isBlocked || company.status === "BLOCKED") {
+  if (isCompanyBlocked(company)) {
     throw new ConflictError("Заблокированную компанию нельзя отправить на проверку");
   }
 
@@ -277,6 +279,9 @@ export async function decideDocument(
 
 export async function activateCompany(companyId: string, adminUserId: string, meta: ClientMeta = {}) {
   const company = await getVerificationContext(companyId);
+  if (isCompanyBlocked(company)) {
+    throw new ConflictError("Компания заблокирована: сначала снимите блокировку");
+  }
   const rule = evaluateCompanyActivation({
     profile: company,
     acceptedLegalTypes: company.legalAcceptances.map((item) => item.type),
@@ -329,10 +334,16 @@ export async function blockCompany(companyId: string, adminUserId: string, comme
   return prisma.$transaction(async (tx) => {
     const company = await tx.company.findUnique({ where: { id: companyId } });
     if (!company) throw new NotFoundError("Компания не найдена");
-    const updated = await tx.company.update({
-      where: { id: companyId },
+    if (company.status === "BLOCKED" && company.isBlocked) return company;
+    const claim = await tx.company.updateMany({
+      where: { id: companyId, status: company.status, isBlocked: company.isBlocked },
       data: { status: "BLOCKED", isBlocked: true },
     });
+    if (claim.count !== 1) {
+      const current = await tx.company.findUnique({ where: { id: companyId } });
+      if (current?.status === "BLOCKED" && current.isBlocked) return current;
+      throw new ConflictError("Статус компании уже изменён другим действием");
+    }
     await tx.product.updateMany({ where: { companyId, status: "PUBLISHED" }, data: { status: "INACTIVE" } });
     await writeAuditLog(
       {
@@ -347,6 +358,49 @@ export async function blockCompany(companyId: string, adminUserId: string, comme
       },
       tx,
     );
-    return updated;
+    return tx.company.findUniqueOrThrow({ where: { id: companyId } });
+  });
+}
+
+/**
+ * Lifts a block without restoring visibility: the company returns to a review
+ * state, products hidden by the block stay INACTIVE, and the catalog needs a
+ * fresh activateCompany plus product publication.
+ */
+export async function unblockCompany(companyId: string, adminUserId: string, comment: string, meta: ClientMeta = {}) {
+  if (!comment.trim()) throw new ConflictError("Укажите причину разблокировки");
+  return prisma.$transaction(async (tx) => {
+    const company = await tx.company.findUnique({ where: { id: companyId } });
+    if (!company) throw new NotFoundError("Компания не найдена");
+    if (!isCompanyBlocked(company)) return company;
+    const status = companyStatusAfterUnblock(company.verificationStatus);
+    const claim = await tx.company.updateMany({
+      where: {
+        id: companyId,
+        status: company.status,
+        isBlocked: company.isBlocked,
+        verificationStatus: company.verificationStatus,
+      },
+      data: { status, isBlocked: false },
+    });
+    if (claim.count !== 1) {
+      const current = await tx.company.findUnique({ where: { id: companyId } });
+      if (current && !isCompanyBlocked(current)) return current;
+      throw new ConflictError("Статус компании уже изменён другим действием");
+    }
+    await writeAuditLog(
+      {
+        adminUserId,
+        companyId,
+        action: "COMPANY_UNBLOCKED",
+        entityType: "Company",
+        entityId: companyId,
+        before: { status: company.status, isBlocked: company.isBlocked },
+        after: { status, isBlocked: false, comment },
+        ...meta,
+      },
+      tx,
+    );
+    return tx.company.findUniqueOrThrow({ where: { id: companyId } });
   });
 }

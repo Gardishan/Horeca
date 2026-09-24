@@ -180,7 +180,20 @@ export function evaluateCompanyActivation(input: ActivationContext): RuleResult 
   return { allowed: reasons.length === 0, reasons };
 }
 
+export function isCompanyBlocked(company: { status: CompanyStatus; isBlocked: boolean }) {
+  return company.isBlocked || company.status === "BLOCKED";
+}
+
 /** An ACTIVE company is already verified; resubmitting would hide its catalog. */
 export function isVerificationSubmissionLocked(status: CompanyStatus) {
   return status === "ACTIVE";
+}
+
+/**
+ * Unblocking never restores ACTIVE: public visibility needs a fresh activation.
+ * DRAFT means never submitted; PENDING_REVIEW is the state submission sets and
+ * review decisions keep until activation.
+ */
+export function companyStatusAfterUnblock(verificationStatus: VerificationStatus): CompanyStatus {
+  return verificationStatus === "NOT_STARTED" ? "DRAFT" : "PENDING_REVIEW";
 }

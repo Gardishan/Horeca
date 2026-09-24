@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ForbiddenError, UnauthorizedError } from "@/lib/errors";
 
 const mocks = vi.hoisted(() => ({
   transaction: vi.fn(),
   companyFindUnique: vi.fn(),
   writeAuditLog: vi.fn(),
+  requireRole: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -13,11 +15,15 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 vi.mock("@/lib/services/audit", () => ({ writeAuditLog: mocks.writeAuditLog }));
+vi.mock("@/lib/auth", () => ({ requireRole: mocks.requireRole }));
 
 import {
   activateCompany,
+  blockCompany,
   submitCompanyVerification,
+  unblockCompany,
 } from "@/lib/services/verification";
+import { POST as unblockRoute } from "@/app/api/admin/companies/[companyId]/unblock/route";
 
 type Document = {
   type: string;
@@ -61,6 +67,10 @@ function runTransactionWith(transactionClient: object) {
   );
 }
 
+function companyRow(overrides: Record<string, unknown> = {}) {
+  return { id: "company-1", status: "BLOCKED", isBlocked: true, verificationStatus: "APPROVED", ...overrides };
+}
+
 describe("company activation over superseded documents", () => {
   beforeEach(() => vi.resetAllMocks());
 
@@ -98,6 +108,17 @@ describe("company activation over superseded documents", () => {
     });
     expect(mocks.transaction).not.toHaveBeenCalled();
     expect(mocks.writeAuditLog).not.toHaveBeenCalled();
+  });
+
+  it("explains that a blocked company must be unblocked before activation", async () => {
+    mocks.companyFindUnique.mockResolvedValue(lifecycleContext({ status: "BLOCKED", isBlocked: true }));
+
+    await expect(activateCompany("company-1", "admin-1")).rejects.toMatchObject({
+      status: 409,
+      code: "CONFLICT",
+      message: "Компания заблокирована: сначала снимите блокировку",
+    });
+    expect(mocks.transaction).not.toHaveBeenCalled();
   });
 });
 
@@ -139,5 +160,264 @@ describe("verification resubmission of an active company", () => {
       where: { id: "company-1", status, verificationStatus, isBlocked: false },
       data: { status: "PENDING_REVIEW", verificationStatus: "PENDING" },
     });
+  });
+});
+
+describe("company block", () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it("blocks with a compare-and-swap, hides published products and audits once", async () => {
+    const before = companyRow({ status: "ACTIVE", isBlocked: false });
+    const client = {
+      company: {
+        findUnique: vi.fn().mockResolvedValue(before),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(companyRow()),
+      },
+      product: { updateMany: vi.fn().mockResolvedValue({ count: 4 }) },
+    };
+    runTransactionWith(client);
+
+    await expect(blockCompany("company-1", "admin-1", "incident")).resolves.toMatchObject({ status: "BLOCKED", isBlocked: true });
+    expect(client.company.updateMany).toHaveBeenCalledWith({
+      where: { id: "company-1", status: "ACTIVE", isBlocked: false },
+      data: { status: "BLOCKED", isBlocked: true },
+    });
+    expect(client.product.updateMany).toHaveBeenCalledWith({
+      where: { companyId: "company-1", status: "PUBLISHED" },
+      data: { status: "INACTIVE" },
+    });
+    expect(mocks.writeAuditLog).toHaveBeenCalledOnce();
+    expect(mocks.writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "COMPANY_BLOCKED",
+        before: { status: "ACTIVE", isBlocked: false },
+        after: { status: "BLOCKED", isBlocked: true, comment: "incident" },
+      }),
+      client,
+    );
+  });
+
+  it("treats a repeated block as idempotent without a second audit row", async () => {
+    const blocked = companyRow();
+    const client = {
+      company: { findUnique: vi.fn().mockResolvedValue(blocked), updateMany: vi.fn() },
+      product: { updateMany: vi.fn() },
+    };
+    runTransactionWith(client);
+
+    await expect(blockCompany("company-1", "admin-1", "repeat")).resolves.toBe(blocked);
+    expect(client.company.updateMany).not.toHaveBeenCalled();
+    expect(client.product.updateMany).not.toHaveBeenCalled();
+    expect(mocks.writeAuditLog).not.toHaveBeenCalled();
+  });
+
+  it("returns idempotently when a concurrent block wins the race", async () => {
+    const client = {
+      company: {
+        findUnique: vi.fn()
+          .mockResolvedValueOnce(companyRow({ status: "ACTIVE", isBlocked: false }))
+          .mockResolvedValueOnce(companyRow()),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+      product: { updateMany: vi.fn() },
+    };
+    runTransactionWith(client);
+
+    await expect(blockCompany("company-1", "admin-1", "incident")).resolves.toMatchObject({ status: "BLOCKED" });
+    expect(client.product.updateMany).not.toHaveBeenCalled();
+    expect(mocks.writeAuditLog).not.toHaveBeenCalled();
+  });
+
+  it("refuses a block that lost the race to a different transition", async () => {
+    const client = {
+      company: {
+        findUnique: vi.fn()
+          .mockResolvedValueOnce(companyRow({ status: "ACTIVE", isBlocked: false }))
+          .mockResolvedValueOnce(companyRow({ status: "PENDING_REVIEW", isBlocked: false })),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+      product: { updateMany: vi.fn() },
+    };
+    runTransactionWith(client);
+
+    await expect(blockCompany("company-1", "admin-1", "incident")).rejects.toMatchObject({ status: 409 });
+    expect(client.product.updateMany).not.toHaveBeenCalled();
+    expect(mocks.writeAuditLog).not.toHaveBeenCalled();
+  });
+
+  it("requires a reason before touching the company", async () => {
+    await expect(blockCompany("company-1", "admin-1", "  ")).rejects.toMatchObject({ status: 409 });
+    expect(mocks.transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe("company unblock", () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it.each([
+    ["APPROVED", "PENDING_REVIEW"],
+    ["PENDING", "PENDING_REVIEW"],
+    ["NOT_STARTED", "DRAFT"],
+  ])("returns a blocked company with %s verification to %s without activating it", async (verificationStatus, target) => {
+    const before = companyRow({ verificationStatus });
+    const after = companyRow({ verificationStatus, status: target, isBlocked: false });
+    const client = {
+      company: {
+        findUnique: vi.fn().mockResolvedValue(before),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(after),
+      },
+      product: { updateMany: vi.fn() },
+    };
+    runTransactionWith(client);
+
+    const result = await unblockCompany("company-1", "admin-1", "restored", { ipAddress: "10.0.0.2" });
+
+    expect(result).toBe(after);
+    expect(client.company.updateMany).toHaveBeenCalledWith({
+      where: { id: "company-1", status: "BLOCKED", isBlocked: true, verificationStatus },
+      data: { status: target, isBlocked: false },
+    });
+    expect(client.product.updateMany).not.toHaveBeenCalled();
+    expect(mocks.writeAuditLog).toHaveBeenCalledOnce();
+    expect(mocks.writeAuditLog).toHaveBeenCalledWith(
+      {
+        adminUserId: "admin-1",
+        companyId: "company-1",
+        action: "COMPANY_UNBLOCKED",
+        entityType: "Company",
+        entityId: "company-1",
+        before: { status: "BLOCKED", isBlocked: true },
+        after: { status: target, isBlocked: false, comment: "restored" },
+        ipAddress: "10.0.0.2",
+      },
+      client,
+    );
+  });
+
+  it("is idempotent for a company that is no longer blocked", async () => {
+    const active = companyRow({ status: "ACTIVE", isBlocked: false });
+    const client = { company: { findUnique: vi.fn().mockResolvedValue(active), updateMany: vi.fn() } };
+    runTransactionWith(client);
+
+    await expect(unblockCompany("company-1", "admin-1", "repeat")).resolves.toBe(active);
+    expect(client.company.updateMany).not.toHaveBeenCalled();
+    expect(mocks.writeAuditLog).not.toHaveBeenCalled();
+  });
+
+  it("returns idempotently when a concurrent unblock wins and refuses any other race", async () => {
+    const unblocked = companyRow({ status: "PENDING_REVIEW", isBlocked: false });
+    runTransactionWith({
+      company: {
+        findUnique: vi.fn().mockResolvedValueOnce(companyRow()).mockResolvedValueOnce(unblocked),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+    });
+    await expect(unblockCompany("company-1", "admin-1", "restored")).resolves.toBe(unblocked);
+
+    runTransactionWith({
+      company: {
+        findUnique: vi.fn()
+          .mockResolvedValueOnce(companyRow())
+          .mockResolvedValueOnce(companyRow({ verificationStatus: "PENDING" })),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+    });
+    await expect(unblockCompany("company-1", "admin-1", "restored")).rejects.toMatchObject({ status: 409 });
+    expect(mocks.writeAuditLog).not.toHaveBeenCalled();
+  });
+
+  it("requires a reason and an existing company", async () => {
+    await expect(unblockCompany("company-1", "admin-1", "")).rejects.toMatchObject({
+      status: 409,
+      message: "Укажите причину разблокировки",
+    });
+    expect(mocks.transaction).not.toHaveBeenCalled();
+
+    runTransactionWith({ company: { findUnique: vi.fn().mockResolvedValue(null) } });
+    await expect(unblockCompany("missing", "admin-1", "restored")).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe("POST /api/admin/companies/[companyId]/unblock", () => {
+  const origin = "https://horeca.example";
+  const params = { params: Promise.resolve({ companyId: "company-1" }) };
+
+  function unblockRequest(headers: Record<string, string> = { Origin: origin }, body = JSON.stringify({ comment: "restored" })) {
+    return new Request(`${origin}/api/admin/companies/company-1/unblock`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...headers },
+      body,
+    });
+  }
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+    mocks.requireRole.mockResolvedValue({ id: "admin-1", role: "ADMIN" });
+  });
+
+  it("unblocks for an admin and returns the envelope", async () => {
+    const client = {
+      company: {
+        findUnique: vi.fn().mockResolvedValue(companyRow()),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(companyRow({ status: "PENDING_REVIEW", isBlocked: false })),
+      },
+    };
+    runTransactionWith(client);
+
+    const response = await unblockRoute(unblockRequest({ Origin: origin, "X-Forwarded-For": "10.0.0.3, 10.0.0.4" }), params);
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      data: companyRow({ status: "PENDING_REVIEW", isBlocked: false }),
+    });
+    expect(mocks.requireRole).toHaveBeenCalledWith("ADMIN");
+    expect(mocks.writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "COMPANY_UNBLOCKED", adminUserId: "admin-1", ipAddress: "10.0.0.3" }),
+      client,
+    );
+  });
+
+  it.each([
+    ["anonymous", new UnauthorizedError(), 401, "UNAUTHORIZED"],
+    ["supplier", new ForbiddenError(), 403, "FORBIDDEN"],
+    ["buyer", new ForbiddenError(), 403, "FORBIDDEN"],
+  ])("denies %s callers before any company read", async (_role, error, status, code) => {
+    mocks.requireRole.mockRejectedValue(error);
+
+    const response = await unblockRoute(unblockRequest(), params);
+
+    expect(response.status).toBe(status);
+    await expect(response.json()).resolves.toMatchObject({ ok: false, error: { code } });
+    expect(mocks.requireRole).toHaveBeenCalledWith("ADMIN");
+    expect(mocks.transaction).not.toHaveBeenCalled();
+    expect(mocks.writeAuditLog).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["missing Origin", {}],
+    ["cross-site Origin", { Origin: "https://attacker.example", "Sec-Fetch-Site": "cross-site" }],
+    ["foreign Origin", { Origin: "https://attacker.example" }],
+  ])("rejects a %s before authentication", async (_case, headers) => {
+    const response = await unblockRoute(unblockRequest(headers), params);
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toMatchObject({ ok: false, error: { code: "CSRF_REJECTED" } });
+    expect(mocks.requireRole).not.toHaveBeenCalled();
+    expect(mocks.transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects a missing reason and malformed JSON without writing", async () => {
+    const missingReason = await unblockRoute(unblockRequest({ Origin: origin }, "{}"), params);
+    expect(missingReason.status).toBe(409);
+    await expect(missingReason.json()).resolves.toMatchObject({ ok: false, error: { message: "Укажите причину разблокировки" } });
+
+    const malformed = await unblockRoute(unblockRequest({ Origin: origin }, "{"), params);
+    expect(malformed.status).toBe(400);
+    await expect(malformed.json()).resolves.toMatchObject({ ok: false, error: { code: "INVALID_JSON" } });
+    expect(mocks.transaction).not.toHaveBeenCalled();
   });
 });
