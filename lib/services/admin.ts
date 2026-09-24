@@ -129,7 +129,8 @@ export const ADMIN_QUEUE_LIMIT = 50;
  * Verification attempts awaiting a decision. Only PENDING attempts accept a decision
  * (evaluateVerificationDecision), so terminal attempts are listed only on explicit request.
  * Documents come from the attempt itself; earlier attempts contribute only documents that
- * are still actionable (UNDER_REVIEW) or give context (APPROVED).
+ * are still actionable (UNDER_REVIEW) or give context (APPROVED). The payment shown is the one
+ * of the current subscription's latest non-cancelled invoice, never simply the newest payment.
  */
 export async function listAdminVerifications(status: VerificationStatus = "PENDING") {
   const verifications = await prisma.companyVerification.findMany({
@@ -159,21 +160,82 @@ export async function listAdminVerifications(status: VerificationStatus = "PENDI
             orderBy: [{ uploadedAt: "asc" }, { id: "asc" }],
             take: ADMIN_QUEUE_LIMIT,
           },
-          payments: { orderBy: { createdAt: "desc" }, take: 1, select: adminPaymentSelect },
-          subscriptions: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true, plan: { select: { code: true, name: true } } } },
+          subscriptions: {
+            where: { status: { in: ["PENDING_PAYMENT", "ACTIVE"] } },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: {
+              id: true,
+              status: true,
+              plan: { select: { code: true, name: true } },
+              invoices: {
+                where: { status: { not: "CANCELLED" } },
+                orderBy: { createdAt: "desc" },
+                take: 1,
+                select: {
+                  id: true,
+                  invoiceNumber: true,
+                  status: true,
+                  payments: { orderBy: { createdAt: "desc" }, take: 1, select: adminPaymentSelect },
+                },
+              },
+            },
+          },
         },
       },
     },
     orderBy: [{ submittedAt: "asc" }, { id: "asc" }],
     take: ADMIN_QUEUE_LIMIT,
   });
-  return verifications.map(({ company: { documents: companyDocuments, payments, ...company }, ...verification }) => ({
-    ...verification,
-    company: { ...company, payments: payments.map(toAdminPaymentView) },
-    earlierDocuments: companyDocuments.flatMap(({ verificationId, ...document }) =>
-      verificationId === verification.id ? [] : [document],
-    ),
-  }));
+  return verifications.map(({ company: { documents: companyDocuments, subscriptions, ...company }, ...verification }) => {
+    const current = subscriptions[0];
+    const invoice = current?.invoices[0];
+    const payment = invoice?.payments[0];
+    return {
+      ...verification,
+      company,
+      earlierDocuments: companyDocuments.flatMap(({ verificationId, ...document }) =>
+        verificationId === verification.id ? [] : [document],
+      ),
+      subscription: current ? { id: current.id, status: current.status, plan: current.plan } : null,
+      invoice: invoice ? { id: invoice.id, invoiceNumber: invoice.invoiceNumber, status: invoice.status } : null,
+      payment: payment ? toAdminPaymentView(payment) : null,
+    };
+  });
+}
+
+/**
+ * Payment proofs awaiting an admin decision across all companies, including plan upgrades and
+ * renewals of already active suppliers. Decisions are allowed only from PROOF_UPLOADED
+ * (evaluatePaymentDecision); the proof locator never leaves this boundary (hasProof only).
+ */
+export async function listAdminPendingPayments() {
+  const payments = await prisma.payment.findMany({
+    where: { status: "PROOF_UPLOADED" },
+    select: {
+      id: true,
+      amount: true,
+      currency: true,
+      method: true,
+      status: true,
+      proofFilePath: true,
+      paidAt: true,
+      createdAt: true,
+      updatedAt: true,
+      company: { select: { id: true, name: true, binIin: true, status: true } },
+      invoice: {
+        select: {
+          id: true,
+          invoiceNumber: true,
+          status: true,
+          subscription: { select: { id: true, status: true, plan: { select: { code: true, name: true } } } },
+        },
+      },
+    },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    take: ADMIN_QUEUE_LIMIT,
+  });
+  return payments.map(toAdminPaymentView);
 }
 
 export function listAdminProducts(query: { search?: string; status?: ProductStatus; companyId?: string; categoryId?: string } = {}) {
