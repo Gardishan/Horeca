@@ -30,7 +30,7 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 
 1. Public catalog не показывает товар неподтверждённой/заблокированной компании или без активной подписки.
 2. Publication требует verification, current subscription, confirmed payment и plan capacity.
-3. Activation требует profile + legal acceptance + approved documents с допустимым antivirus verdict + confirmed payment + approved verification.
+3. Activation требует profile + legal acceptance + approved текущие documents с допустимым antivirus verdict (включая approved `REGISTRATION`/`BIN_IIN`) + confirmed payment + approved verification; `REJECTED`/`REUPLOAD_REQUESTED` документ перестаёт учитываться только после более нового upload того же типа.
 4. Supplier не управляет чужой компанией или товаром.
 5. Admin decisions и private downloads оставляют audit evidence.
 6. Client-side state никогда не является источником billing/trust решения.

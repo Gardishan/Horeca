@@ -277,8 +277,10 @@ export async function activateCompany(companyId: string, adminUserId: string, me
     profile: company,
     acceptedLegalTypes: company.legalAcceptances.map((item) => item.type),
     documents: company.documents.map((document) => ({
+      type: document.type,
       status: document.status,
       antivirusStatus: document.antivirusStatus,
+      uploadedAt: document.uploadedAt,
     })),
     deployed: isDeployedApplicationEnvironment(),
     paymentStatus: company.payments[0]?.status ?? null,

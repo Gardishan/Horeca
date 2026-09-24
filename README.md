@@ -126,7 +126,7 @@ Demo-доступ предназначен только для локально�
 - публичная видимость: `PUBLISHED + ACTIVE company + APPROVED verification + ACTIVE subscription + !blocked`;
 - публикация: те же условия плюс `CONFIRMED payment` и лимит тарифа;
 - отправка на проверку: полный профиль, OFFER + PRIVACY, обязательный документ, тариф, счёт и допустимый payment state;
-- активация: полный профиль, согласия, все документы `APPROVED` и с допустимым antivirus verdict, payment `CONFIRMED` и verification `APPROVED`.
+- активация: полный профиль, согласия, все текущие документы `APPROVED` и с допустимым antivirus verdict (`REJECTED`/`REUPLOAD_REQUESTED` документ перестаёт учитываться только после более нового upload того же типа), одобренный `REGISTRATION` или `BIN_IIN`, payment `CONFIRMED` и verification `APPROVED`.
 - критические company/payment статусы меняются только специализированными server-side переходами; generic profile update не может активировать, одобрить или разблокировать компанию.
 
 Отказ возвращает все причины сразу, чтобы интерфейс мог объяснить пользователю, что именно осталось сделать.
