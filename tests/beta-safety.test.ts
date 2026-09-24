@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import {
   BETA_ACCESS_MAX_AGE_SECONDS,
+  assertBetaDemoContact,
   assertBetaDemoMaterial,
   assertBetaManualPayment,
   assertBetaRegistrationAllowed,
@@ -109,6 +110,22 @@ describe("controlled beta safety", () => {
     ).not.toThrow();
   });
 
+  it("requires an explicit demo-contact acknowledgement for buyer requests only in a demo-only Beta", () => {
+    const environment = betaEnvironment();
+
+    expect(() => assertBetaDemoContact(undefined, environment)).toThrowError(
+      expect.objectContaining({ status: 422, code: "BETA_DEMO_CONTACT_REQUIRED" }),
+    );
+    expect(() => assertBetaDemoContact(false, environment)).toThrowError(/демонстрацион/i);
+    expect(() => assertBetaDemoContact(true, environment)).not.toThrow();
+    expect(() =>
+      assertBetaDemoContact(true, { ...environment, BETA_DEMO_ONLY: "false" }),
+    ).toThrowError(expect.objectContaining({ status: 503, code: "BETA_UNAVAILABLE" }));
+    expect(() =>
+      assertBetaDemoContact(undefined, { APP_ENV: "test", NODE_ENV: "test" }),
+    ).not.toThrow();
+  });
+
   it("accepts only local return paths after the access form", () => {
     expect(safeBetaReturnPath("/dashboard/company?step=profile")).toBe(
       "/dashboard/company?step=profile",
@@ -133,6 +150,7 @@ describe("controlled beta safety", () => {
         "app/api/dashboard/company/billing/mark-paid/route.ts",
         "assertBetaManualPayment(input.betaDemoAcknowledged)",
       ],
+      ["app/api/buyer-requests/route.ts", "assertBetaDemoContact(betaDemoAcknowledged)"],
     ]);
 
     for (const [file, guard] of guardedRoutes) {

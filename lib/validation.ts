@@ -86,6 +86,7 @@ export const buyerRequestSchema = z.object({
   message: z.string().trim().min(10).max(2000),
   quantity: z.coerce.number().int().positive().max(10_000_000),
   website: z.string().max(0).optional(),
+  betaDemoAcknowledged: z.boolean().optional(),
 });
 
 export const adminDecisionSchema = z.object({

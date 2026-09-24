@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BadgeCheck, Building2, CalendarCheck, Camera, ExternalLink, Mail, MapPin, PackageCheck, Phone, Send, ShieldCheck, Truck, WalletCards } from "lucide-react";
 import { getPublicProduct } from "@/lib/services/catalog";
 import { AppError } from "@/lib/errors";
+import { isBetaDemoOnly } from "@/lib/beta-safety";
 import { formatDate, formatMoney, UNIT_LABELS } from "@/lib/constants";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { BuyerRequestForm } from "@/components/forms/buyer-request-form";
@@ -70,7 +71,7 @@ export default async function ProductPage({ params }: { params: Promise<{ produc
           </div>
           <div className="mt-6 grid gap-3 border-t pt-5 text-sm"><p className="flex items-center gap-2"><BadgeCheck className="size-4 text-brand-700" />Профиль поставщика подтверждён</p><p className="flex items-center gap-2"><ShieldCheck className="size-4 text-brand-700" />Документы проверены вручную</p><p className="flex items-center gap-2"><WalletCards className="size-4 text-brand-700" />Подписка и оплата подтверждены</p><p className="flex items-center gap-2"><CalendarCheck className="size-4 text-brand-700" />Последняя проверка: {formatDate(company.lastVerifiedAt)}</p></div>
         </section>
-        <section id="request" className="surface p-6 md:p-8 scroll-mt-24"><p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-700">B2B-заявка</p><h2 className="mt-2 text-2xl font-extrabold tracking-tight">Получить предложение</h2><p className="mb-6 mt-2 text-sm text-slate-500">Укажите объём и контакты — запрос попадёт поставщику в кабинет.</p><BuyerRequestForm productId={product.id} productName={product.name} /></section>
+        <section id="request" className="surface p-6 md:p-8 scroll-mt-24"><p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-700">B2B-заявка</p><h2 className="mt-2 text-2xl font-extrabold tracking-tight">Получить предложение</h2><p className="mb-6 mt-2 text-sm text-slate-500">Укажите объём и контакты — запрос попадёт поставщику в кабинет.</p><BuyerRequestForm productId={product.id} productName={product.name} betaDemoOnly={isBetaDemoOnly()} /></section>
       </div>
     </main>
   );

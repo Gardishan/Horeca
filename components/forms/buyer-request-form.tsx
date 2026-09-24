@@ -5,7 +5,7 @@ import { Send, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 
-export function BuyerRequestForm({ productId, productName }: { productId: string; productName: string }) {
+export function BuyerRequestForm({ productId, productName, betaDemoOnly = false }: { productId: string; productName: string; betaDemoOnly?: boolean }) {
   const [pending, setPending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -29,6 +29,7 @@ export function BuyerRequestForm({ productId, productName }: { productId: string
             quantity: Number(form.get("quantity")),
             message: form.get("message"),
             website: form.get("website"),
+            betaDemoAcknowledged: betaDemoOnly ? form.get("betaDemoAcknowledged") === "true" : undefined,
           }),
         });
         const payload = await response.json();
@@ -47,8 +48,9 @@ export function BuyerRequestForm({ productId, productName }: { productId: string
         <label className="hidden" aria-hidden="true">Сайт<input name="website" tabIndex={-1} autoComplete="off" /></label>
       </div>
       <label className="field-label">Комментарий<textarea className="field min-h-28 resize-y" name="message" required minLength={10} defaultValue={`Прошу направить коммерческое предложение на ${productName}.`} /></label>
+      {betaDemoOnly ? <label className="flex items-start gap-2 text-xs leading-5 text-amber-950"><input className="mt-1" type="checkbox" name="betaDemoAcknowledged" value="true" required />Подтверждаю: имя, компания, телефон и email вымышленные. В контролируемой Beta нельзя указывать реальные контакты.</label> : null}
       <Button type="submit" disabled={pending}><Send className="size-4" />{pending ? "Отправляем…" : "Запросить предложение"}</Button>
-      <p className="flex items-center gap-1.5 text-xs text-slate-500"><CheckCircle2 className="size-3.5 text-brand-700" />Контакты используются только для ответа на B2B-заявку.</p>
+      {betaDemoOnly ? null : <p className="flex items-center gap-1.5 text-xs text-slate-500"><CheckCircle2 className="size-3.5 text-brand-700" />Контакты используются только для ответа на B2B-заявку.</p>}
     </form>
   );
 }
