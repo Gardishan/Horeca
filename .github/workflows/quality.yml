@@ -58,6 +58,30 @@ jobs:
       - run: npm run db:deploy
       - run: npm run db:seed
       - run: npm run smoke:http
+      - name: Run deployable container against PostgreSQL
+        # The Beta runtime is this image, so prove it serves database and
+        # private-storage routes, not just liveness. Test-mode configuration
+        # overrides the image's production defaults for this local check.
+        run: |
+          docker run --detach --name horeca-runtime --network host \
+            --env APP_ENV=test --env DEPLOYMENT_VERSION="${GITHUB_SHA}" \
+            --env DATABASE_URL --env AUTH_SECRET \
+            --env APP_URL=http://127.0.0.1:3200 --env NEXT_PUBLIC_APP_URL=http://127.0.0.1:3200 \
+            --env PRIVATE_STORAGE_MODE=filesystem --env PRIVATE_STORAGE_ROOT=/app/storage/private \
+            --env DEMO_AUTH_ENABLED=true --env RATE_LIMIT_MODE=memory --env RATE_LIMIT_ALLOW_IN_MEMORY=true \
+            --env MALWARE_SCAN_MODE=mock --env HOSTNAME=127.0.0.1 --env PORT=3200 \
+            "horeca:${GITHUB_SHA}"
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --output /dev/null http://127.0.0.1:3200/api/health/ready; then break; fi
+            sleep 2
+          done
+          curl --fail --silent --show-error --output /dev/null http://127.0.0.1:3200/api/health/ready
+          curl --fail --silent --show-error --output /dev/null http://127.0.0.1:3200/api/catalog/products
+          status="$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3200/api/admin/documents/container-smoke/download)"
+          test "${status}" = "401"
+      - name: Show container logs
+        if: always()
+        run: docker logs horeca-runtime 2>&1 | tail -n 100 || true
       - run: npm run security:audit
 
   android-debug:
