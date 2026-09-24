@@ -63,11 +63,16 @@ Railway подключает volume с владельцем root; `chown` в Doc
 `node /app/beta-bootstrap/seed-beta-files.mjs` через Railway SSH. Helper
 разворачивает только пять фиксированных synthetic PDF из общего
 `prisma/demo-files.json`, требует выключенную demo-only Beta и mounted volume,
-не перезаписывает существующие файлы и отклоняет symlinks. Нужен работающий
+не перезаписывает существующие файлы и отклоняет symlinks. Railway SSH запускает
+команду от root даже при runtime UID 1001; helper перед записью сбрасывает
+supplementary groups и GID/UID до 1001. Ошибка сброса прав запрещает запись.
+Нужен работающий
 неинтерактивный SSH-доступ CI; отсутствие доступа или volume блокирует запуск.
 
 В GitHub Environment `beta` нужен secret `BETA_RAILWAY_SSH_PRIVATE_KEY`: заранее
-зарегистрированный у Railway ключ без интерактивного passphrase. Workflow
+зарегистрированный у Railway ключ без интерактивного passphrase. Railway
+ограничивает SSH-ключи аккаунтом или workspace, не отдельным проектом; текущий
+выделенный ключ принадлежит workspace, где находится только этот проект. Workflow
 передаёт его через `--identity-file`, не регистрирует ключи автоматически и
 не требует account/workspace API token. Перед изменением deployment выполняется
 read-only SSH probe к работающему PostgreSQL; проверяется ожидаемый ответ команды,
@@ -99,6 +104,16 @@ rollback и restore. Успешный workflow формирует `VERIFIED_BETA
 остаётся отдельным обязательным шагом; отсутствие digest блокирует evidence.
 
 ## Build и preflight
+
+`npm run build` использует поддерживаемый Next.js Webpack build. Turbopack
+16.3.6 создавал Prisma external alias без файлов в standalone; проверка должна
+запускать изолированный runtime вне source tree. `npm run smoke:http` сам
+копирует artifact во временный каталог, исключает внешние symlinks и очищает
+его после остановки сервера.
+
+Для Railway app GitHub auto-deploy выключен; изменения продвигаются ручным
+Beta workflow после зелёного main CI. Это сохраняет соответствие runtime
+проверенному SHA/image digest при последующих evidence-only коммитах.
 
 Собирайте один immutable image на commit и продвигайте тот же digest между средами:
 

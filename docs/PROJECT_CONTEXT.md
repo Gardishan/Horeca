@@ -18,7 +18,7 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 - PostgreSQL/Prisma: `prisma/schema.prisma` и versioned migrations.
 - Private uploads: filesystem разрешён в dev/test и demo-only single-replica Beta; staging/production требуют S3-compatible boundary, никогда не `/public`.
 - Session: подписанная HMAC HttpOnly cookie.
-- Deployment: Next.js standalone non-root image, отдельный migration target, startup validation, split liveness/readiness и fail-closed проверка состава runtime artifact.
+- Deployment: Next.js standalone non-root image, отдельный migration target, startup validation, split liveness/readiness и fail-closed проверка состава runtime artifact. Production build использует `next build --webpack`: Turbopack 16.3.6 пропускает Prisma external alias в standalone. HTTP smoke запускает копию runtime вне репозитория и запрещает escaping symlinks, чтобы родительский `node_modules` не скрывал отсутствующие зависимости.
 - Controlled Beta: access token → подписанная HttpOnly cookie, runtime kill switch, noindex и demo-only upload/payment policy.
 - Заявки: `/dashboard/requests` и `/api/dashboard/requests` читают контакты и сообщения только компании authenticated supplier, по 24 записи на страницу, с `private, no-store` для API.
 - Billing UI связывает счёт с выбранной pending subscription; наличие старого счёта не скрывает создание нового.
@@ -90,17 +90,21 @@ MVP deliverable проверен, но commercial production readiness не за
 
 `docs/mvp-launch-readiness.json` отдельно учитывает controlled Beta и требует
 все восемь обязательных blocking controls. Историческое CI evidence не заменяет
-проверку нового launch commit. GitHub readback 24.09.2026 подтверждает Environment
-`beta`, но списки repository/Environment secrets пусты; последний Beta Launch
-`31879629530` завершился failure и не содержит внешнего URL. Launch остаётся
-незавершённым в [issue 44](https://github.com/Gardishan/Horeca/issues/44).
+проверку нового launch commit. На 24.09.2026 Railway Hobby и CLI активны,
+проект/среда — `horeca-kz-beta` / `beta`; PostgreSQL 17.11 с TLS 1.3 и private
+volume подготовлены. Три GitHub Environment secrets настроены; SSH host record
+сохранён после initial-trust подключения. `https://horeca-beta.up.railway.app`
+существует, но Beta выключена и внешний launch gate ещё не пройден. Launch
+остаётся незавершённым в [issue 44](https://github.com/Gardishan/Horeca/issues/44).
 
 Railway Beta требует persistent volume `/app/storage/private` и отдельный
 bootstrap synthetic PDF в runtime; seed на Actions runner не переносит файлы
 в приложение. External smoke проверяет download и SHA-256 нового upload после
 redeploy/rollback. Workflow без image digest не формирует successful candidate
 evidence и не объявляет launch. Текущий change contract и ограничения:
-`docs/MVP_BETA_DELIVERY.md`. До внешних доказательств strict MVP gate красный.
+`docs/MVP_BETA_DELIVERY.md`. До внешних доказательств strict MVP gate красный. GitHub auto-deploy для app
+выключен: rollout выполняет ручной Beta workflow, чтобы evidence-only merge
+не заменял проверенный image незарегистрированным deployment.
 
 ## Известные production gaps
 
