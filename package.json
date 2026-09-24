@@ -41,7 +41,7 @@
     "@prisma/client": "6.19.3",
     "bcryptjs": "3.0.3",
     "lucide-react": "1.27.0",
-    "next": "16.2.12",
+    "next": "16.3.6",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "0.0.1",
@@ -55,7 +55,7 @@
     "@vitest/coverage-v8": "4.1.10",
     "dotenv": "17.4.2",
     "eslint": "9.39.5",
-    "eslint-config-next": "16.2.12",
+    "eslint-config-next": "16.3.6",
     "knip": "6.29.0",
     "prisma": "6.19.3",
     "tailwindcss": "4.3.3",
@@ -66,9 +66,10 @@
   "overrides": {
     "brace-expansion@^1.1.7": "1.1.18",
     "brace-expansion@^5.0.5": "5.0.9",
-    "js-yaml": "4.3.1",
+    "deepmerge-ts": "8.0.2",
+    "js-yaml": "4.3.2",
     "nanoid": "3.3.18",
     "postcss": "8.5.26",
-    "sharp": "0.35.3"
+    "sharp": "0.35.4"
   }
 }
