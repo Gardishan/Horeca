@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { assertDemoSeedAllowed } from "../lib/runtime-config";
 import { demoSubscriptionTerm } from "../lib/domain/demo-subscription";
+import { renewDemoSubscription } from "./demo-subscription";
 
 const prisma = new PrismaClient();
 
@@ -80,19 +81,14 @@ async function main() {
   });
 
   await prisma.subscription.upsert({ where: { id: "subscription-active" }, update: {}, create: { id: "subscription-active", companyId: "company-active", planId: "plan-pro", status: "ACTIVE", ...demoTerm } });
-  // Повторный seed продлевает срок только собственной demo-подписки, иначе через
-  // месяц company-active выпадает из публичного каталога. Если у компании уже есть
-  // другая ACTIVE подписка (продление через биллинг перевело demo-подписку в
-  // EXPIRED), seed её не трогает, чтобы не создать вторую ACTIVE подписку.
-  const demoRenewal = await prisma.subscription.updateMany({
-    where: { id: "subscription-active", company: { subscriptions: { none: { id: { not: "subscription-active" }, status: "ACTIVE" } } } },
-    data: { status: "ACTIVE", ...demoTerm },
-  });
-  if (demoRenewal.count !== 1) console.log("Demo subscription superseded by another ACTIVE subscription: term not renewed");
   await prisma.subscription.upsert({ where: { id: "subscription-pending" }, update: {}, create: { id: "subscription-pending", companyId: "company-pending", planId: "plan-start", status: "PENDING_PAYMENT" } });
 
-  await prisma.invoice.upsert({ where: { invoiceNumber: "HKZ-DEMO-0001" }, update: demoRenewal.count === 1 ? { issuedAt: demoTerm.startsAt, dueAt: demoTerm.endsAt } : {}, create: { id: "invoice-active", companyId: "company-active", subscriptionId: "subscription-active", invoiceNumber: "HKZ-DEMO-0001", amount: 35_000, currency: "KZT", status: "PAID", issuedAt: demoTerm.startsAt, dueAt: demoTerm.endsAt } });
+  await prisma.invoice.upsert({ where: { invoiceNumber: "HKZ-DEMO-0001" }, update: {}, create: { id: "invoice-active", companyId: "company-active", subscriptionId: "subscription-active", invoiceNumber: "HKZ-DEMO-0001", amount: 35_000, currency: "KZT", status: "PAID", issuedAt: demoTerm.startsAt, dueAt: demoTerm.endsAt } });
   await prisma.invoice.upsert({ where: { invoiceNumber: "HKZ-DEMO-0002" }, update: {}, create: { id: "invoice-pending", companyId: "company-pending", subscriptionId: "subscription-pending", invoiceNumber: "HKZ-DEMO-0002", amount: 15_000, currency: "KZT", status: "PAID_PENDING_CONFIRMATION", issuedAt: now, dueAt: demoTerm.endsAt } });
+  // Повторный seed продлевает срок только собственной demo-подписки, иначе через
+  // месяц company-active выпадает из публичного каталога (см. renewDemoSubscription).
+  const demoRenewal = await renewDemoSubscription(prisma, now);
+  if (!demoRenewal.renewed) console.log("Demo subscription superseded by another ACTIVE subscription: term not renewed");
   await prisma.payment.upsert({ where: { id: "payment-active" }, update: {}, create: { id: "payment-active", companyId: "company-active", invoiceId: "invoice-active", amount: 35_000, currency: "KZT", method: "MANUAL_BANK_TRANSFER", status: "CONFIRMED", paidAt: now, confirmedAt: now, adminComment: "Seed: оплата подтверждена" } });
   await prisma.payment.upsert({ where: { id: "payment-pending" }, update: {}, create: { id: "payment-pending", companyId: "company-pending", invoiceId: "invoice-pending", amount: 15_000, currency: "KZT", method: "MANUAL_BANK_TRANSFER", status: "PROOF_UPLOADED", paidAt: now, proofFilePath: demoFiles.pendingPaymentProof.storagePath } });
 
