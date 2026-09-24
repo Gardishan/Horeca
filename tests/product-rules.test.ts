@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { evaluateProductPublication, evaluatePublicVisibility } from "@/lib/domain/product-rules";
+import { evaluateProductPublication, evaluatePublicVisibility, evaluateSupplierProductChange } from "@/lib/domain/product-rules";
 
 describe("product publication policy", () => {
   const valid = {
@@ -69,5 +69,20 @@ describe("public catalog policy", () => {
     });
     expect(result.allowed).toBe(false);
     expect(result.reasons).toHaveLength(5);
+  });
+});
+
+describe("admin moderation lock", () => {
+  it("freezes a product the admin BLOCKED for its supplier", () => {
+    expect(evaluateSupplierProductChange("BLOCKED")).toEqual({
+      allowed: false,
+      reasons: ["Товар заблокирован администратором"],
+    });
+  });
+
+  it("leaves every other status under supplier control", () => {
+    for (const status of ["DRAFT", "PUBLISHED", "INACTIVE"] as const) {
+      expect(evaluateSupplierProductChange(status), status).toEqual({ allowed: true, reasons: [] });
+    }
   });
 });

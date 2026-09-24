@@ -1,7 +1,7 @@
 import type { Prisma, ProductStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ConflictError, NotFoundError } from "@/lib/errors";
-import { evaluateProductPublication } from "@/lib/domain/product-rules";
+import { evaluateProductPublication, evaluateSupplierProductChange } from "@/lib/domain/product-rules";
 import { writeAuditLog, type AuditInput } from "@/lib/services/audit";
 import { toPlainNumber, uniqueSlug } from "@/lib/utils";
 import type { z } from "zod";
@@ -126,27 +126,59 @@ export function createCompanyProduct(companyId: string, input: SupplierProductIn
   return prisma.product.create({ data: productCreateData(companyId, input), include: productInclude });
 }
 
-export async function updateCompanyProduct(companyId: string, productId: string, input: Partial<SupplierProductInput>) {
-  await getCompanyProduct(companyId, productId);
-  return prisma.product.update({
-    where: { id: productId },
-    data: productUpdateData(input),
-    include: productInclude,
+function supplierLockConflict(reasons: string[]) {
+  return new ConflictError("Товар заблокирован администратором и недоступен для изменений", { reasons });
+}
+
+async function readSupplierProduct(tx: Prisma.TransactionClient, companyId: string, productId: string) {
+  const product = await tx.product.findFirst({ where: { id: productId, companyId }, select: { status: true } });
+  if (!product) throw new NotFoundError("Товар не найден");
+  const lock = evaluateSupplierProductChange(product.status);
+  if (!lock.allowed) throw supplierLockConflict(lock.reasons);
+  return product;
+}
+
+/**
+ * Supplier writes exclude BLOCKED in SQL: an admin block committed after the read
+ * makes the conditional update miss, so the supplier can never overwrite it.
+ */
+async function writeSupplierProduct(
+  tx: Prisma.TransactionClient,
+  companyId: string,
+  productId: string,
+  data: Prisma.ProductUncheckedUpdateManyInput,
+) {
+  const claim = await tx.product.updateMany({
+    where: { id: productId, companyId, status: { not: "BLOCKED" } },
+    data,
+  });
+  if (claim.count !== 1) throw supplierLockConflict(evaluateSupplierProductChange("BLOCKED").reasons);
+  return tx.product.findUniqueOrThrow({ where: { id: productId }, include: productInclude });
+}
+
+export function updateCompanyProduct(companyId: string, productId: string, input: Partial<SupplierProductInput>) {
+  return prisma.$transaction(async (tx) => {
+    await readSupplierProduct(tx, companyId, productId);
+    return writeSupplierProduct(tx, companyId, productId, productUpdateData(input));
   });
 }
 
-export async function publishCompanyProduct(companyId: string, productId: string) {
+export function publishCompanyProduct(companyId: string, productId: string) {
   return prisma.$transaction(async (tx) => {
     const product = await findProductForPublication(tx, { id: productId, companyId });
     if (!product) throw new NotFoundError("Товар не найден");
+    const lock = evaluateSupplierProductChange(product.status);
+    if (!lock.allowed) throw supplierLockConflict(lock.reasons);
     await assertPublicationAllowed(tx, companyId, product);
-    return tx.product.update({ where: { id: productId }, data: { status: "PUBLISHED" }, include: productInclude });
+    return writeSupplierProduct(tx, companyId, productId, { status: "PUBLISHED" });
   });
 }
 
-export async function setCompanyProductStatus(companyId: string, productId: string, status: ProductStatus) {
-  await getCompanyProduct(companyId, productId);
-  return prisma.product.update({ where: { id: productId }, data: { status }, include: productInclude });
+export function hideCompanyProduct(companyId: string, productId: string) {
+  return prisma.$transaction(async (tx) => {
+    await readSupplierProduct(tx, companyId, productId);
+    return writeSupplierProduct(tx, companyId, productId, { status: "INACTIVE" });
+  });
 }
 
 /**

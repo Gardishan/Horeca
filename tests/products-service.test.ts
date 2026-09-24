@@ -22,7 +22,9 @@ import {
   adminPublishProduct,
   adminSetProductStatus,
   adminUpdateProduct,
+  hideCompanyProduct,
   publishCompanyProduct,
+  updateCompanyProduct,
 } from "@/lib/services/products";
 import { ConflictError, NotFoundError } from "@/lib/errors";
 
@@ -92,7 +94,8 @@ async function publishExpectingConflict() {
 describe("publishCompanyProduct plan limits", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.productUpdate.mockResolvedValue({ id: "product-1", status: "PUBLISHED" });
+    mocks.productUpdateMany.mockResolvedValue({ count: 1 });
+    mocks.productFindUniqueOrThrow.mockResolvedValue({ id: "product-1", status: "PUBLISHED" });
   });
 
   // Регрессия: сервис строил вход правила как `subscription?.plan.maxProducts ?? 0`,
@@ -109,7 +112,7 @@ describe("publishCompanyProduct plan limits", () => {
       id: "product-1",
       status: "PUBLISHED",
     });
-    expect(mocks.productUpdate).toHaveBeenCalledWith(
+    expect(mocks.productUpdateMany).toHaveBeenCalledWith(
       expect.objectContaining({ data: { status: "PUBLISHED" } }),
     );
   });
@@ -125,7 +128,7 @@ describe("publishCompanyProduct plan limits", () => {
     expect((error as ConflictError).details).toMatchObject({
       reasons: expect.arrayContaining([expect.stringContaining("Лимит тарифа")]),
     });
-    expect(mocks.productUpdate).not.toHaveBeenCalled();
+    expect(mocks.productUpdateMany).not.toHaveBeenCalled();
   });
 
   it("still refuses publication once a finite plan limit is reached", async () => {
@@ -139,7 +142,7 @@ describe("publishCompanyProduct plan limits", () => {
     expect((error as ConflictError).details).toMatchObject({
       reasons: expect.arrayContaining([expect.stringContaining("максимум 10 товаров")]),
     });
-    expect(mocks.productUpdate).not.toHaveBeenCalled();
+    expect(mocks.productUpdateMany).not.toHaveBeenCalled();
   });
 
   it("allows publication below a finite plan limit", async () => {
@@ -183,7 +186,7 @@ describe("publishCompanyProduct plan limits", () => {
       expect((error as ConflictError).details, label).toMatchObject({
         reasons: expect.arrayContaining([expect.stringContaining(reason)]),
       });
-      expect(mocks.productUpdate, label).not.toHaveBeenCalled();
+      expect(mocks.productUpdateMany, label).not.toHaveBeenCalled();
     }
   });
 
@@ -195,7 +198,7 @@ describe("publishCompanyProduct plan limits", () => {
 
     expect(error).toBeInstanceOf(NotFoundError);
     expect(mocks.productCount).not.toHaveBeenCalled();
-    expect(mocks.productUpdate).not.toHaveBeenCalled();
+    expect(mocks.productUpdateMany).not.toHaveBeenCalled();
   });
 
   // Просроченная, неактивная и неоплаченная подписка отсекаются на уровне запроса,
@@ -223,6 +226,129 @@ describe("publishCompanyProduct plan limits", () => {
     expect(mocks.productCount).toHaveBeenCalledWith({
       where: { companyId: "company-1", status: "PUBLISHED" },
     });
+  });
+});
+
+const supplierWrite = { id: "product-1", companyId: "company-1", status: { not: "BLOCKED" } };
+
+function supplierProduct(status: "DRAFT" | "PUBLISHED" | "INACTIVE" | "BLOCKED") {
+  return { name: "Кофе в зернах Arabica Blend 1 кг", status };
+}
+
+async function rejection(promise: Promise<unknown>) {
+  return promise.then(
+    () => { throw new Error("expected the supplier action to be refused"); },
+    (error: unknown) => error,
+  );
+}
+
+function expectAdminBlockConflict(error: unknown) {
+  expect(error).toBeInstanceOf(ConflictError);
+  expect((error as ConflictError).status).toBe(409);
+  expect((error as ConflictError).details).toEqual({ reasons: ["Товар заблокирован администратором"] });
+}
+
+describe("supplier cannot override an admin product block", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.productUpdateMany.mockResolvedValue({ count: 1 });
+  });
+
+  it("refuses to publish a BLOCKED product before any plan check or write", async () => {
+    runTransaction();
+    mocks.productFindFirst.mockResolvedValue(productRecord({ maxProducts: null, productStatus: "BLOCKED" }));
+    mocks.productCount.mockResolvedValue(0);
+
+    expectAdminBlockConflict(await rejection(publishCompanyProduct("company-1", "product-1")));
+    expect(mocks.productCount).not.toHaveBeenCalled();
+    expect(mocks.productUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.productUpdate).not.toHaveBeenCalled();
+  });
+
+  it("publishes an eligible DRAFT product only through a write that excludes BLOCKED", async () => {
+    runTransaction();
+    mocks.productFindFirst.mockResolvedValue(productRecord({ maxProducts: 10, productStatus: "DRAFT" }));
+    mocks.productCount.mockResolvedValue(0);
+    mocks.productFindUniqueOrThrow.mockResolvedValue({ id: "product-1", status: "PUBLISHED" });
+
+    await expect(publishCompanyProduct("company-1", "product-1")).resolves.toMatchObject({ status: "PUBLISHED" });
+    expect(mocks.productUpdateMany).toHaveBeenCalledWith({ where: supplierWrite, data: { status: "PUBLISHED" } });
+  });
+
+  it("does not overwrite an admin block that commits between the read and the write", async () => {
+    runTransaction();
+    mocks.productFindFirst.mockResolvedValue(productRecord({ maxProducts: 10, productStatus: "INACTIVE" }));
+    mocks.productCount.mockResolvedValue(0);
+    mocks.productUpdateMany.mockResolvedValue({ count: 0 });
+
+    expectAdminBlockConflict(await rejection(publishCompanyProduct("company-1", "product-1")));
+    expect(mocks.productFindUniqueOrThrow).not.toHaveBeenCalled();
+  });
+
+  it("refuses to hide a BLOCKED product, which would otherwise erase the block", async () => {
+    runTransaction();
+    mocks.productFindFirst.mockResolvedValue(supplierProduct("BLOCKED"));
+
+    expectAdminBlockConflict(await rejection(hideCompanyProduct("company-1", "product-1")));
+    expect(mocks.productUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("hides a published product through a company-scoped write that excludes BLOCKED", async () => {
+    runTransaction();
+    mocks.productFindFirst.mockResolvedValue(supplierProduct("PUBLISHED"));
+    mocks.productFindUniqueOrThrow.mockResolvedValue({ id: "product-1", status: "INACTIVE" });
+
+    await expect(hideCompanyProduct("company-1", "product-1")).resolves.toMatchObject({ status: "INACTIVE" });
+    expect(mocks.productFindFirst.mock.calls[0][0].where).toEqual({ id: "product-1", companyId: "company-1" });
+    expect(mocks.productUpdateMany).toHaveBeenCalledWith({ where: supplierWrite, data: { status: "INACTIVE" } });
+  });
+
+  it("refuses a hide that loses the race against a concurrent admin block", async () => {
+    runTransaction();
+    mocks.productFindFirst.mockResolvedValue(supplierProduct("PUBLISHED"));
+    mocks.productUpdateMany.mockResolvedValue({ count: 0 });
+
+    expectAdminBlockConflict(await rejection(hideCompanyProduct("company-1", "product-1")));
+  });
+
+  it("refuses to edit a BLOCKED product", async () => {
+    runTransaction();
+    mocks.productFindFirst.mockResolvedValue(supplierProduct("BLOCKED"));
+
+    expectAdminBlockConflict(await rejection(updateCompanyProduct("company-1", "product-1", { price: 1 })));
+    expect(mocks.productUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("edits a non-blocked product through a company-scoped write that excludes BLOCKED", async () => {
+    runTransaction();
+    mocks.productFindFirst.mockResolvedValue(supplierProduct("PUBLISHED"));
+    mocks.productFindUniqueOrThrow.mockResolvedValue({ id: "product-1", status: "PUBLISHED", stock: 5 });
+
+    await expect(updateCompanyProduct("company-1", "product-1", { stock: 5 })).resolves.toMatchObject({ stock: 5 });
+    expect(mocks.productUpdateMany).toHaveBeenCalledWith({ where: supplierWrite, data: { stock: 5 } });
+  });
+
+  it("refuses an edit that loses the race against a concurrent admin block", async () => {
+    runTransaction();
+    mocks.productFindFirst.mockResolvedValue(supplierProduct("DRAFT"));
+    mocks.productUpdateMany.mockResolvedValue({ count: 0 });
+
+    expectAdminBlockConflict(await rejection(updateCompanyProduct("company-1", "product-1", { stock: 5 })));
+  });
+
+  it("keeps another company's product invisible to hide and edit", async () => {
+    for (const action of [
+      () => hideCompanyProduct("company-2", "product-1"),
+      () => updateCompanyProduct("company-2", "product-1", { stock: 5 }),
+    ]) {
+      vi.clearAllMocks();
+      runTransaction();
+      mocks.productFindFirst.mockResolvedValue(null);
+
+      await expect(action()).rejects.toBeInstanceOf(NotFoundError);
+      expect(mocks.productFindFirst.mock.calls[0][0].where).toEqual({ id: "product-1", companyId: "company-2" });
+      expect(mocks.productUpdateMany).not.toHaveBeenCalled();
+    }
   });
 });
 

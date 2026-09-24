@@ -1,11 +1,21 @@
 import type {
   CompanyStatus,
   PaymentStatus,
+  ProductStatus,
   SubscriptionStatus,
   VerificationStatus,
 } from "@prisma/client";
 
 export type RuleResult = { allowed: boolean; reasons: string[] };
+
+/**
+ * Admin moderation lock: a BLOCKED product is frozen for its supplier (no publish,
+ * hide or edit). Only admin use cases move a product out of BLOCKED.
+ */
+export function evaluateSupplierProductChange(productStatus: ProductStatus): RuleResult {
+  if (productStatus === "BLOCKED") return { allowed: false, reasons: ["Товар заблокирован администратором"] };
+  return { allowed: true, reasons: [] };
+}
 
 export type PublicationContext = {
   companyStatus: CompanyStatus;
