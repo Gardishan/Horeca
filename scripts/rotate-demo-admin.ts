@@ -8,35 +8,44 @@ import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import { assertDemoSeedAllowed } from "../lib/runtime-config";
 
-// Ротируется учётная запись из demo-сида, поэтому действует то же ограничение
-// среды, что и для самого сида: в staging и production операция запрещена.
-assertDemoSeedAllowed(process.env);
+// tsx исполняет scripts/*.ts как CommonJS, где top-level await не поддерживается,
+// поэтому вся работа выполняется внутри async main().
+async function main() {
+  // Ротируется учётная запись из demo-сида, поэтому действует то же ограничение
+  // среды, что и для самого сида: в staging и production операция запрещена.
+  assertDemoSeedAllowed(process.env);
 
-const email = process.env.DEMO_ADMIN_EMAIL ?? "admin@horeca.kz";
-const password = process.env.DEMO_ADMIN_PASSWORD ?? randomBytes(18).toString("base64url");
+  const email = process.env.DEMO_ADMIN_EMAIL ?? "admin@horeca.kz";
+  const password = process.env.DEMO_ADMIN_PASSWORD ?? randomBytes(18).toString("base64url");
 
-const prisma = new PrismaClient();
-try {
-  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true, role: true } });
-  if (!existing) throw new Error(`Пользователь ${email} не найден — сид не выполнялся?`);
-  if (existing.role !== "ADMIN") throw new Error(`${email} не является ADMIN — отказ`);
+  const prisma = new PrismaClient();
+  try {
+    const existing = await prisma.user.findUnique({ where: { email }, select: { id: true, role: true } });
+    if (!existing) throw new Error(`Пользователь ${email} не найден — сид не выполнялся?`);
+    if (existing.role !== "ADMIN") throw new Error(`${email} не является ADMIN — отказ`);
 
-  // Роль повторно проверяется в самом запросе: между чтением и записью она могла
-  // измениться, и понижённая учётная запись не должна получить новый пароль.
-  const { count } = await prisma.user.updateMany({
-    where: { id: existing.id, role: "ADMIN" },
-    data: { passwordHash: await bcrypt.hash(password, 12) },
-  });
-  if (count !== 1) throw new Error(`${email} изменился во время ротации — пароль не обновлён`);
+    // Роль повторно проверяется в самом запросе: между чтением и записью она могла
+    // измениться, и понижённая учётная запись не должна получить новый пароль.
+    const { count } = await prisma.user.updateMany({
+      where: { id: existing.id, role: "ADMIN" },
+      data: { passwordHash: await bcrypt.hash(password, 12) },
+    });
+    if (count !== 1) throw new Error(`${email} изменился во время ротации — пароль не обновлён`);
 
-  console.log("");
-  console.log("  Пароль администратора обновлён.");
-  console.log(`  email:  ${email}`);
-  console.log(`  пароль: ${password}`);
-  console.log("");
-  console.log("  Пароли supplier@horeca.kz и pending@horeca.kz остались demo123 —");
-  console.log("  это намеренно: они нужны для прохода сценариев поставщика.");
-  console.log("");
-} finally {
-  await prisma.$disconnect();
+    console.log("");
+    console.log("  Пароль администратора обновлён.");
+    console.log(`  email:  ${email}`);
+    console.log(`  пароль: ${password}`);
+    console.log("");
+    console.log("  Пароли supplier@horeca.kz и pending@horeca.kz остались demo123 —");
+    console.log("  это намеренно: они нужны для прохода сценариев поставщика.");
+    console.log("");
+  } finally {
+    await prisma.$disconnect();
+  }
 }
+
+main().catch((error: unknown) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exitCode = 1;
+});
