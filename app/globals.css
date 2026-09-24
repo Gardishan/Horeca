@@ -104,6 +104,10 @@ textarea:focus-visible {
   outline: none;
 }
 
+.field[aria-invalid="true"] {
+  border-color: #b91c1c;
+}
+
 .field-label {
   display: grid;
   gap: 0.4rem;
