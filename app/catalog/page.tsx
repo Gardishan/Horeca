@@ -3,6 +3,9 @@ import { ProductCard } from "@/components/catalog/product-card";
 import { CatalogFilters } from "@/components/catalog/catalog-filters";
 import { Pagination } from "@/components/catalog/pagination";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Alert } from "@/components/ui/alert";
+import Link from "next/link";
+import { catalogQuerySchema } from "@/lib/catalog-query";
 import { listCatalogFacets, listPublicProducts } from "@/lib/services/catalog";
 
 export const dynamic = "force-dynamic";
@@ -12,15 +15,18 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 export default async function CatalogPage({ searchParams }: { searchParams: SearchParams }) {
   const raw = await searchParams;
   const values = Object.fromEntries(Object.entries(raw).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value])) as Record<string, string | undefined>;
+  const query = catalogQuerySchema.safeParse(values);
+  if (!query.success) {
+    return (
+      <main className="app-shell py-9 md:py-12">
+        <h1 className="mb-4 text-2xl font-extrabold">Каталог товаров</h1>
+        <Alert tone="danger">Некорректные параметры поиска. Проверьте номер страницы и фильтры.</Alert>
+        <Link className="mt-4 inline-block font-semibold text-brand-800 underline" href="/catalog">Сбросить фильтры</Link>
+      </main>
+    );
+  }
   const [{ items, pagination }, facets] = await Promise.all([
-    listPublicProducts({
-      search: values.search,
-      category: values.category,
-      city: values.city,
-      supplierType: values.supplierType,
-      availability: values.availability as never,
-      page: Number(values.page ?? 1),
-    }),
+    listPublicProducts(query.data),
     listCatalogFacets(),
   ]);
   return (

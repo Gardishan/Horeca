@@ -44,6 +44,60 @@ HoReCa KZ поставляется как self-hosted Next.js 16 Node.js contain
 
 Минимальный Beta rollout: применить migration, выполнить demo seed, включить access gate при выключенном traffic switch, проверить readiness, установить `BETA_ENABLED=true`, выполнить внешний happy/forbidden smoke, перезапустить replica и доказать DB persistence. Откат — `BETA_ENABLED=false`, возврат предыдущего image digest и повторный health/smoke. Канонический статус хранится в `docs/mvp-launch-readiness.json`; commercial registry не изменяется.
 
+Railway workflow использует существующий проект `horeca-kz-beta`, среду `beta`
+и secrets `BETA_RAILWAY_PROJECT_TOKEN` / `BETA_SMOKE_ACCESS_TOKEN` в GitHub
+Environment `beta`. Для filesystem mode к приложению должен быть подключён
+постоянный volume с mount path `/app/storage/private`, доступный runtime UID
+1001. `PRIVATE_STORAGE_ROOT` должен совпадать с `RAILWAY_VOLUME_MOUNT_PATH`.
+Обычная файловая система контейнера не сохраняет загруженные документы при
+замене deployment.
+
+Railway подключает volume с владельцем root; `chown` в Dockerfile выполняется
+до подключения volume и этого не исправляет. При первом provisioning подготовьте
+владельца mount point, затем восстановите runtime UID 1001 и проверьте запись
+при `BETA_ENABLED=false` до запуска workflow. Не оставляйте приложение работающим
+от root. См. [Railway volume permissions](https://docs.railway.com/volumes#permissions).
+
+`db:seed` через DB tunnel создаёт записи и локальные PDF на Actions runner.
+Поэтому до включения traffic workflow отдельно выполняет в приложении
+`node /app/beta-bootstrap/seed-beta-files.mjs` через Railway SSH. Helper
+разворачивает только пять фиксированных synthetic PDF из общего
+`prisma/demo-files.json`, требует выключенную demo-only Beta и mounted volume,
+не перезаписывает существующие файлы и отклоняет symlinks. Нужен работающий
+неинтерактивный SSH-доступ CI; отсутствие доступа или volume блокирует запуск.
+
+В GitHub Environment `beta` нужен secret `BETA_RAILWAY_SSH_PRIVATE_KEY`: заранее
+зарегистрированный у Railway ключ без интерактивного passphrase. Workflow
+передаёт его через `--identity-file`, не регистрирует ключи автоматически и
+не требует account/workspace API token. Перед изменением deployment выполняется
+read-only SSH probe к работающему PostgreSQL; проверяется ожидаемый ответ команды,
+а не только exit code.
+
+Временный repository-secret fallback использует те же три имени secrets.
+Предпочтителен Environment `beta`; после подтверждения его injection удалите
+repository fallback, у которого шире область доступа. Значения secrets никогда
+не входят в evidence или загружаемые артефакты.
+
+Публичная переменная Environment `BETA_RAILWAY_SSH_KNOWN_HOSTS` необязательна:
+если у оператора уже есть доверенная запись `ssh.railway.com`, workflow проверяет
+её формат и включает `StrictHostKeyChecking=yes`. Без записи используется
+модель initial trust официального Railway CLI: `accept-new` только для
+`ssh.railway.com` с отдельным временным `known_hosts` на один workflow run.
+Изменение сохранённого ключа в рамках run отклоняется. После успешного read-only
+probe журналируется первый наблюдённый публичный fingerprint; это TOFU,
+не независимая проверка подлинности host key. При новом run initial trust
+выполняется заново. Private key удаляется в финальном `always()` cleanup.
+Railway не публикует стабильный список relay host keys; такой список не является
+предварительным условием Controlled Beta. Источники:
+[официальный CLI 5.41.2](https://github.com/railwayapp/cli/blob/630cd74cd3f34cd0fce93c7760818a3a02a03b95/src/commands/ssh/native.rs#L503),
+[ответ сотрудника Railway](https://station.railway.com/questions/please-verify-changed-ed25519-host-key-f-3e7bd018).
+
+External smoke проверяет seeded document/payment-proof downloads, запрет
+скачивания для supplier и SHA-256 нового synthetic upload после redeploy,
+rollback и restore. Успешный workflow формирует `VERIFIED_BETA_CANDIDATE` с
+реальным image digest. Завершение strict readiness gate и prerelease identity
+остаётся отдельным обязательным шагом; отсутствие digest блокирует evidence.
+
 ## Build и preflight
 
 Собирайте один immutable image на commit и продвигайте тот же digest между средами:

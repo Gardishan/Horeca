@@ -4,6 +4,17 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { z } from "zod";
 
+const mandatoryControlIds = new Set([
+  "critical-flows",
+  "controlled-beta-safety",
+  "beta-database",
+  "beta-deployment",
+  "external-https-smoke",
+  "android-debug-artifact",
+  "release-identity",
+  "beta-operations",
+]);
+
 const statusSchema = z.enum(["done", "planned", "in_progress", "blocked"]);
 const controlSchema = z.object({
   id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
@@ -28,6 +39,20 @@ const registrySchema = z
   .superRefine((registry, context) => {
     const ids = new Set<string>();
     registry.controls.forEach((control, index) => {
+      if (!mandatoryControlIds.has(control.id)) {
+        context.addIssue({
+          code: "custom",
+          message: `unknown MVP control: ${control.id}`,
+          path: ["controls", index, "id"],
+        });
+      }
+      if (!control.blocking) {
+        context.addIssue({
+          code: "custom",
+          message: `mandatory control must be blocking: ${control.id}`,
+          path: ["controls", index, "blocking"],
+        });
+      }
       if (ids.has(control.id)) {
         context.addIssue({
           code: "custom",
@@ -51,6 +76,15 @@ const registrySchema = z
         });
       }
     });
+    for (const id of mandatoryControlIds) {
+      if (!ids.has(id)) {
+        context.addIssue({
+          code: "custom",
+          message: `missing mandatory control: ${id}`,
+          path: ["controls"],
+        });
+      }
+    }
   });
 
 export type MvpReadinessRegistry = z.infer<typeof registrySchema>;

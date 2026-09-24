@@ -5,24 +5,112 @@ import {
   missingMvpEvidenceFiles,
 } from "@/scripts/check-mvp-readiness";
 
+const requiredControlIds = [
+  "critical-flows",
+  "controlled-beta-safety",
+  "beta-database",
+  "beta-deployment",
+  "external-https-smoke",
+  "android-debug-artifact",
+  "release-identity",
+  "beta-operations",
+] as const;
+
+function completeRegistry() {
+  return {
+    version: 1,
+    product: "HoReCa KZ",
+    target: "mvp-beta",
+    updatedAt: "2026-09-24",
+    controls: requiredControlIds.map((id) => ({
+      id,
+      title: `Fixture ${id}`,
+      status: "done",
+      blocking: true,
+      owner: "Test owner",
+      evidence: ["docs/DEPLOYMENT.md"],
+      verifiedAt: "2026-09-24T00:00:00Z",
+      environment: "test-fixture",
+      notes: "Synthetic evidence for readiness validation tests only",
+    })),
+  };
+}
+
 describe("MVP Beta readiness registry", () => {
-  it("is machine-readable and keeps external launch evidence explicit", () => {
+  it("keeps the live registry valid without prescribing its launch status", () => {
     const result = evaluateMvpReadiness(registry);
 
     expect(result.valid).toBe(true);
     if (!result.valid) return;
-    expect(result.ready).toBe(false);
-    expect(result.counts.done).toBeGreaterThan(0);
-    expect(result.blockers.map((control) => control.id)).toContain("beta-deployment");
-    expect(result.blockers.map((control) => control.id)).toContain("external-https-smoke");
+    expect(result.registry.controls.map((control) => control.id).sort()).toEqual(
+      [...requiredControlIds].sort(),
+    );
+    expect(result.registry.controls.every((control) => control.blocking)).toBe(true);
     expect(missingMvpEvidenceFiles(result.registry, process.cwd())).toEqual([]);
   });
 
+  it("accepts completion when every mandatory control has completion evidence", () => {
+    const result = evaluateMvpReadiness(completeRegistry());
+
+    expect(result.valid).toBe(true);
+    expect(result.ready).toBe(true);
+    expect(result.blockers).toEqual([]);
+  });
+
+  it.each(["planned", "in_progress", "blocked"])(
+    "keeps the gate closed for a %s mandatory control",
+    (status) => {
+      const fixture = completeRegistry();
+      fixture.controls[3].status = status;
+      const result = evaluateMvpReadiness(fixture);
+
+      expect(result.valid).toBe(true);
+      expect(result.ready).toBe(false);
+      expect(result.blockers.map((control) => control.id)).toEqual(["beta-deployment"]);
+    },
+  );
+
+  it.each(requiredControlIds)("rejects omission of mandatory control %s", (id) => {
+    const fixture = completeRegistry();
+    fixture.controls = fixture.controls.filter((control) => control.id !== id);
+    const result = evaluateMvpReadiness(fixture);
+
+    expect(result.valid).toBe(false);
+    expect(result.ready).toBe(false);
+    expect(result.errors.join(" ")).toContain(`missing mandatory control: ${id}`);
+  });
+
+  it.each(requiredControlIds)("rejects downgrading mandatory control %s", (id) => {
+    const fixture = completeRegistry();
+    fixture.controls = fixture.controls.map((control) => (
+      control.id === id ? { ...control, blocking: false } : control
+    ));
+    const result = evaluateMvpReadiness(fixture);
+
+    expect(result.valid).toBe(false);
+    expect(result.ready).toBe(false);
+    expect(result.errors.join(" ")).toContain(`mandatory control must be blocking: ${id}`);
+  });
+
+  it("rejects controls outside the canonical MVP scope", () => {
+    const fixture = completeRegistry();
+    const result = evaluateMvpReadiness({
+      ...fixture,
+      controls: [...fixture.controls, { ...fixture.controls[0], id: "unexpected-control" }],
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.ready).toBe(false);
+    expect(result.errors.join(" ")).toContain("unknown MVP control: unexpected-control");
+  });
+
   it("rejects duplicate controls and unverifiable completion", () => {
-    const first = registry.controls[0];
+    const fixture = completeRegistry();
+    const first = fixture.controls[0];
     const invalid = {
-      ...registry,
+      ...fixture,
       controls: [
+        ...fixture.controls.slice(1),
         { ...first, evidence: [], verifiedAt: null },
         { ...first },
       ],

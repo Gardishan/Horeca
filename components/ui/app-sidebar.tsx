@@ -2,9 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { LucideIcon } from "lucide-react";
+import { Building2, CreditCard, FileCheck2, Inbox, LayoutDashboard, Package } from "lucide-react";
 
-export type SidebarItem = { href: string; label: string; icon: LucideIcon };
+const icons = {
+  overview: LayoutDashboard,
+  company: Building2,
+  billing: CreditCard,
+  verification: FileCheck2,
+  products: Package,
+  requests: Inbox,
+};
+
+export type SidebarItem = { href: string; label: string; icon: keyof typeof icons };
 
 export function AppSidebar({ label, items }: { label: string; items: SidebarItem[] }) {
   const pathname = usePathname();
@@ -14,7 +23,7 @@ export function AppSidebar({ label, items }: { label: string; items: SidebarItem
       <nav className="flex gap-2 overflow-x-auto lg:grid" aria-label={label}>
         {items.map((item) => {
           const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(`${item.href}/`));
-          const Icon = item.icon;
+          const Icon = icons[item.icon];
           return (
             <Link
               key={item.href}
@@ -29,4 +38,3 @@ export function AppSidebar({ label, items }: { label: string; items: SidebarItem
     </aside>
   );
 }
-

@@ -1,6 +1,6 @@
 # Project context
 
-Последнее обновление: 14.08.2026.
+Последнее обновление: 24.09.2026.
 
 Это долговременная память для следующего разработчика или coding agent. Она фиксирует текущее состояние, но не заменяет schema, tests и source code.
 
@@ -20,6 +20,9 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 - Session: подписанная HMAC HttpOnly cookie.
 - Deployment: Next.js standalone non-root image, отдельный migration target, startup validation, split liveness/readiness и fail-closed проверка состава runtime artifact.
 - Controlled Beta: access token → подписанная HttpOnly cookie, runtime kill switch, noindex и demo-only upload/payment policy.
+- Заявки: `/dashboard/requests` и `/api/dashboard/requests` читают контакты и сообщения только компании authenticated supplier, по 24 записи на страницу, с `private, no-store` для API.
+- Billing UI связывает счёт с выбранной pending subscription; наличие старого счёта не скрывает создание нового.
+- Параметры каталога проходят общую Zod-проверку на HTTP, page и service boundary; некорректная пагинация не доходит до Prisma.
 
 Подробности: `docs/ARCHITECTURE.md`.
 
@@ -64,8 +67,11 @@ Production dependency audit должен оставаться без извес�
 high findings, любые critical findings и stale exception после исправления
 dependency graph.
 
-На 14.08.2026 advisory registry пуст: совместимые security overrides закрывают
-известные high findings как в production, так и в полном dependency graph.
+На 24.09.2026 advisory registry пуст. Security update использует Next/eslint
+config 16.3.6, Vitest/coverage 4.1.11, sharp 0.35.4 и js-yaml 4.3.2.
+Prisma остаётся 6.19.3; override фиксирует transitive deepmerge-ts 8.0.2 для закрытия high advisory. Config использует plain objects,
+а затронутые breaking changes Maps/deepmergeInto здесь не применяются.
+`npm ci`, Prisma generate/validate и audit подтверждают совместимость.
 
 ## Demo state
 
@@ -82,7 +88,19 @@ MVP deliverable проверен, но commercial production readiness не за
 
 ## MVP Beta launch readiness
 
-`docs/mvp-launch-readiness.json` отдельно учитывает controlled Beta. Application-side access gate, kill switch, noindex и demo-only policy merged в `main` 410c98ef через PR #45; post-merge Quality #61 и Security #63 зелёные, debug APK и SBOM приложены к точному SHA. GitHub live-readback на 14.08.2026 не показывает Environment, Deployment, Actions secrets/variables, tag или Release; внешний HTTPS URL, managed Beta database, external smoke, rollback и release identity остаются незакрытыми в issue #44, поэтому `npm run mvp:release-check` обязан быть красным.
+`docs/mvp-launch-readiness.json` отдельно учитывает controlled Beta и требует
+все восемь обязательных blocking controls. Историческое CI evidence не заменяет
+проверку нового launch commit. GitHub readback 24.09.2026 подтверждает Environment
+`beta`, но списки repository/Environment secrets пусты; последний Beta Launch
+`31879629530` завершился failure и не содержит внешнего URL. Launch остаётся
+незавершённым в [issue 44](https://github.com/Gardishan/Horeca/issues/44).
+
+Railway Beta требует persistent volume `/app/storage/private` и отдельный
+bootstrap synthetic PDF в runtime; seed на Actions runner не переносит файлы
+в приложение. External smoke проверяет download и SHA-256 нового upload после
+redeploy/rollback. Workflow без image digest не формирует successful candidate
+evidence и не объявляет launch. Текущий change contract и ограничения:
+`docs/MVP_BETA_DELIVERY.md`. До внешних доказательств strict MVP gate красный.
 
 ## Известные production gaps
 

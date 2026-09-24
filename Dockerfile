@@ -54,6 +54,7 @@ RUN groupadd --system --gid 1001 nodejs \
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --chown=nextjs:nodejs scripts/seed-beta-files.mjs prisma/demo-files.json ./beta-bootstrap/
 
 ENV NODE_ENV=production \
     APP_ENV=production \

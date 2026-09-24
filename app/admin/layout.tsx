@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Building2, FileCheck2, LayoutDashboard, Package } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { AppSidebar } from "@/components/ui/app-sidebar";
+import { AppSidebar, type SidebarItem } from "@/components/ui/app-sidebar";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-const items = [
-  { href: "/admin", label: "Обзор", icon: LayoutDashboard },
-  { href: "/admin/verifications", label: "Верификации", icon: FileCheck2 },
-  { href: "/admin/company", label: "Компании", icon: Building2 },
-  { href: "/admin/products", label: "Товары", icon: Package },
+const items: SidebarItem[] = [
+  { href: "/admin", label: "Обзор", icon: "overview" },
+  { href: "/admin/verifications", label: "Верификации", icon: "verification" },
+  { href: "/admin/company", label: "Компании", icon: "company" },
+  { href: "/admin/products", label: "Товары", icon: "products" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

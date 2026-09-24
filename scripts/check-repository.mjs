@@ -262,9 +262,11 @@ if (fileSet.has("package.json")) {
   const requiredSecurityOverrides = {
     "brace-expansion@^1.1.7": "1.1.18",
     "brace-expansion@^5.0.5": "5.0.9",
-    "js-yaml": "4.3.1",
+    "deepmerge-ts": "8.0.2",
+    "js-yaml": "4.3.2",
     "nanoid": "3.3.18",
     "postcss": "8.5.26",
+    "sharp": "0.35.4",
   };
   for (const [dependency, version] of Object.entries(requiredSecurityOverrides)) {
     if (packageJson.overrides?.[dependency] !== version) {

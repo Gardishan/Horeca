@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import process from "node:process";
 
@@ -166,6 +166,18 @@ async function runFull() {
   const companies = await admin.json("/api/admin/companies");
   assert(companies.response.status === 200 && companies.payload.data.length >= 2, "Admin authorization failed");
 
+  for (const path of [
+    "/api/admin/documents/document-registration-active/download",
+    "/api/admin/payments/payment-pending/proof",
+  ]) {
+    const denied = await supplier.fetch(path);
+    assert(denied.response.status === 403, "Supplier downloaded an admin-only private file");
+    const downloaded = await admin.fetch(path);
+    const bytes = Buffer.from(await downloaded.response.arrayBuffer());
+    assert(downloaded.response.ok && bytes.subarray(0, 5).toString() === "%PDF-", "Seeded private document or payment proof is absent from runtime storage");
+    assert(downloaded.response.headers.get("cache-control")?.includes("no-store"), "Private file response is cacheable");
+  }
+
   return [
     "HTTPS liveness and readiness",
     "anonymous invite enforcement",
@@ -175,6 +187,7 @@ async function runFull() {
     "supplier authorization",
     "admin authorization",
     "cross-role denial",
+    "seeded private document and payment proof downloads",
   ];
 }
 
@@ -210,20 +223,36 @@ async function runCreateMarker() {
   const afterCount = after.payload.data.company._count.buyerRequests;
   assert(after.response.status === 200 && afterCount === beforeCount + 1, "Persistence marker count was not committed");
 
+  const pendingSupplier = new CookieClient();
+  await grantBetaAccess(pendingSupplier);
+  await login(pendingSupplier, "pending@horeca.kz");
+  const fileBytes = Buffer.from(`%PDF-1.4\n% Synthetic Beta persistence probe ${nonce}\n%%EOF\n`);
+  const form = new FormData();
+  form.set("type", "OTHER");
+  form.set("demoMaterialAcknowledged", "true");
+  form.set("file", new Blob([fileBytes], { type: "application/pdf" }), "beta-persistence.pdf");
+  const uploaded = await pendingSupplier.json("/api/dashboard/company/documents", {
+    method: "POST", headers: { Origin: origin.origin }, body: form,
+  });
+  assert(uploaded.response.status === 201 && uploaded.payload.ok, "Synthetic private-file persistence marker upload failed");
+
   const marker = {
     id: created.payload.data.id,
     label: markerLabel,
     beforeCount,
     afterCount,
     createdAt: created.payload.data.createdAt,
+    documentId: uploaded.payload.data.id,
+    documentSha256: createHash("sha256").update(fileBytes).digest("hex"),
   };
   await writeFile(markerPath, `${JSON.stringify(marker, null, 2)}\n`, { mode: 0o600 });
-  return { checks: ["unique PostgreSQL marker created", "supplier count incremented"], markerId: marker.id };
+  return { checks: ["unique PostgreSQL marker created", "supplier count incremented", "synthetic private-file marker uploaded"], markerId: marker.id };
 }
 
 async function runVerifyMarker() {
   assert(markerPath, "BETA_MARKER_PATH is required");
   const marker = JSON.parse(await readFile(markerPath, "utf8"));
+  assert(typeof marker.documentId === "string" && typeof marker.documentSha256 === "string", "Private-file persistence marker is missing");
   const supplier = new CookieClient();
   await grantBetaAccess(supplier);
   await login(supplier, "supplier@horeca.kz");
@@ -233,7 +262,14 @@ async function runVerifyMarker() {
     dashboard.payload.data.company._count.buyerRequests >= marker.afterCount,
     "Supplier marker count regressed after provider lifecycle action",
   );
-  return { checks: ["external marker count retained"], markerId: marker.id };
+  const admin = new CookieClient();
+  await grantBetaAccess(admin);
+  await login(admin, "admin@horeca.kz");
+  const downloaded = await admin.fetch(`/api/admin/documents/${encodeURIComponent(marker.documentId)}/download`);
+  assert(downloaded.response.ok, "Private-file marker did not survive provider lifecycle action");
+  const fileBytes = Buffer.from(await downloaded.response.arrayBuffer());
+  assert(createHash("sha256").update(fileBytes).digest("hex") === marker.documentSha256, "Private-file marker changed after provider lifecycle action");
+  return { checks: ["external marker count retained", "private-file marker SHA-256 retained"], markerId: marker.id };
 }
 
 const result = mode === "preflight"

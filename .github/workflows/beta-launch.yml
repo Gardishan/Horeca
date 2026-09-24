@@ -41,6 +41,61 @@ jobs:
           npm install --global @railway/cli@5.41.2
           railway --version
 
+      - name: Prepare registered SSH identity and relay host trust
+        env:
+          BETA_SSH_PRIVATE_KEY: ${{ secrets.BETA_RAILWAY_SSH_PRIVATE_KEY }}
+          BETA_SSH_KNOWN_HOSTS: ${{ vars.BETA_RAILWAY_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          if [ -z "${BETA_SSH_PRIVATE_KEY}" ]; then
+            echo "Beta SSH requires an owner-registered private key" >&2
+            exit 1
+          fi
+          ssh_dir="${RUNNER_TEMP}/horeca-beta-launch/ssh"
+          mkdir -p "${ssh_dir}" "${HOME}/.ssh"
+          chmod 700 "${ssh_dir}" "${HOME}/.ssh"
+          printf '%s\n' "${BETA_SSH_PRIVATE_KEY}" > "${ssh_dir}/id_ed25519"
+          unset BETA_SSH_PRIVATE_KEY
+          chmod 600 "${ssh_dir}/id_ed25519"
+          if ! ssh-keygen -y -P '' -f "${ssh_dir}/id_ed25519" > "${ssh_dir}/id_ed25519.pub" 2> "${ssh_dir}/key-validation.log"; then
+            echo "Beta SSH identity must be a valid non-interactive private key" >&2
+            exit 1
+          fi
+          if [ -n "${BETA_SSH_KNOWN_HOSTS}" ]; then
+            printf '%s\n' "${BETA_SSH_KNOWN_HOSTS}" > "${ssh_dir}/known_hosts"
+            ssh-keygen -F ssh.railway.com -f "${ssh_dir}/known_hosts" > "${ssh_dir}/matched-hosts"
+            ssh-keygen -lf "${ssh_dir}/matched-hosts" > /dev/null
+            host_key_checking=yes
+            host_trust_mode=pinned
+          else
+            # Railway CLI uses accept-new for initial tunnel trust. This file is
+            # scoped to this run; changed stored keys still fail within the run.
+            # First use is observed trust, not independent host verification.
+            : > "${ssh_dir}/known_hosts"
+            host_key_checking=accept-new
+            host_trust_mode=initial-use
+          fi
+          test ! -e "${HOME}/.ssh/config"
+          cat > "${HOME}/.ssh/config" <<EOF
+          Host ssh.railway.com
+            BatchMode yes
+            IdentitiesOnly yes
+            StrictHostKeyChecking ${host_key_checking}
+            UserKnownHostsFile ${ssh_dir}/known_hosts
+            GlobalKnownHostsFile /dev/null
+            ConnectTimeout 10
+            ServerAliveInterval 30
+            ServerAliveCountMax 3
+          EOF
+          chmod 600 "${HOME}/.ssh/config"
+          {
+            echo "BETA_SSH_KEY_PATH=${ssh_dir}/id_ed25519"
+            echo "BETA_SSH_CONFIG_PATH=${HOME}/.ssh/config"
+            echo "BETA_SSH_KNOWN_HOSTS_PATH=${ssh_dir}/known_hosts"
+            echo "BETA_SSH_TRUST_MODE=${host_trust_mode}"
+          } >> "${GITHUB_ENV}"
+
       - name: Verify main and inspect Railway read-only state
         id: provider
         env:
@@ -82,6 +137,23 @@ jobs:
           test -n "${app_service_id}"
           test -n "${database_service_id}"
           test "${app_service_id}" != "${database_service_id}"
+          environment_id="$(jq -er '[.environments.edges[].node | select(.name == "beta")] | if length == 1 then .[0].id else error("Expected exactly one beta environment") end' "${state_dir}/status.json")"
+
+          # --identity-file bypasses account-level SSH-key discovery, which is
+          # unsupported for project tokens. The relay validates the registered key.
+          # Verify command output: the relay can return exit 0 before routing is ready.
+          ssh_probe="horeca-beta-ssh-${GITHUB_RUN_ID}"
+          if ! railway ssh --identity-file "${BETA_SSH_KEY_PATH}" --environment beta \
+            --service "${database_service_id}" -- printf '%s' "${ssh_probe}" \
+            > "${state_dir}/ssh-preflight.out" 2> "${state_dir}/ssh-preflight.log"; then
+            echo "Beta PostgreSQL SSH preflight failed before deployment; verify the registered key and relay host trust" >&2
+            exit 1
+          fi
+          test "$(< "${state_dir}/ssh-preflight.out")" = "${ssh_probe}"
+          if [ "${BETA_SSH_TRUST_MODE}" = "initial-use" ]; then
+            ssh-keygen -F ssh.railway.com -f "${BETA_SSH_KNOWN_HOSTS_PATH}" > "${state_dir}/ssh-observed-hosts"
+            ssh-keygen -lf "${state_dir}/ssh-observed-hosts" | awk '{ print "Railway SSH first-observed host fingerprint (TOFU): " $2 }'
+          fi
 
           railway domain list --environment beta --service "${app_service_id}" --json > "${state_dir}/domains.json"
           beta_domain="$(jq -r '[.domains[] | select((.domain // "") | endswith(".up.railway.app"))][0].domain // empty' "${state_dir}/domains.json")"
@@ -109,6 +181,7 @@ jobs:
             echo "APP_SERVICE_NAME=${app_service_name}"
             echo "DATABASE_SERVICE_ID=${database_service_id}"
             echo "DATABASE_SERVICE_NAME=${database_service_name}"
+            echo "BETA_ENVIRONMENT_ID=${environment_id}"
             echo "BETA_BASE_URL=${beta_base_url}"
           } >> "${GITHUB_ENV}"
 
@@ -202,21 +275,27 @@ jobs:
           initial_deployment_id="$(wait_for_new_success "${BETA_STATE_DIR}/before-initial-deploy.json" "initial candidate")"
 
           tunnel_log="${BETA_STATE_DIR}/database-tunnel.log"
-          railway connect "${DATABASE_SERVICE_NAME}" \
-            --environment beta \
-            --ssh \
-            --tunnel-only \
-            --port 15432 \
+          railway api --compact --raw-var "environmentId=${BETA_ENVIRONMENT_ID}" \
+            --raw-var "serviceId=${DATABASE_SERVICE_ID}" \
+            'query ServiceInstance($environmentId: String!, $serviceId: String!) { serviceInstance(environmentId: $environmentId, serviceId: $serviceId) { id } }' \
+            > "${BETA_STATE_DIR}/database-instance.json"
+          database_instance_id="$(jq -er '.data.serviceInstance.id | select(type == "string" and test("^[A-Za-z0-9_-]+$"))' "${BETA_STATE_DIR}/database-instance.json")"
+          database_port="$(node -e 'const fs = require("node:fs"); const url = new URL(JSON.parse(fs.readFileSync(process.argv[1], "utf8")).DATABASE_URL); console.log(url.port || "5432");' "${BETA_STATE_DIR}/runtime-variables.json")"
+          node -e 'const server = require("node:net").createServer(); server.on("error", () => process.exit(1)); server.listen(15432, "127.0.0.1", () => server.close());'
+          ssh -F "${BETA_SSH_CONFIG_PATH}" -i "${BETA_SSH_KEY_PATH}" -N \
+            -o ExitOnForwardFailure=yes \
+            -L "127.0.0.1:15432:127.0.0.1:${database_port}" \
+            "${database_instance_id}@ssh.railway.com" \
             > "${tunnel_log}" 2>&1 &
           tunnel_pid=$!
           trap 'kill "${tunnel_pid}" 2>/dev/null || true' EXIT
           tunnel_ready=false
           for attempt in $(seq 1 60); do
+            if ! kill -0 "${tunnel_pid}" 2>/dev/null; then break; fi
             if (echo > /dev/tcp/127.0.0.1/15432) 2>/dev/null; then
               tunnel_ready=true
               break
             fi
-            if ! kill -0 "${tunnel_pid}" 2>/dev/null; then break; fi
             sleep 1
           done
           if [ "${tunnel_ready}" != "true" ]; then
@@ -251,9 +330,41 @@ jobs:
             exit 1
           fi
 
+          # DB seeding runs on the Actions runner. Materialize the same synthetic
+          # fixtures in the app's mounted private volume before enabling traffic.
+          # The helper refuses missing volumes, enabled traffic and non-demo envs.
+          if railway ssh --identity-file "${BETA_SSH_KEY_PATH}" --environment beta --service "${APP_SERVICE_ID}" -- \
+            node /app/beta-bootstrap/seed-beta-files.mjs \
+            > "${BETA_STATE_DIR}/private-files-bootstrap.log" 2>&1; then
+            # The SSH relay can exit 0 before command routing is available.
+            # Require the helper's actual completion record, not transport success.
+            node - "${BETA_STATE_DIR}/private-files-bootstrap.log" <<'NODE'
+          const fs = require("node:fs");
+          const lines = fs.readFileSync(process.argv[2], "utf8").trim().split(/\r?\n/);
+          const completed = lines.some((line) => {
+            try {
+              const result = JSON.parse(line);
+              return result.event === "beta_demo_files_ready" &&
+                Number.isInteger(result.created) && result.created >= 0 &&
+                Number.isInteger(result.existing) && result.existing >= 0 &&
+                result.created + result.existing === 5;
+            } catch { return false; }
+          });
+          if (!completed) {
+            console.error("Beta private-file bootstrap did not return its completion record");
+            process.exit(1);
+          }
+          NODE
+            echo "Synthetic private files verified on the application's persistent volume"
+          else
+            echo "Beta private-file bootstrap failed; verify the mounted private volume and SSH access" >&2
+            exit 1
+          fi
+
           EXPECTED_DEPLOYMENT_VERSION="${GITHUB_SHA}" node scripts/smoke-beta-external.mjs preflight \
             | tee "${BETA_STATE_DIR}/external-preflight.json"
 
+          echo "BETA_ENABLE_ATTEMPTED=true" >> "${GITHUB_ENV}"
           railway variable set "BETA_ENABLED=true" \
             --environment beta \
             --service "${APP_SERVICE_ID}" \
@@ -399,29 +510,37 @@ jobs:
             | tee "${BETA_STATE_DIR}/external-marker-rollback.json"
 
           tunnel_log="${BETA_STATE_DIR}/database-tunnel-rollback.log"
-          railway connect "${DATABASE_SERVICE_NAME}" \
-            --environment beta \
-            --ssh \
-            --tunnel-only \
-            --port 15433 \
+          railway variable list --environment beta --service "${APP_SERVICE_ID}" --json \
+            > "${BETA_STATE_DIR}/runtime-variables-rollback.json"
+          node --import tsx scripts/validate-beta-runtime.mjs "${BETA_STATE_DIR}/runtime-variables-rollback.json" \
+            > "${BETA_STATE_DIR}/runtime-validation-rollback.json"
+          railway api --compact --raw-var "environmentId=${BETA_ENVIRONMENT_ID}" \
+            --raw-var "serviceId=${DATABASE_SERVICE_ID}" \
+            'query ServiceInstance($environmentId: String!, $serviceId: String!) { serviceInstance(environmentId: $environmentId, serviceId: $serviceId) { id } }' \
+            > "${BETA_STATE_DIR}/database-instance-rollback.json"
+          database_instance_id="$(jq -er '.data.serviceInstance.id | select(type == "string" and test("^[A-Za-z0-9_-]+$"))' "${BETA_STATE_DIR}/database-instance-rollback.json")"
+          database_port="$(node -e 'const fs = require("node:fs"); const url = new URL(JSON.parse(fs.readFileSync(process.argv[1], "utf8")).DATABASE_URL); console.log(url.port || "5432");' "${BETA_STATE_DIR}/runtime-variables-rollback.json")"
+          node -e 'const server = require("node:net").createServer(); server.on("error", () => process.exit(1)); server.listen(15433, "127.0.0.1", () => server.close());'
+          ssh -F "${BETA_SSH_CONFIG_PATH}" -i "${BETA_SSH_KEY_PATH}" -N \
+            -o ExitOnForwardFailure=yes \
+            -L "127.0.0.1:15433:127.0.0.1:${database_port}" \
+            "${database_instance_id}@ssh.railway.com" \
             > "${tunnel_log}" 2>&1 &
           tunnel_pid=$!
           trap 'kill "${tunnel_pid}" 2>/dev/null || true' EXIT
           tunnel_ready=false
           for attempt in $(seq 1 60); do
+            if ! kill -0 "${tunnel_pid}" 2>/dev/null; then break; fi
             if (echo > /dev/tcp/127.0.0.1/15433) 2>/dev/null; then
               tunnel_ready=true
               break
             fi
-            if ! kill -0 "${tunnel_pid}" 2>/dev/null; then break; fi
             sleep 1
           done
           if [ "${tunnel_ready}" != "true" ]; then
             echo "Railway private PostgreSQL tunnel failed during rollback verification" >&2
             exit 1
           fi
-          railway variable list --environment beta --service "${APP_SERVICE_ID}" --json \
-            > "${BETA_STATE_DIR}/runtime-variables-rollback.json"
           node - "${BETA_STATE_DIR}/runtime-variables-rollback.json" "${BETA_STATE_DIR}/tunnel-database-url-rollback" <<'NODE'
           const fs = require("node:fs");
           const variables = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
@@ -455,16 +574,17 @@ jobs:
             node scripts/check-beta-persistence.mjs
 
           query_deployment "${restored_deployment_id}" "${BETA_STATE_DIR}/restored-deployment-query.json"
-          image_digest="$(jq -r '[.data.deployment.meta | .. | strings | select(test("^sha256:[0-9a-f]{64}$"))][0] // empty' "${BETA_STATE_DIR}/restored-deployment-query.json")"
+          image_digest="$(jq -r '.data.deployment.meta.imageDigest | select(type == "string" and test("^sha256:[0-9a-f]{64}$"))' "${BETA_STATE_DIR}/restored-deployment-query.json")"
           if [ -z "${image_digest}" ]; then
-            image_digest="unavailable-from-provider-api"
+            echo "Beta candidate evidence is incomplete: provider image digest is unavailable" >&2
+            exit 1
           fi
 
           marker_id="$(jq -r '.id' "${BETA_MARKER_PATH}")"
           marker_label_sha256="$(jq -r '.markerLabelSha256' "${BETA_STATE_DIR}/persistence-restored.json")"
           mkdir -p "${RUNNER_TEMP}/horeca-beta-artifacts"
           jq -n \
-            --arg result "LAUNCHED_BETA" \
+            --arg result "VERIFIED_BETA_CANDIDATE" \
             --arg launchCommit "${GITHUB_SHA}" \
             --arg baselineMainSha "${{ github.event.before }}" \
             --arg workflowRunUrl "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
@@ -490,15 +610,17 @@ jobs:
           cat "${RUNNER_TEMP}/horeca-beta-artifacts/beta-launch-evidence.json"
 
           {
-            echo "### Controlled Beta launch"
+            echo "### Controlled Beta candidate"
             echo
-            echo "- Result: LAUNCHED_BETA"
+            echo "- Result: VERIFIED_BETA_CANDIDATE"
             echo "- Commit: \`${GITHUB_SHA}\`"
             echo "- HTTPS origin: ${BETA_BASE_URL}"
             echo "- Migration and demo-only seed: passed"
             echo "- Invite/auth/authorization smoke: passed"
             echo "- PostgreSQL marker across redeploy, rollback and restore: passed"
+            echo "- Private-file marker SHA-256 across redeploy, rollback and restore: passed"
             echo "- Debug APK SHA-256: \`${APK_SHA256}\`"
+            echo "- MVP launch approval: pending prerelease identity and strict readiness gate"
             echo "- Commercial production readiness: not declared"
           } >> "${GITHUB_STEP_SUMMARY}"
 
@@ -508,3 +630,77 @@ jobs:
           path: ${{ runner.temp }}/horeca-beta-artifacts/beta-launch-evidence.json
           if-no-files-found: error
           retention-days: 90
+
+      - name: Disable Beta after an unsuccessful launch
+        if: ${{ always() && (failure() || cancelled()) && env.BETA_ENABLE_ATTEMPTED == 'true' }}
+        timeout-minutes: 5
+        env:
+          RAILWAY_TOKEN: ${{ secrets.BETA_RAILWAY_PROJECT_TOKEN }}
+          BETA_ACCESS_TOKEN: ${{ secrets.BETA_SMOKE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          umask 077
+          # Never alter a prior launch when this run stopped before enabling.
+          if [ "${BETA_ENABLE_ATTEMPTED:-}" != "true" ]; then exit 0; fi
+          if [ -z "${BETA_STATE_DIR:-}" ] || [ -z "${APP_SERVICE_ID:-}" ] || [ -z "${BETA_BASE_URL:-}" ] || [ -z "${RAILWAY_TOKEN:-}" ]; then
+            echo "::error::Beta safety shutdown could not be verified: launch context is missing" >&2
+            exit 1
+          fi
+          # Keep within GitHub's cancellation grace period. A lost runner or
+          # unavailable provider still requires operator verification of the kill switch.
+          if ! timeout 240s bash > "${BETA_STATE_DIR}/cleanup-attempt.log" 2>&1 <<'CLEANUP'
+          set -euo pipefail
+          before_file="${BETA_STATE_DIR}/before-safety-shutdown.json"
+          current_file="${BETA_STATE_DIR}/safety-shutdown-deployments.json"
+          snapshot_available=true
+          if ! timeout 20s railway deployment list --environment beta --service "${APP_SERVICE_ID}" --json > "${before_file}"; then
+            snapshot_available=false
+          elif ! jq -e 'type == "array"' "${before_file}" > /dev/null; then
+            snapshot_available=false
+          fi
+
+          timeout 20s railway variable set "BETA_ENABLED=false" \
+            --environment beta --service "${APP_SERVICE_ID}" --skip-deploys --json \
+            > "${BETA_STATE_DIR}/safety-disable-variable-set.json"
+          timeout 20s railway redeploy --environment beta --service "${APP_SERVICE_ID}" --yes --json \
+            > "${BETA_STATE_DIR}/safety-disable-redeploy.json"
+          # Even when the initial read failed, issue the shutdown; do not claim
+          # a verified new deployment without a trustworthy prior snapshot.
+          test "${snapshot_available}" = "true"
+
+          deployment_id=""
+          for attempt in $(seq 1 24); do
+            timeout 20s railway deployment list --environment beta --service "${APP_SERVICE_ID}" --json > "${current_file}"
+            deployment_id="$(jq -r --slurpfile before "${before_file}" '
+              ($before[0] | map(.id)) as $known |
+              [.[] | select(.id as $id | ($known | index($id) | not))] |
+              sort_by(.createdAt) | reverse |
+              [.[] | select(.status == "SUCCESS")][0].id // empty
+            ' "${current_file}")"
+            if [ -n "${deployment_id}" ]; then break; fi
+            new_count="$(jq -r --slurpfile before "${before_file}" '($before[0] | map(.id)) as $known | [.[] | select(.id as $id | ($known | index($id) | not))] | length' "${current_file}")"
+            pending_count="$(jq -r --slurpfile before "${before_file}" '($before[0] | map(.id)) as $known | [.[] | select(.id as $id | ($known | index($id) | not)) | select(.status | IN("INITIALIZING", "BUILDING", "DEPLOYING", "WAITING", "QUEUED"))] | length' "${current_file}")"
+            if [ "${new_count}" -gt 0 ] && [ "${pending_count}" -eq 0 ]; then exit 1; fi
+            sleep 5
+          done
+          test -n "${deployment_id}"
+          timeout 45s node scripts/smoke-beta-external.mjs preflight \
+            > "${BETA_STATE_DIR}/external-preflight-after-failure.json"
+          echo "- Beta disabled after unsuccessful launch; new deployment: ${deployment_id}; external kill switch verified." >> "${GITHUB_STEP_SUMMARY}"
+          CLEANUP
+          then
+            echo "::error::Beta safety shutdown could not be verified. Operator must verify BETA_ENABLED=false and closed external traffic." >&2
+            echo "- Beta safety shutdown: UNVERIFIED; operator verification required." >> "${GITHUB_STEP_SUMMARY}"
+            exit 1
+          fi
+          echo "Beta safety shutdown verified by external preflight."
+
+      - name: Remove ephemeral SSH material
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -f "${RUNNER_TEMP}/horeca-beta-launch/ssh/id_ed25519" \
+            "${RUNNER_TEMP}/horeca-beta-launch/ssh/id_ed25519.pub"
+          if [ -n "${BETA_SSH_CONFIG_PATH:-}" ]; then
+            rm -f "${BETA_SSH_CONFIG_PATH}"
+          fi

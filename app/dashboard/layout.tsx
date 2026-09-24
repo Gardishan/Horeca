@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Building2, CreditCard, FileCheck2, LayoutDashboard, Package } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { AppSidebar } from "@/components/ui/app-sidebar";
+import { AppSidebar, type SidebarItem } from "@/components/ui/app-sidebar";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-const items = [
-  { href: "/dashboard/company", label: "Обзор", icon: LayoutDashboard },
-  { href: "/dashboard/company/profile", label: "Профиль", icon: Building2 },
-  { href: "/dashboard/company/billing", label: "Тариф и оплата", icon: CreditCard },
-  { href: "/dashboard/company/verification", label: "Верификация", icon: FileCheck2 },
-  { href: "/dashboard/products", label: "Товары", icon: Package },
+const items: SidebarItem[] = [
+  { href: "/dashboard/company", label: "Обзор", icon: "overview" },
+  { href: "/dashboard/company/profile", label: "Профиль", icon: "company" },
+  { href: "/dashboard/company/billing", label: "Тариф и оплата", icon: "billing" },
+  { href: "/dashboard/company/verification", label: "Верификация", icon: "verification" },
+  { href: "/dashboard/products", label: "Товары", icon: "products" },
+  { href: "/dashboard/requests", label: "Заявки покупателей", icon: "requests" },
 ];
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
