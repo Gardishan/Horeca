@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { evaluateProductPublication, evaluatePublicVisibility } from "@/lib/domain/product-rules";
+import {
+  evaluateProductPublication,
+  evaluatePublicVisibility,
+  evaluateSupplierProductChange,
+  isProductRenamed,
+} from "@/lib/domain/product-rules";
 
 describe("product publication policy", () => {
   const valid = {
@@ -69,5 +74,31 @@ describe("public catalog policy", () => {
     });
     expect(result.allowed).toBe(false);
     expect(result.reasons).toHaveLength(5);
+  });
+});
+
+describe("admin moderation lock", () => {
+  it("freezes a product the admin BLOCKED for its supplier", () => {
+    expect(evaluateSupplierProductChange("BLOCKED")).toEqual({
+      allowed: false,
+      reasons: ["Товар заблокирован администратором"],
+    });
+  });
+
+  it("leaves every other status under supplier control", () => {
+    for (const status of ["DRAFT", "PUBLISHED", "INACTIVE"] as const) {
+      expect(evaluateSupplierProductChange(status), status).toEqual({ allowed: true, reasons: [] });
+    }
+  });
+});
+
+describe("public slug stability", () => {
+  it("does not treat a save with the same name as a rename", () => {
+    expect(isProductRenamed("Кофе в зернах Arabica Blend 1 кг", "Кофе в зернах Arabica Blend 1 кг")).toBe(false);
+    expect(isProductRenamed("Кофе в зернах Arabica Blend 1 кг", "  Кофе в зернах Arabica Blend 1 кг ")).toBe(false);
+  });
+
+  it("treats a different name as a rename", () => {
+    expect(isProductRenamed("Кофе в зернах Arabica Blend 1 кг", "Кофе в зернах Arabica Blend 500 г")).toBe(true);
   });
 });

@@ -43,6 +43,8 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 13. Неожиданный API 500 имеет один correlation ID в response/header/structured log и не журналирует raw error details.
 14. `APP_ENV=beta` не обслуживает traffic без `BETA_ENABLED=true` и валидной access cookie; health/readiness сохраняют операторский контроль.
 15. Controlled Beta не принимает upload/payment signal без server-side подтверждения demo-only policy; public registration закрыта по умолчанию.
+16. Товар в `BLOCKED` supplier не публикует, не скрывает и не редактирует (conditional write не перезаписывает конкурентную блокировку); снять блокировку может только audited admin use case.
+17. Slug товара меняется только при фактическом переименовании; сохранение без смены названия не ломает ссылку `/catalog/<slug>`.
 
 ## Проверенный путь качества
 
