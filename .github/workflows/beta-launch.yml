@@ -267,7 +267,7 @@ jobs:
             | tee "${BETA_STATE_DIR}/runtime-validation.json"
 
           snapshot_deployments "${BETA_STATE_DIR}/before-initial-deploy.json"
-          railway up . \
+          railway up \
             --ci \
             --environment beta \
             --service "${APP_SERVICE_ID}" \

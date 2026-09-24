@@ -139,3 +139,15 @@ or files. A failed privilege change must prevent writes; do not widen file modes
 or recursively change ownership as a workaround. Runtime PID1, mounted-volume
 ownership and write access as UID1001 were independently verified while traffic
 remained disabled.
+
+## Railway upload-path correction
+
+Launch run [36000555873](https://github.com/Gardishan/Horeca/actions/runs/36000555873)
+on main `dd72be8f634b27609d9cfb558a04aaaaa04c1902` passed provider, SSH and
+runtime-secret preflight, then stopped before upload with `prefix not found`.
+CLI 5.41.2 retains the explicit relative `.` input while using the absolute
+linked project directory as the archive prefix. The workflow now uses the
+documented `railway up` current-directory form so both paths share that root.
+Scope is only upload-path selection; service, environment, credentials and
+deployment gates are unchanged. The failed run never enabled Beta. A fresh
+main CI and actual upload/deployment must verify the correction.
