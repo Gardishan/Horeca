@@ -151,3 +151,24 @@ documented `railway up` current-directory form so both paths share that root.
 Scope is only upload-path selection; service, environment, credentials and
 deployment gates are unchanged. The failed run never enabled Beta. A fresh
 main CI and actual upload/deployment must verify the correction.
+
+## APK verification correction
+
+The corrected upload succeeded on Railway, and
+[Beta Launch 36002052452](https://github.com/Gardishan/Horeca/actions/runs/36002052452)
+on `bfa8e345eda060b2bea0cfea166fb32cd9bfca2a` passed migration, demo seed,
+external role/download smoke and database/private-file persistence after app
+redeploy. Gradle built the APK successfully, but the verifier inspected only
+`classes.dex`. The downloaded Quality APK reproduces the defect: the configured
+URL resides in `classes2.dex`.
+
+Change contract: verify the exact configured URL among root APK DEX string
+constants, including secondary DEX files. Reject missing/wrong URLs, resource-only
+matches and unreadable artifacts. Preserve Gradle and application configuration;
+do not add dependencies or weaken the origin check. Focused fixtures and the
+actual downloaded APK cover the failure before another full launch attempt.
+
+The failed run exercised the safety shutdown: at 2026-09-24T12:58:08Z the
+workflow verified a new disabled deployment and external kill switch. An
+independent probe at 13:00:46Z returned `503 BETA_DISABLED`. This is real shutdown
+evidence, not a successful launch or rollback rehearsal.

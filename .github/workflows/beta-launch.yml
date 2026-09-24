@@ -427,10 +427,9 @@ jobs:
           )
           cp android/app/build/outputs/apk/debug/app-debug.apk \
             "${RUNNER_TEMP}/horeca-beta-artifacts/horeca-kz-beta-debug.apk"
-          unzip -p "${RUNNER_TEMP}/horeca-beta-artifacts/horeca-kz-beta-debug.apk" classes.dex \
-            | strings \
-            | grep --fixed-strings "${BETA_BASE_URL}" \
-            > /dev/null
+          node scripts/verify-apk-url.mjs \
+            "${RUNNER_TEMP}/horeca-beta-artifacts/horeca-kz-beta-debug.apk" \
+            "${BETA_BASE_URL}"
           apk_sha256="$(sha256sum "${RUNNER_TEMP}/horeca-beta-artifacts/horeca-kz-beta-debug.apk" | cut -d' ' -f1)"
           printf '%s  %s\n' "${apk_sha256}" "horeca-kz-beta-debug.apk" \
             > "${RUNNER_TEMP}/horeca-beta-artifacts/APK_SHA256SUMS"
