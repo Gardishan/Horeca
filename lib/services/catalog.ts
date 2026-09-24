@@ -2,6 +2,7 @@ import type { AvailabilityStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { NotFoundError } from "@/lib/errors";
 import { toPlainNumber } from "@/lib/utils";
+import { catalogQuerySchema } from "@/lib/catalog-query";
 
 export type CatalogQuery = {
   search?: string;
@@ -94,9 +95,9 @@ function serializeProduct<T extends { price: Prisma.Decimal; wholesalePrice: Pri
 }
 
 export async function listPublicProducts(query: CatalogQuery = {}) {
-  const pageSize = Math.min(Math.max(query.pageSize ?? 24, 1), 60);
-  const page = Math.max(query.page ?? 1, 1);
-  const where = publicProductWhere(query);
+  const parsed = catalogQuerySchema.parse(query);
+  const { pageSize, page } = parsed;
+  const where = publicProductWhere(parsed);
   const [items, total] = await prisma.$transaction([
     prisma.product.findMany({
       where,

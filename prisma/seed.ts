@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { mkdir, writeFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { assertDemoSeedAllowed } from "../lib/runtime-config";
 
@@ -27,13 +28,16 @@ const categories = [
 
 const cities = ["Алматы", "Астана", "Шымкент", "Караганда", "Актобе", "Атырау"];
 
-async function createMockPdf(companyId: string, fileName: string, title: string) {
+type DemoFile = { storagePath: string; title: string };
+const demoFiles = JSON.parse(readFileSync(new URL("./demo-files.json", import.meta.url), "utf8")) as Record<"activeRegistration" | "activeBank" | "activeCertificate" | "pendingRegistration" | "pendingPaymentProof", DemoFile>;
+
+async function createMockPdf({ storagePath, title }: DemoFile) {
   const root = path.resolve(process.env.PRIVATE_STORAGE_ROOT ?? "./storage/private");
-  const directory = path.join(root, "company-documents", companyId);
+  const directory = path.dirname(path.join(root, storagePath));
   await mkdir(directory, { recursive: true, mode: 0o700 });
   const pdf = Buffer.from(`%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n% HoReCa KZ seed document: ${title}\ntrailer<</Root 1 0 R>>\n%%EOF\n`);
-  await writeFile(path.join(directory, fileName), pdf, { mode: 0o600 });
-  return { storagePath: path.join("company-documents", companyId, fileName), size: pdf.length };
+  await writeFile(path.join(root, storagePath), pdf, { mode: 0o600 });
+  return { storagePath, size: pdf.length };
 }
 
 async function main() {
@@ -81,7 +85,7 @@ async function main() {
   await prisma.invoice.upsert({ where: { invoiceNumber: "HKZ-DEMO-0001" }, update: {}, create: { id: "invoice-active", companyId: "company-active", subscriptionId: "subscription-active", invoiceNumber: "HKZ-DEMO-0001", amount: 35_000, currency: "KZT", status: "PAID", issuedAt: now, dueAt: nextMonth } });
   await prisma.invoice.upsert({ where: { invoiceNumber: "HKZ-DEMO-0002" }, update: {}, create: { id: "invoice-pending", companyId: "company-pending", subscriptionId: "subscription-pending", invoiceNumber: "HKZ-DEMO-0002", amount: 15_000, currency: "KZT", status: "PAID_PENDING_CONFIRMATION", issuedAt: now, dueAt: nextMonth } });
   await prisma.payment.upsert({ where: { id: "payment-active" }, update: {}, create: { id: "payment-active", companyId: "company-active", invoiceId: "invoice-active", amount: 35_000, currency: "KZT", method: "MANUAL_BANK_TRANSFER", status: "CONFIRMED", paidAt: now, confirmedAt: now, adminComment: "Seed: оплата подтверждена" } });
-  await prisma.payment.upsert({ where: { id: "payment-pending" }, update: {}, create: { id: "payment-pending", companyId: "company-pending", invoiceId: "invoice-pending", amount: 15_000, currency: "KZT", method: "MANUAL_BANK_TRANSFER", status: "PROOF_UPLOADED", paidAt: now, proofFilePath: "company-documents/company-pending/payment-proof.pdf" } });
+  await prisma.payment.upsert({ where: { id: "payment-pending" }, update: {}, create: { id: "payment-pending", companyId: "company-pending", invoiceId: "invoice-pending", amount: 15_000, currency: "KZT", method: "MANUAL_BANK_TRANSFER", status: "PROOF_UPLOADED", paidAt: now, proofFilePath: demoFiles.pendingPaymentProof.storagePath } });
 
   await prisma.companyVerification.upsert({ where: { id: "verification-active" }, update: {}, create: { id: "verification-active", companyId: "company-active", status: "APPROVED", submittedAt: now, reviewedAt: now, reviewedById: "user-admin", adminComment: "Seed: документы проверены" } });
   await prisma.companyVerification.upsert({ where: { id: "verification-pending" }, update: {}, create: { id: "verification-pending", companyId: "company-pending", status: "PENDING", submittedAt: now } });
@@ -93,11 +97,11 @@ async function main() {
     }
   }
 
-  const activeRegistration = await createMockPdf("company-active", "mock-registration.pdf", "registration");
-  const activeBank = await createMockPdf("company-active", "mock-bank-details.pdf", "bank details");
-  const activeCertificate = await createMockPdf("company-active", "mock-certificate.pdf", "quality certificate");
-  const pendingRegistration = await createMockPdf("company-pending", "mock-registration-pending.pdf", "registration pending");
-  await createMockPdf("company-pending", "payment-proof.pdf", "payment proof");
+  const activeRegistration = await createMockPdf(demoFiles.activeRegistration);
+  const activeBank = await createMockPdf(demoFiles.activeBank);
+  const activeCertificate = await createMockPdf(demoFiles.activeCertificate);
+  const pendingRegistration = await createMockPdf(demoFiles.pendingRegistration);
+  await createMockPdf(demoFiles.pendingPaymentProof);
   const documents = [
     { id: "document-registration-active", companyId: "company-active", verificationId: "verification-active", type: "REGISTRATION" as const, originalName: "Справка о регистрации.pdf", storedName: "mock-registration.pdf", ...activeRegistration, status: "APPROVED" as const, reviewedAt: now, reviewedById: "user-admin" },
     { id: "document-bank-active", companyId: "company-active", verificationId: "verification-active", type: "BANK_DETAILS" as const, originalName: "Банковские реквизиты.pdf", storedName: "mock-bank-details.pdf", ...activeBank, status: "APPROVED" as const, reviewedAt: now, reviewedById: "user-admin" },

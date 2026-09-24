@@ -11,12 +11,33 @@ type DocumentItem = { id: string; type: string; originalName: string; status: st
 export function VerificationPanel({ acceptedTypes, documents, betaDemoOnly = false }: { acceptedTypes: string[]; documents: DocumentItem[]; betaDemoOnly?: boolean }) {
   const router = useRouter(); const [pending, setPending] = useState(""); const [feedback, setFeedback] = useState<{ error: boolean; text: string } | null>(null);
   async function post(key: string, endpoint: string, body: object = {}) {
-    setPending(key); setFeedback(null); const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const payload = await response.json();
-    const reasons = payload.error?.details?.reasons; setFeedback({ error: !response.ok, text: response.ok ? "Сохранено" : Array.isArray(reasons) ? reasons.join(" · ") : payload.error?.message ?? "Ошибка" }); setPending(""); if (response.ok) router.refresh();
+    setPending(key); setFeedback(null);
+    try {
+      const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const payload = await response.json();
+      const reasons = payload?.error?.details?.reasons;
+      setFeedback({ error: !response.ok, text: response.ok ? "Сохранено" : Array.isArray(reasons) ? reasons.join(" · ") : payload?.error?.message ?? "Ошибка" });
+      if (response.ok) router.refresh();
+    } catch {
+      setFeedback({ error: true, text: "Не удалось получить ответ сервера. Обновите страницу перед повторной попыткой." });
+    } finally {
+      setPending("");
+    }
   }
   async function upload(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setPending("upload"); setFeedback(null); const response = await fetch("/api/dashboard/company/documents", { method: "POST", body: new FormData(event.currentTarget) }); const payload = await response.json();
-    setFeedback({ error: !response.ok, text: response.ok ? "Документ загружен в приватное хранилище" : payload.error?.message ?? "Ошибка" }); setPending(""); if (response.ok) { event.currentTarget.reset(); router.refresh(); }
+    event.preventDefault();
+    const form = event.currentTarget;
+    setPending("upload"); setFeedback(null);
+    try {
+      const response = await fetch("/api/dashboard/company/documents", { method: "POST", body: new FormData(form) });
+      const payload = await response.json();
+      setFeedback({ error: !response.ok, text: response.ok ? "Документ загружен в приватное хранилище" : payload?.error?.message ?? "Ошибка" });
+      if (response.ok) { form.reset(); router.refresh(); }
+    } catch {
+      setFeedback({ error: true, text: "Не удалось получить ответ сервера. Обновите страницу перед повторной попыткой." });
+    } finally {
+      setPending("");
+    }
   }
   return (
     <div className="grid gap-6">

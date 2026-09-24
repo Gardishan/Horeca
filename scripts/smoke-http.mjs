@@ -113,6 +113,14 @@ async function run() {
   assert(catalog.response.headers.get("cache-control")?.includes("no-store"), "API response is cacheable");
   checks.push("public catalog trust filter");
 
+  for (const query of ["page=abc", "page=1.5", "pageSize=Infinity", "availability=INVALID"]) {
+    const invalidCatalog = await json(`/api/catalog/products?${query}`);
+    assert(invalidCatalog.response.status === 422 && invalidCatalog.payload.error.code === "VALIDATION_ERROR", "Invalid catalog query reached the database");
+  }
+  const invalidCatalogPage = await fetch(`${origin}/catalog?page=abc`);
+  assert(invalidCatalogPage.ok && (await invalidCatalogPage.text()).includes("Некорректные параметры поиска"), "Invalid catalog page has no recovery state");
+  checks.push("catalog query validation and page recovery");
+
   const missingOrigin = await json("/api/buyer-requests", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -163,6 +171,15 @@ async function run() {
     supersededPlan.response.ok && supersededPlan.payload.data.status === "PENDING_PAYMENT",
     "Supplier could not supersede a pending plan",
   );
+  const newPlanBilling = await fetch(`${origin}/dashboard/company/billing`, { headers: { Cookie: pendingCookie } });
+  assert(newPlanBilling.ok && (await newPlanBilling.text()).includes("Сформировать счёт"), "Old invoice hid invoice creation for the new plan");
+  const newPlanInvoice = await json("/api/dashboard/company/billing/generate-invoice", {
+    method: "POST",
+    headers: { Cookie: pendingCookie, Origin: origin, "Content-Type": "application/json" },
+    body: "{}",
+  });
+  assert(newPlanInvoice.response.ok && newPlanInvoice.payload.data.subscriptionId === supersededPlan.payload.data.id, "New invoice does not belong to the selected plan");
+  checks.push("new plan invoice generation despite an existing invoice");
 
   const request = await json("/api/buyer-requests", {
     method: "POST",
@@ -170,9 +187,22 @@ async function run() {
     body: JSON.stringify({ productId: "product-coffee", buyerName: "Smoke Buyer", buyerCompany: "Smoke Cafe", phone: "+77010000000", email: "buyer@example.kz", message: "Прошу направить тестовое коммерческое предложение.", quantity: 10, website: "" }),
   });
   assert(request.response.status === 201, "Buyer request was not created");
-  checks.push("buyer request flow");
+  const inbox = await json("/api/dashboard/requests", { headers: { Cookie: supplierCookie } });
+  assert(inbox.response.ok && inbox.payload.data.items.some((item) => item.id === request.payload.data.id && item.email === "buyer@example.kz"), "Supplier did not receive the buyer request and contact details");
+  assert(inbox.response.headers.get("cache-control")?.includes("no-store"), "Buyer contacts are cacheable");
+  const foreignInbox = await json("/api/dashboard/requests?companyId=company-active", { headers: { Cookie: pendingCookie } });
+  assert(foreignInbox.response.ok && !foreignInbox.payload.data.items.some((item) => item.id === request.payload.data.id), "Buyer request leaked into a different supplier inbox");
+  const anonymousInbox = await json("/api/dashboard/requests");
+  assert(anonymousInbox.response.status === 401, "Anonymous client read buyer contacts");
+  const inboxPage = await fetch(`${origin}/dashboard/requests`, { headers: { Cookie: supplierCookie } });
+  assert(inboxPage.ok && (await inboxPage.text()).includes("Smoke Cafe"), "Supplier inbox page did not render the request");
+  checks.push("buyer request delivery, inbox and company isolation");
 
   const adminCookie = await login("admin@horeca.kz");
+  const adminPage = await fetch(`${origin}/admin`, { headers: { Cookie: adminCookie } });
+  assert(adminPage.ok && /<h1\b/.test(await adminPage.text()), "Admin server/client layout failed to render its page");
+  const adminInbox = await json("/api/dashboard/requests", { headers: { Cookie: adminCookie } });
+  assert(adminInbox.response.status === 403, "Admin session bypassed supplier-only inbox authorization");
   const companies = await json("/api/admin/companies", { headers: { Cookie: adminCookie } });
   assert(companies.response.ok && companies.payload.data.length >= 2, "Admin companies API is unavailable");
   const verifications = await json("/api/admin/verifications", { headers: { Cookie: adminCookie } });

@@ -25,6 +25,7 @@ const nextConfig: NextConfig = {
       "./docker-compose.yml",
       "./eslint.config.mjs",
       "./instrumentation.ts",
+      "./knip.json",
       "./next.config.ts",
       "./package-lock.json",
       "./postcss.config.mjs",

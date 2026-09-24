@@ -1,0 +1,22 @@
+{
+  "activeRegistration": {
+    "storagePath": "company-documents/company-active/mock-registration.pdf",
+    "title": "registration"
+  },
+  "activeBank": {
+    "storagePath": "company-documents/company-active/mock-bank-details.pdf",
+    "title": "bank details"
+  },
+  "activeCertificate": {
+    "storagePath": "company-documents/company-active/mock-certificate.pdf",
+    "title": "quality certificate"
+  },
+  "pendingRegistration": {
+    "storagePath": "company-documents/company-pending/mock-registration-pending.pdf",
+    "title": "registration pending"
+  },
+  "pendingPaymentProof": {
+    "storagePath": "company-documents/company-pending/payment-proof.pdf",
+    "title": "payment proof"
+  }
+}

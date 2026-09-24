@@ -2,7 +2,7 @@
   "version": 1,
   "product": "HoReCa KZ",
   "target": "mvp-beta",
-  "updatedAt": "2026-08-15",
+  "updatedAt": "2026-09-24",
   "controls": [
     {
       "id": "critical-flows",
@@ -41,7 +41,7 @@
     {
       "id": "beta-database",
       "title": "The Beta database is migrated, seeded with demo-only data and persists across restart",
-      "status": "blocked",
+      "status": "in_progress",
       "blocking": true,
       "owner": "Product owner + Platform/DevOps",
       "evidence": [
@@ -52,16 +52,18 @@
         "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
         "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
         "https://github.com/Gardishan/Horeca/actions/runs/31877000013",
-        "https://github.com/Gardishan/Horeca/issues/44#issuecomment-5301594684"
+        "https://github.com/Gardishan/Horeca/issues/44#issuecomment-5301594684",
+        "docs/MVP_BETA_DELIVERY.md",
+        "https://github.com/Gardishan/Horeca/actions/runs/31879629530"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "Fresh workflow_dispatch run 31876896260 targeted exact main 1a7781b1 with environment beta after the owner reported re-saving both exact secret names, but both expressions were still empty. User-authored read-only probe 31877000013 reproduced the result; no Railway command executed, so migration, demo seed and persistence readback remain blocked."
+      "notes": "Local clean PostgreSQL 17.11 migration/seed and 12-group HTTP smoke passed on 2026-09-24. Railway Hobby/CLI are active; owner approved reusing the new project, now renamed horeca-kz-beta / beta. Provisioning TLS PostgreSQL, UID1001-writable app volume and credentials is in progress. Provider migration/bootstrap/persistence evidence remains pending."
     },
     {
       "id": "beta-deployment",
       "title": "An immutable application image is deployed at an external HTTPS provider URL",
-      "status": "blocked",
+      "status": "in_progress",
       "blocking": true,
       "owner": "Product owner + Platform/DevOps",
       "evidence": [
@@ -73,11 +75,13 @@
         "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
         "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
         "https://github.com/Gardishan/Horeca/actions/runs/31877000013",
-        "https://github.com/Gardishan/Horeca/issues/44#issuecomment-5301594684"
+        "https://github.com/Gardishan/Horeca/issues/44#issuecomment-5301594684",
+        "docs/MVP_BETA_DELIVERY.md",
+        "https://github.com/Gardishan/Horeca/actions/runs/31879629530"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "GitHub attached environment beta to fresh exact-main run 31876896260, but both environment-scoped secret expressions resolved empty. Independent actor Gardishan probe 31877000013 reproduced the result, proving the failure is not specific to the bot-origin workflow dispatch. The fail-closed workflow exited before Railway readback or mutation."
+      "notes": "Owner approved reuse of the newly created Railway project on 2026-09-24; project/environment now named horeca-kz-beta / beta. Existing app deployment is crashed and no external launch is claimed. Configure three Beta secrets/resources, then deploy a reviewed main commit and verify actual HTTPS runtime/digest."
     },
     {
       "id": "external-https-smoke",
@@ -90,11 +94,13 @@
         "scripts/smoke-beta-external.mjs",
         "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
         "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
-        "https://github.com/Gardishan/Horeca/issues/44#issuecomment-5301594684"
+        "https://github.com/Gardishan/Horeca/issues/44#issuecomment-5301594684",
+        "docs/MVP_BETA_DELIVERY.md",
+        "https://github.com/Gardishan/Horeca/actions/runs/31879629530"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "The external smoke implementation is merged, but fresh exact-main Beta Launch run 31876896260 correctly stopped before provider discovery because both GitHub Environment secret expressions were empty; no Railway or external HTTPS request was attempted."
+      "notes": "No external origin was returned by the latest failed Beta deployment. Enhanced smoke must verify invite/auth/roles, seeded private document/payment-proof downloads and SHA-256 of a new synthetic upload after redeploy/rollback/restore. Local or mocked checks do not complete this control."
     },
     {
       "id": "android-debug-artifact",
@@ -107,11 +113,13 @@
         "android/app/src/main/java/kz/horeca/app/MainActivity.java",
         "https://github.com/Gardishan/Horeca/actions/runs/31822731617",
         "https://github.com/Gardishan/Horeca/actions/runs/31822731617/artifacts/9227617669",
-        "https://github.com/Gardishan/Horeca/actions/runs/31876896260"
+        "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
+        "docs/MVP_BETA_DELIVERY.md",
+        "https://github.com/Gardishan/Horeca/actions/runs/31879629530"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "Main 410c98ef reproducibly produced debug artifact 9227617669 (SHA-256 f86c154c711f4e79e6330993722ce3c9edfca03e208bd3a0aaef00888596bbb2) for the local emulator. Fresh exact-main run 31876896260 stopped before provider URL discovery, so no external-origin APK or checksum was produced; do not create a production signing key."
+      "notes": "Historical CI built an emulator-targeted debug APK. No external Beta origin or launch-commit APK/checksum is available. Rebuild the debug APK using the verified external origin after a successful candidate deployment; production signing stays out of scope."
     },
     {
       "id": "release-identity",
@@ -127,11 +135,13 @@
         "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
         "https://github.com/Gardishan/Horeca/actions/runs/31877000013",
         "https://github.com/Gardishan/Horeca/commit/410c98ef80ace5e5c12e30552229a4f8a1d5df40",
-        "https://github.com/Gardishan/Horeca/actions/runs/31822731478/artifacts/9227592566"
+        "https://github.com/Gardishan/Horeca/actions/runs/31822731478/artifacts/9227592566",
+        "docs/MVP_BETA_DELIVERY.md",
+        "https://github.com/Gardishan/Horeca/actions/runs/31879629530"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "The fail-closed launch workflow ran via workflow_dispatch on exact main 1a7781b1. Image digest, deployed migration evidence, external-origin APK, tag and prerelease remain intentionally absent because fresh run 31876896260 and independent probe 31877000013 both received empty beta Environment secret expressions."
+      "notes": "Remote main readback on 2026-09-24 was 849bbb4b461a696dfc91a3f3ff64518abfdc47b2. Current local fixes still require review and main CI. Then record one launch SHA, actual image digest, migration, external-origin APK and SBOM, and complete strict gate/prerelease identity. The workflow must not substitute a missing image digest with a success label."
     },
     {
       "id": "beta-operations",
@@ -146,11 +156,13 @@
         "tests/beta-safety.test.ts",
         "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
         "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
-        "https://github.com/Gardishan/Horeca/issues/44#issuecomment-5301594684"
+        "https://github.com/Gardishan/Horeca/issues/44#issuecomment-5301594684",
+        "docs/MVP_BETA_DELIVERY.md",
+        "https://github.com/Gardishan/Horeca/actions/runs/31879629530"
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "The application kill switch passed policy and local runtime smoke. Fresh exact-main run 31876896260 stopped at empty beta Environment secret expressions before provider readback, so Railway rollback, persistence verification and final-candidate restore were not attempted."
+      "notes": "Local policy and workflow failure-cleanup fixtures pass; provider rollout/rollback and monitoring observation remain unverified. After provisioning, prove DB and private-file persistence across redeploy/rollback/restore. Failure cleanup is best effort if the runner or provider becomes unavailable. Record monitoring access and an observation window. Owner-approved project/environment renaming is complete; provider lifecycle proof remains pending."
     }
   ]
 }
