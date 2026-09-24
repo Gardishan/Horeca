@@ -28,7 +28,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "db:rotate-admin": "node scripts/rotate-demo-admin.mjs",
+    "db:rotate-admin": "node --import tsx scripts/rotate-demo-admin.ts",
     "db:studio": "prisma studio",
     "quality:quick": "npm run check:runtime && npm run check:repo && npm run check:unused && npm run check:readiness && npm run mvp:check-readiness && npm run typecheck && npm run test && npm run lint",
     "verify": "npm run check:runtime && npm run check:repo && npm run check:unused && npm run check:readiness && npm run mvp:check-readiness && npm run prisma:validate && npm run typecheck && npm run test:coverage && npm run lint && npm run build",
