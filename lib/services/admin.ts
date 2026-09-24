@@ -112,28 +112,67 @@ export async function getAdminCompany(companyId: string) {
   };
 }
 
-export async function listAdminVerifications(status?: VerificationStatus) {
+const adminDocumentSelect = {
+  id: true,
+  type: true,
+  originalName: true,
+  status: true,
+  antivirusStatus: true,
+  uploadedAt: true,
+  adminComment: true,
+} satisfies Prisma.CompanyDocumentSelect;
+
+/** Upper bound for every admin review queue; items are served oldest first. */
+export const ADMIN_QUEUE_LIMIT = 50;
+
+/**
+ * Verification attempts awaiting a decision. Only PENDING attempts accept a decision
+ * (evaluateVerificationDecision), so terminal attempts are listed only on explicit request.
+ * Documents come from the attempt itself; earlier attempts contribute only documents that
+ * are still actionable (UNDER_REVIEW) or give context (APPROVED).
+ */
+export async function listAdminVerifications(status: VerificationStatus = "PENDING") {
   const verifications = await prisma.companyVerification.findMany({
-    where: status ? { status } : { status: { in: ["PENDING", "REUPLOAD_REQUESTED"] } },
-    include: {
+    where: { status },
+    select: {
+      id: true,
+      companyId: true,
+      status: true,
+      submittedAt: true,
+      reviewedAt: true,
+      adminComment: true,
+      createdAt: true,
+      documents: {
+        select: adminDocumentSelect,
+        orderBy: [{ uploadedAt: "asc" }, { id: "asc" }],
+        take: ADMIN_QUEUE_LIMIT,
+      },
       company: {
-        include: {
+        select: {
+          id: true,
+          name: true,
+          binIin: true,
+          city: true,
           documents: {
-            select: { id: true, type: true, originalName: true, status: true, antivirusStatus: true, uploadedAt: true, adminComment: true },
+            where: { status: { in: ["APPROVED", "UNDER_REVIEW"] } },
+            select: { ...adminDocumentSelect, verificationId: true },
+            orderBy: [{ uploadedAt: "asc" }, { id: "asc" }],
+            take: ADMIN_QUEUE_LIMIT,
           },
           payments: { orderBy: { createdAt: "desc" }, take: 1, select: adminPaymentSelect },
-          subscriptions: { include: { plan: true }, orderBy: { createdAt: "desc" }, take: 1 },
+          subscriptions: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true, plan: { select: { code: true, name: true } } } },
         },
       },
     },
-    orderBy: { submittedAt: "asc" },
+    orderBy: [{ submittedAt: "asc" }, { id: "asc" }],
+    take: ADMIN_QUEUE_LIMIT,
   });
-  return verifications.map((verification) => ({
+  return verifications.map(({ company: { documents: companyDocuments, payments, ...company }, ...verification }) => ({
     ...verification,
-    company: {
-      ...verification.company,
-      payments: verification.company.payments.map(toAdminPaymentView),
-    },
+    company: { ...company, payments: payments.map(toAdminPaymentView) },
+    earlierDocuments: companyDocuments.flatMap(({ verificationId, ...document }) =>
+      verificationId === verification.id ? [] : [document],
+    ),
   }));
 }
 
