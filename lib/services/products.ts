@@ -1,7 +1,7 @@
 import type { Prisma, ProductStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ConflictError, NotFoundError } from "@/lib/errors";
-import { evaluateProductPublication, evaluateSupplierProductChange } from "@/lib/domain/product-rules";
+import { evaluateProductPublication, evaluateSupplierProductChange, isProductRenamed } from "@/lib/domain/product-rules";
 import { writeAuditLog, type AuditInput } from "@/lib/services/audit";
 import { toPlainNumber, uniqueSlug } from "@/lib/utils";
 import type { z } from "zod";
@@ -48,10 +48,10 @@ function productCreateData(companyId: string, input: ProductInput) {
   };
 }
 
-function productUpdateData(input: Partial<ProductInput>) {
+function productUpdateData(currentName: string, input: Partial<ProductInput>) {
   return {
     ...input,
-    ...(input.name ? { slug: uniqueSlug(input.name) } : {}),
+    ...(input.name !== undefined && isProductRenamed(currentName, input.name) ? { slug: uniqueSlug(input.name) } : {}),
   };
 }
 
@@ -131,7 +131,7 @@ function supplierLockConflict(reasons: string[]) {
 }
 
 async function readSupplierProduct(tx: Prisma.TransactionClient, companyId: string, productId: string) {
-  const product = await tx.product.findFirst({ where: { id: productId, companyId }, select: { status: true } });
+  const product = await tx.product.findFirst({ where: { id: productId, companyId }, select: { name: true, status: true } });
   if (!product) throw new NotFoundError("Товар не найден");
   const lock = evaluateSupplierProductChange(product.status);
   if (!lock.allowed) throw supplierLockConflict(lock.reasons);
@@ -158,8 +158,8 @@ async function writeSupplierProduct(
 
 export function updateCompanyProduct(companyId: string, productId: string, input: Partial<SupplierProductInput>) {
   return prisma.$transaction(async (tx) => {
-    await readSupplierProduct(tx, companyId, productId);
-    return writeSupplierProduct(tx, companyId, productId, productUpdateData(input));
+    const product = await readSupplierProduct(tx, companyId, productId);
+    return writeSupplierProduct(tx, companyId, productId, productUpdateData(product.name, input));
   });
 }
 
@@ -244,7 +244,7 @@ export function adminUpdateProduct(
     if (!before) throw new NotFoundError("Товар не найден");
     const updated = await tx.product.update({
       where: { id: productId },
-      data: productUpdateData(input),
+      data: productUpdateData(before.name, input),
       include: productInclude,
     });
     await writeAuditLog(

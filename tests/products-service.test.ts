@@ -352,6 +352,64 @@ describe("supplier cannot override an admin product block", () => {
   });
 });
 
+// Регрессия: updateCompanyProduct делал `input.name ? { slug: uniqueSlug(input.name) } : {}`,
+// а форма всегда отправляет name, поэтому любое сохранение (даже правка цены) меняло
+// публичный slug и ломало ссылки /catalog/<slug>.
+describe("product edits keep the public slug unless the name changes", () => {
+  const currentName = "Кофе в зернах Arabica Blend 1 кг";
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.productUpdateMany.mockResolvedValue({ count: 1 });
+    mocks.productFindUniqueOrThrow.mockResolvedValue({ id: "product-1", slug: "arabica-blend-1kg" });
+    mocks.auditCreate.mockResolvedValue({ id: "audit-1" });
+  });
+
+  it("keeps the slug when the supplier saves the form with an unchanged name", async () => {
+    runTransaction();
+    mocks.productFindFirst.mockResolvedValue(supplierProduct("PUBLISHED"));
+
+    await updateCompanyProduct("company-1", "product-1", { name: currentName, price: 9_100 });
+
+    const data = mocks.productUpdateMany.mock.calls[0][0].data;
+    expect(data).toEqual({ name: currentName, price: 9_100 });
+    expect(data).not.toHaveProperty("slug");
+  });
+
+  it("keeps the slug when the edit does not touch the name", async () => {
+    runTransaction();
+    mocks.productFindFirst.mockResolvedValue(supplierProduct("PUBLISHED"));
+
+    await updateCompanyProduct("company-1", "product-1", { stock: 7 });
+
+    expect(mocks.productUpdateMany.mock.calls[0][0].data).not.toHaveProperty("slug");
+  });
+
+  it("regenerates the slug when the supplier actually renames the product", async () => {
+    runTransaction();
+    mocks.productFindFirst.mockResolvedValue(supplierProduct("DRAFT"));
+
+    await updateCompanyProduct("company-1", "product-1", { name: "Arabica Espresso 500 g" });
+
+    expect(mocks.productUpdateMany.mock.calls[0][0].data.slug).toMatch(/^arabica-espresso-500-g-[0-9a-f]{8}$/);
+  });
+
+  it("keeps the slug when the admin saves with an unchanged name and regenerates it on rename", async () => {
+    runTransaction();
+    mocks.productFindUnique.mockResolvedValue(storedProduct({ name: currentName }));
+    mocks.productUpdate.mockResolvedValue(storedProduct({ name: currentName }));
+
+    await adminUpdateProduct("product-1", { name: currentName, isFeatured: true }, "admin-1");
+    expect(mocks.productUpdate.mock.calls[0][0].data).not.toHaveProperty("slug");
+
+    runTransaction();
+    mocks.productUpdate.mockResolvedValue(storedProduct({ name: "Arabica Espresso 500 g", slug: "arabica-espresso-500-g-1a2b3c4d" }));
+
+    await adminUpdateProduct("product-1", { name: "Arabica Espresso 500 g" }, "admin-1");
+    expect(mocks.productUpdate.mock.calls[1][0].data.slug).toMatch(/^arabica-espresso-500-g-[0-9a-f]{8}$/);
+  });
+});
+
 const adminMeta = { ipAddress: "203.0.113.7", userAgent: "vitest" };
 
 function storedProduct(overrides: Partial<{ status: "DRAFT" | "PUBLISHED" | "INACTIVE" | "BLOCKED"; name: string; slug: string; isFeatured: boolean; price: number }> = {}) {

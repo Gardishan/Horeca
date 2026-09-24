@@ -17,6 +17,11 @@ export function evaluateSupplierProductChange(productStatus: ProductStatus): Rul
   return { allowed: true, reasons: [] };
 }
 
+/** The public slug (/catalog/<slug>) is regenerated only when a save actually renames the product. */
+export function isProductRenamed(currentName: string, nextName: string): boolean {
+  return nextName.trim() !== currentName.trim();
+}
+
 export type PublicationContext = {
   companyStatus: CompanyStatus;
   verificationStatus: VerificationStatus;

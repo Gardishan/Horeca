@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { evaluateProductPublication, evaluatePublicVisibility, evaluateSupplierProductChange } from "@/lib/domain/product-rules";
+import {
+  evaluateProductPublication,
+  evaluatePublicVisibility,
+  evaluateSupplierProductChange,
+  isProductRenamed,
+} from "@/lib/domain/product-rules";
 
 describe("product publication policy", () => {
   const valid = {
@@ -84,5 +89,16 @@ describe("admin moderation lock", () => {
     for (const status of ["DRAFT", "PUBLISHED", "INACTIVE"] as const) {
       expect(evaluateSupplierProductChange(status), status).toEqual({ allowed: true, reasons: [] });
     }
+  });
+});
+
+describe("public slug stability", () => {
+  it("does not treat a save with the same name as a rename", () => {
+    expect(isProductRenamed("Кофе в зернах Arabica Blend 1 кг", "Кофе в зернах Arabica Blend 1 кг")).toBe(false);
+    expect(isProductRenamed("Кофе в зернах Arabica Blend 1 кг", "  Кофе в зернах Arabica Blend 1 кг ")).toBe(false);
+  });
+
+  it("treats a different name as a rename", () => {
+    expect(isProductRenamed("Кофе в зернах Arabica Blend 1 кг", "Кофе в зернах Arabica Blend 500 г")).toBe(true);
   });
 });
