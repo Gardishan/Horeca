@@ -58,7 +58,7 @@
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "Local clean PostgreSQL 17.11 migration/seed and 12-group HTTP smoke passed on 2026-09-24. Railway Hobby/CLI are active; owner approved reusing the new project, now renamed horeca-kz-beta / beta. Provisioning TLS PostgreSQL, UID1001-writable app volume and credentials is in progress. Provider migration/bootstrap/persistence evidence remains pending."
+      "notes": "Railway PostgreSQL17.11 is deployed with persistent volume; an actual pg_stat_ssl session proved TLS1.3 on 2026-09-24. No public TCP proxy. Provider migration/demo seed and lifecycle persistence proof remain pending. Local clean PostgreSQL17.11 migration/seed and isolated artifact HTTP smoke pass."
     },
     {
       "id": "beta-deployment",
@@ -81,7 +81,7 @@
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "Owner approved reuse of the newly created Railway project on 2026-09-24; project/environment now named horeca-kz-beta / beta. Existing app deployment is crashed and no external launch is claimed. Configure three Beta secrets/resources, then deploy a reviewed main commit and verify actual HTTPS runtime/digest."
+      "notes": "Owner-approved horeca-kz-beta / beta resources and three GitHub Environment secrets are configured. HTTPS origin https://horeca-beta.up.railway.app exists; appPID1UID1001 and volumeowner1001/mode0700 are verified. Beta remains disabled. Maina332671 runtime exposed missing Prisma alias in Turbopack standalone; Webpack+isolated-smoke correction requires CI and fresh external deployment before this control is done."
     },
     {
       "id": "external-https-smoke",
@@ -100,7 +100,7 @@
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "No external origin was returned by the latest failed Beta deployment. Enhanced smoke must verify invite/auth/roles, seeded private document/payment-proof downloads and SHA-256 of a new synthetic upload after redeploy/rollback/restore. Local or mocked checks do not complete this control."
+      "notes": "External disabled-Beta probe on 2026-09-24: liveness200 and catalog503 BETA_DISABLED; readiness500 exposed missing Prisma runtime. Isolated local smoke now reproduces this packaging class. Fix requires external redeploy, then invite/auth/roles, protected PDF downloads and synthetic-upload hashes across lifecycle changes."
     },
     {
       "id": "android-debug-artifact",
@@ -141,7 +141,7 @@
       ],
       "verifiedAt": null,
       "environment": "beta",
-      "notes": "Remote main readback on 2026-09-24 was 849bbb4b461a696dfc91a3f3ff64518abfdc47b2. Current local fixes still require review and main CI. Then record one launch SHA, actual image digest, migration, external-origin APK and SBOM, and complete strict gate/prerelease identity. The workflow must not substitute a missing image digest with a success label."
+      "notes": "PR57 merged as a332671fc0d2a4710fca91bdb27df7b15a793cc4; post-merge Quality35997366753 and Security35997366746 passed. External packaging correction is still required, so a332671 is not a verified launch candidate. Record the corrected mainSHA, actual image digest, external-origin APK/SBOM and strict-gate/prerelease identity after runtime verification."
     },
     {
       "id": "beta-operations",

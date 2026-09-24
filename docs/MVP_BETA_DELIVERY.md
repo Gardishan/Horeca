@@ -113,3 +113,29 @@ cleanup; operators must then use the documented manual kill-switch procedure.
 Local verification is not evidence of an external launch. Keep unresolved
 controls in `docs/mvp-launch-readiness.json` open until their actual runtime,
 APK, rollback, observation and release-identity criteria pass.
+
+## Runtime packaging correction
+
+External disabled-Beta preflight on 2026-09-24 found liveness 200 but readiness
+500 on deployment `dd55767a-48ed-4531-b7eb-343c178e244b`, main `a332671f`.
+The log identifies missing `@prisma/client-2c3a283f134fdcb6`. Turbopack created
+that alias in `.next/node_modules` but omitted it and Prisma from standalone
+NFT traces. A local copy outside the repository reproduces missing runtime
+modules; the previous smoke inherited the repository's parent `node_modules`.
+The catalog kill switch remains closed (`503 BETA_DISABLED`).
+
+Change contract: use Next's supported `next build --webpack` production build
+and run the existing HTTP smoke from an isolated temporary artifact. Keep Next
+16.3.6 security fixes, application policy and schema unchanged. Risks are build
+output/CSP/RSC differences, covered by the full gate and existing role/HTML/HTTP
+smoke. No ad hoc rewriting of generated external-module aliases. Related upstream
+trace report: [Next.js #95816](https://github.com/vercel/next.js/issues/95816);
+[documented CLI build flags](https://nextjs.org/docs/app/api-reference/cli/next).
+
+The same provider probe confirmed that SSH commands run as UID 0 even when the
+application PID1 runs as UID 1001. Bootstrap must clear supplementary groups and
+drop GID/UID to the Docker application's 1001 before creating private directories
+or files. A failed privilege change must prevent writes; do not widen file modes
+or recursively change ownership as a workaround. Runtime PID1, mounted-volume
+ownership and write access as UID1001 were independently verified while traffic
+remained disabled.

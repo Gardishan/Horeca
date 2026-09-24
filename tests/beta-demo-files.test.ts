@@ -41,6 +41,94 @@ describe("controlled Beta demo file bootstrap", () => {
     return spawnSync(process.execPath, [script], { env: { ...environment, ...overrides }, encoding: "utf8" });
   }
 
+  function runWithIdentity(options: { uid: number; gid: number; failAt?: "setgroups" | "setgid" | "setuid"; retainRoot?: boolean }) {
+    const harness = `
+      const fs = require("node:fs/promises");
+      const { syncBuiltinESMExports } = require("node:module");
+      const { pathToFileURL } = require("node:url");
+      const options = ${JSON.stringify(options)};
+      let uid = options.uid;
+      let gid = options.gid;
+      let groups = [20, 100];
+      const events = [];
+      process.getuid = () => uid;
+      process.getgid = () => gid;
+      process.setgroups = (value) => {
+        events.push({ action: "setgroups", groups: value });
+        if (options.failAt === "setgroups") throw new Error("Simulated group reset failure");
+        groups = [...value];
+      };
+      process.setgid = (value) => {
+        events.push({ action: "setgid", id: value });
+        if (options.failAt === "setgid") throw new Error("Simulated GID switch failure");
+        gid = value;
+      };
+      process.setuid = (value) => {
+        events.push({ action: "setuid", id: value });
+        if (options.failAt === "setuid") throw new Error("Simulated UID switch failure");
+        if (!options.retainRoot) uid = value;
+      };
+      for (const action of ["mkdir", "writeFile"]) {
+        const original = fs[action];
+        fs[action] = (...args) => {
+          events.push({ action, uid, gid, groups: [...groups] });
+          return original(...args);
+        };
+      }
+      syncBuiltinESMExports();
+      process.on("exit", () => console.log(JSON.stringify({ event: "bootstrap_identity_trace", events })));
+      import(pathToFileURL(process.argv[1]).href).catch(() => { process.exitCode = 1; });
+    `;
+    const result = spawnSync(process.execPath, ["-e", harness, script], { env: environment, encoding: "utf8" });
+    const traceLine = result.stdout.split("\n").find((line) => line.startsWith('{"event":"bootstrap_identity_trace"'));
+    expect(traceLine, result.stderr).toBeDefined();
+    return { ...result, events: JSON.parse(traceLine!).events as Array<Record<string, unknown>> };
+  }
+
+  it("drops root groups, GID and UID before creating private fixture directories or files", async () => {
+    const result = runWithIdentity({ uid: 0, gid: 0 });
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain('"created":5');
+    expect(result.events.slice(0, 3)).toEqual([
+      { action: "setgroups", groups: [] },
+      { action: "setgid", id: 1001 },
+      { action: "setuid", id: 1001 },
+    ]);
+    const writes = result.events.filter(({ action }) => action === "mkdir" || action === "writeFile");
+    expect(writes.length).toBeGreaterThan(0);
+    for (const write of writes) expect(write).toMatchObject({ uid: 1001, gid: 1001, groups: [] });
+    expect((await lstat(path.join(volume, "company-documents"))).mode & 0o777).toBe(0o700);
+    for (const [storagePath] of expectedFiles) expect((await lstat(path.join(volume, storagePath))).mode & 0o777).toBe(0o600);
+  });
+
+  it("preserves the identity of a non-root local fixture invocation", () => {
+    const result = runWithIdentity({ uid: 501, gid: 20 });
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain('"created":5');
+    expect(result.events.some(({ action }) => ["setgroups", "setgid", "setuid"].includes(String(action)))).toBe(false);
+    for (const write of result.events) expect(write).toMatchObject({ uid: 501, gid: 20, groups: [20, 100] });
+  });
+
+  it.each(["setgroups", "setgid", "setuid"] as const)("refuses every file mutation when %s fails", async (failAt) => {
+    const result = runWithIdentity({ uid: 0, gid: 0, failAt });
+
+    expect(result.status).not.toBe(0);
+    expect(result.events.at(-1)?.action).toBe(failAt);
+    expect(result.events.some(({ action }) => action === "mkdir" || action === "writeFile")).toBe(false);
+    expect(await readdir(volume)).toEqual([]);
+    expect(`${result.stdout}${result.stderr}`).not.toContain("Simulated");
+  });
+
+  it("refuses file mutations if the process remains root after the UID switch", async () => {
+    const result = runWithIdentity({ uid: 0, gid: 0, retainRoot: true });
+
+    expect(result.status).not.toBe(0);
+    expect(result.events.some(({ action }) => action === "mkdir" || action === "writeFile")).toBe(false);
+    expect(await readdir(volume)).toEqual([]);
+  });
+
   it("creates the five exact synthetic PDFs and preserves files on repeated execution", async () => {
     const first = run();
     expect(first.status, first.stderr).toBe(0);

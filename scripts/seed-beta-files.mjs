@@ -3,6 +3,19 @@ import path from "node:path";
 
 class BootstrapError extends Error {}
 
+function dropRootPrivileges() {
+  if (process.getuid?.() !== 0) return;
+  try {
+    // Railway SSH runs as root even when the application runs as Docker UID 1001.
+    process.setgroups([]);
+    process.setgid(1001);
+    process.setuid(1001);
+    if (process.getuid() !== 1001 || process.getgid() !== 1001) throw new Error();
+  } catch {
+    throw new BootstrapError("Demo file bootstrap could not switch to the application user.");
+  }
+}
+
 async function storageRoot() {
   if (process.env.APP_ENV !== "beta" || process.env.BETA_DEMO_ONLY !== "true" || process.env.BETA_ENABLED !== "false") {
     throw new BootstrapError("Demo file bootstrap requires disabled, demo-only Beta.");
@@ -50,6 +63,7 @@ async function existingFixture(filePath, expected) {
 }
 
 async function main() {
+  dropRootPrivileges();
   const root = await storageRoot();
   const manifest = JSON.parse(await readFile(new URL("./demo-files.json", import.meta.url), "utf8"));
   if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) {
