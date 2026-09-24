@@ -77,6 +77,10 @@ jobs:
       - name: Build local-emulator debug APK
         working-directory: android
         run: gradle :app:assembleDebug -PwebAppUrl=http://10.0.2.2:3000
+      - name: Verify the debug APK embeds its web origin
+        # Same verifier as the Beta launch, so every PR exercises it on a real
+        # multidex APK before a launch depends on it.
+        run: node scripts/verify-apk-url.mjs android/app/build/outputs/apk/debug/app-debug.apk http://10.0.2.2:3000
       - uses: actions/upload-artifact@v7
         with:
           name: horeca-kz-debug-${{ github.sha }}
