@@ -310,6 +310,42 @@ async function run() {
   assert(document.ok && bytes.subarray(0, 5).toString() === "%PDF-", "Protected document download failed");
   checks.push("admin access and protected document download");
 
+  const mutation = (cookie) => ({ Cookie: cookie, Origin: origin, "Content-Type": "application/json" });
+  const unchangedNameEdit = await json("/api/dashboard/products/product-coffee", {
+    method: "PUT",
+    headers: mutation(supplierCookie),
+    body: JSON.stringify({ name: "Кофе в зернах Arabica Blend 1 кг", price: 8900 }),
+  });
+  assert(unchangedNameEdit.response.ok && unchangedNameEdit.payload.data.slug === "arabica-blend-1kg", "Saving a product without renaming it rotated its public slug");
+  const stableLink = await json("/api/catalog/products/arabica-blend-1kg");
+  assert(stableLink.response.ok, "Existing catalog link broke after an edit without a rename");
+  checks.push("product edit without rename keeps the public catalog link");
+
+  const supplierModeration = await json("/api/admin/products/product-syrup/block", { method: "POST", headers: mutation(supplierCookie), body: "{}" });
+  assert(supplierModeration.response.status === 403, "Supplier reached the admin product moderation API");
+  const adminBlock = await json("/api/admin/products/product-syrup/block", { method: "POST", headers: mutation(adminCookie), body: "{}" });
+  assert(adminBlock.response.ok && adminBlock.payload.data.status === "BLOCKED", "Admin could not block a product");
+  for (const [path, method, body] of [
+    ["/api/dashboard/products/product-syrup/publish", "POST", "{}"],
+    ["/api/dashboard/products/product-syrup/hide", "POST", "{}"],
+    ["/api/dashboard/products/product-syrup", "PUT", JSON.stringify({ price: 4200 })],
+  ]) {
+    const attempt = await json(path, { method, headers: mutation(supplierCookie), body });
+    assert(attempt.response.status === 409 && attempt.payload.error.code === "CONFLICT", `Supplier overrode an admin product block via ${method} ${path}`);
+  }
+  const blockedLink = await json("/api/catalog/products/vanilla-syrup-1l");
+  assert(blockedLink.response.status === 404, "Blocked product stayed in the public catalog");
+  const unblock = await json("/api/admin/products/product-syrup/publish", { method: "POST", headers: mutation(adminCookie), body: "{}" });
+  assert(unblock.response.ok && unblock.payload.data.status === "PUBLISHED", "Admin could not lift a product block");
+  const restoredLink = await json("/api/catalog/products/vanilla-syrup-1l");
+  assert(restoredLink.response.ok, "Unblocked product did not return to the public catalog");
+  const moderationAudit = await json("/api/admin/companies/company-active", { headers: { Cookie: adminCookie } });
+  const productActions = moderationAudit.response.ok
+    ? moderationAudit.payload.data.auditLogs.filter((entry) => entry.entityType === "Product" && entry.entityId === "product-syrup").map((entry) => entry.action)
+    : [];
+  assert(productActions.includes("PRODUCT_BLOCKED") && productActions.includes("PRODUCT_PUBLISHED"), "Admin product moderation left no audit evidence");
+  checks.push("admin product block is authoritative for the supplier, reversible by admin and audited");
+
   return checks;
 }
 
