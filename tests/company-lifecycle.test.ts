@@ -16,6 +16,7 @@ vi.mock("@/lib/services/audit", () => ({ writeAuditLog: mocks.writeAuditLog }));
 
 import {
   activateCompany,
+  submitCompanyVerification,
 } from "@/lib/services/verification";
 
 type Document = {
@@ -97,5 +98,46 @@ describe("company activation over superseded documents", () => {
     });
     expect(mocks.transaction).not.toHaveBeenCalled();
     expect(mocks.writeAuditLog).not.toHaveBeenCalled();
+  });
+});
+
+describe("verification resubmission of an active company", () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it("refuses to demote an active approved company to review", async () => {
+    mocks.companyFindUnique.mockResolvedValue(lifecycleContext({ status: "ACTIVE", verificationStatus: "APPROVED" }));
+
+    await expect(submitCompanyVerification("company-1")).rejects.toMatchObject({
+      status: 409,
+      code: "CONFLICT",
+      message: "Компания уже проверена и активна: повторная отправка на проверку недоступна",
+    });
+    expect(mocks.transaction).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["REJECTED", "PENDING_REVIEW"],
+    ["REUPLOAD_REQUESTED", "PENDING_REVIEW"],
+    ["APPROVED", "PENDING_REVIEW"],
+  ])("still opens a new attempt after a %s decision on a %s company", async (verificationStatus, status) => {
+    mocks.companyFindUnique.mockResolvedValue(lifecycleContext({
+      status,
+      verificationStatus,
+      payments: [{ status: "PROOF_UPLOADED" }],
+      verifications: [{ id: "verification-1", companyId: "company-1", status: verificationStatus }],
+    }));
+    const nextAttempt = { id: "verification-2", companyId: "company-1", status: "PENDING" };
+    const client = {
+      companyVerification: { create: vi.fn().mockResolvedValue(nextAttempt) },
+      company: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      companyDocument: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+    };
+    runTransactionWith(client);
+
+    await expect(submitCompanyVerification("company-1")).resolves.toEqual(nextAttempt);
+    expect(client.company.updateMany).toHaveBeenCalledWith({
+      where: { id: "company-1", status, verificationStatus, isBlocked: false },
+      data: { status: "PENDING_REVIEW", verificationStatus: "PENDING" },
+    });
   });
 });

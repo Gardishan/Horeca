@@ -5,6 +5,7 @@ import {
   evaluateVerificationSubmission,
   evaluateVerificationDecision,
   isDocumentSafeForApproval,
+  isVerificationSubmissionLocked,
   profileCompletion,
   type ActivationContext,
 } from "@/lib/domain/verification-rules";
@@ -175,6 +176,15 @@ describe("company activation", () => {
   it("computes profile completeness deterministically", () => {
     expect(profileCompletion(profile)).toMatchObject({ complete: true, percent: 100 });
     expect(profileCompletion({ ...profile, phone: "" }).percent).toBe(90);
+  });
+});
+
+describe("company lifecycle guards", () => {
+  it("locks verification resubmission only for an active company", () => {
+    expect(isVerificationSubmissionLocked("ACTIVE")).toBe(true);
+    for (const status of ["DRAFT", "PENDING_REVIEW", "REJECTED", "BLOCKED"] as const) {
+      expect(isVerificationSubmissionLocked(status)).toBe(false);
+    }
   });
 });
 

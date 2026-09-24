@@ -43,6 +43,7 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 13. Неожиданный API 500 имеет один correlation ID в response/header/structured log и не журналирует raw error details.
 14. `APP_ENV=beta` не обслуживает traffic без `BETA_ENABLED=true` и валидной access cookie; health/readiness сохраняют операторский контроль.
 15. Controlled Beta не принимает upload/payment signal без server-side подтверждения demo-only policy; public registration закрыта по умолчанию.
+16. `ACTIVE` компания не может повторно отправить verification; повторная подача остаётся после `REJECTED`/`REUPLOAD_REQUESTED` и до активации.
 
 ## Проверенный путь качества
 

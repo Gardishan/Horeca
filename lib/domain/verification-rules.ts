@@ -1,5 +1,6 @@
 import type {
   AntivirusStatus,
+  CompanyStatus,
   DocumentStatus,
   DocumentType,
   LegalType,
@@ -177,4 +178,9 @@ export function evaluateCompanyActivation(input: ActivationContext): RuleResult 
   }
   if (input.paymentStatus !== "CONFIRMED") reasons.push("Оплата не подтверждена");
   return { allowed: reasons.length === 0, reasons };
+}
+
+/** An ACTIVE company is already verified; resubmitting would hide its catalog. */
+export function isVerificationSubmissionLocked(status: CompanyStatus) {
+  return status === "ACTIVE";
 }

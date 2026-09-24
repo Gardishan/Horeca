@@ -8,6 +8,7 @@ import {
   evaluateVerificationSubmission,
   evaluateVerificationDecision,
   isDocumentSafeForApproval,
+  isVerificationSubmissionLocked,
 } from "@/lib/domain/verification-rules";
 import { isDeployedApplicationEnvironment } from "@/lib/runtime-config";
 import { writeAuditLog } from "@/lib/services/audit";
@@ -96,6 +97,9 @@ export async function getVerificationContext(companyId: string) {
 
 export async function submitCompanyVerification(companyId: string) {
   const company = await getVerificationContext(companyId);
+  if (isVerificationSubmissionLocked(company.status)) {
+    throw new ConflictError("Компания уже проверена и активна: повторная отправка на проверку недоступна");
+  }
   const rule = evaluateVerificationSubmission({
     profile: company,
     acceptedLegalTypes: company.legalAcceptances.map((item) => item.type),

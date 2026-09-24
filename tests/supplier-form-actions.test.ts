@@ -36,6 +36,13 @@ function actionButton(node: ReactNode): ReactElement<ElementProps> | undefined {
   }
 }
 
+function textOf(node: ReactNode): string {
+  return Children.toArray(node).map((child) => {
+    if (typeof child === "string" || typeof child === "number") return String(child);
+    return isValidElement<ElementProps>(child) ? textOf(child.props.children) : "";
+  }).join(" ");
+}
+
 function prepareUpload(kind: "document" | "payment" = "document") {
   const form = { reset: vi.fn() };
   const body = new FormData();
@@ -144,5 +151,26 @@ describe("supplier form recovery", () => {
     expect(mocks.refresh).not.toHaveBeenCalled();
     if (kind === "billing") expect(mocks.setters[2]).toHaveBeenLastCalledWith(true);
     else expect(mocks.setters[1]).toHaveBeenLastCalledWith(expect.objectContaining({ error: true }));
+  });
+
+  it("submits verification from an unlocked panel", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ ok: true, data: { id: "verification-1" } }));
+    vi.stubGlobal("fetch", fetchMock);
+    const click = actionButton(VerificationPanel({ acceptedTypes: ["OFFER", "PRIVACY"], documents: [] }))?.props.onClick;
+    if (!click) throw new Error("Submit action is missing");
+
+    await click();
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/dashboard/company/submit-verification", expect.objectContaining({ method: "POST" }));
+    expect(mocks.refresh).toHaveBeenCalledOnce();
+  });
+
+  it("hides resubmission for an active company but keeps document upload", () => {
+    const panel = VerificationPanel({ acceptedTypes: ["OFFER", "PRIVACY"], documents: [], submissionLocked: true });
+
+    expect(actionButton(panel)).toBeUndefined();
+    expect(uploadForm(panel)).toBeDefined();
+    expect(textOf(panel)).toContain("Компания проверена и активна");
+    expect(textOf(panel)).not.toContain("Отправить компанию");
   });
 });
