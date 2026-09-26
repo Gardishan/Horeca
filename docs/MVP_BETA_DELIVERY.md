@@ -172,3 +172,30 @@ The failed run exercised the safety shutdown: at 2026-09-24T12:58:08Z the
 workflow verified a new disabled deployment and external kill switch. An
 independent probe at 13:00:46Z returned `503 BETA_DISABLED`. This is real shutdown
 evidence, not a successful launch or rollback rehearsal.
+
+## Railway rollback and shutdown correction
+
+[Beta Launch 36004483180](https://github.com/Gardishan/Horeca/actions/runs/36004483180)
+on `f5455cbbf0de4aaf105350747be24befb36493a9` passed external smoke, persistence
+and the external-origin APK check. The rollback step then returned HTTP 400.
+Live API introspection on 2026-09-25 reports
+`deploymentRollback(id: String!): Boolean!`; the workflow's object selection
+was invalid. The read query is separate and must not be blamed from this log.
+[Read-only diagnostic 36137079916](https://github.com/Gardishan/Horeca/actions/runs/36137079916)
+confirmed the complete deployment read, `canRollback`, image digest and scalar
+schema with the existing project token. No broader credential is required.
+
+Change contract: call both rollback mutations as scalar operations, require an
+explicit `true`, then retain the existing provider deployment and external smoke
+readbacks. A rejected mutation must stop promotion. Preserve project-token scope;
+do not replace it with broader account credentials.
+
+The failure cleanup requested deployment `fa257e47-4ed1-4233-b9c3-7527bfa1f986`
+at 2026-09-24T13:21:37.341Z. Provider readback records SUCCESS at 13:28:08.056Z;
+the old 24-by-5-second poll loop had already stopped. Independent HTTPS probes
+on 2026-09-25 confirmed `503 BETA_DISABLED` and `503 NOT_READY`.
+Ordinary-failure cleanup must use the existing 15-minute deployment budget;
+cancellation remains explicitly best effort within 240 seconds. Test delayed
+success beyond the former poll cap and deadline expiry. Provider outage or loss
+of the runner can still prevent verification; do not claim shutdown from a
+variable update alone. No application policy or schema changes are in scope.

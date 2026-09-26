@@ -1,6 +1,6 @@
 # Project context
 
-Последнее обновление: 24.09.2026.
+Последнее обновление: 25.09.2026.
 
 Это долговременная память для следующего разработчика или coding agent. Она фиксирует текущее состояние, но не заменяет schema, tests и source code.
 
@@ -105,6 +105,15 @@ evidence и не объявляет launch. Текущий change contract и о
 `docs/MVP_BETA_DELIVERY.md`. До внешних доказательств strict MVP gate красный. GitHub auto-deploy для app
 выключен: rollout выполняет ручной Beta workflow, чтобы evidence-only merge
 не заменял проверенный image незарегистрированным deployment.
+
+Runtime-проверки 24–25.09 подтвердили migration/seed, TLS и физический restart
+PostgreSQL, private-file persistence и APK с внешним origin. Финальный launch
+ещё требует успешного rollback/restore. Live Railway API возвращает scalar
+`Boolean!` из `deploymentRollback`; workflow требует явного `true` перед
+проверкой нового deployment. После обычного сбоя cleanup ждёт deployment до
+15 минут; отмена workflow ограничена best-effort попыткой в 240 секунд.
+APK verifier проверяет точную URL-константу во всех корневых DEX-файлах,
+поскольку Android может поместить её в `classes2.dex`.
 
 ## Известные production gaps
 

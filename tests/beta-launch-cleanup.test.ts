@@ -22,6 +22,8 @@ describe("Beta launch failure cleanup", () => {
     await mkdir(state);
     commandLog = path.join(directory, "commands.jsonl");
     await writeFile(commandLog, "");
+    const clock = path.join(directory, "clock");
+    await writeFile(clock, "0");
     const railway = `#!${process.execPath}
 const fs = require('node:fs');
 const args = process.argv.slice(2);
@@ -40,13 +42,15 @@ if (args[0] === 'variable') {
   fs.writeFileSync(counter, String(count + 1));
   if (count === 0 && scenario === 'snapshot-failure') fail();
   const rows = [{ id: 'old-enabled', status: 'SUCCESS', createdAt: '2026-09-01' }];
-  if (count > 0 && scenario !== 'stale') rows.push({id: 'new-disabled', status: scenario === 'terminal-failure' ? 'FAILED' : count === 1 ? 'DEPLOYING' : 'SUCCESS', createdAt: '2026-09-02'});
+  const ready = scenario === 'delayed-success' ? count >= 40 : count >= 2;
+  if (count > 0 && scenario !== 'stale') rows.push({id: 'new-disabled', status: scenario === 'terminal-failure' ? 'FAILED' : ready ? 'SUCCESS' : 'DEPLOYING', createdAt: '2026-09-02'});
   console.log(JSON.stringify(rows));
 } else { fail(); }
 `;
     await writeFile(path.join(bin, "railway"), railway, { mode: 0o700 });
-    await writeFile(path.join(bin, "timeout"), '#!/bin/bash\nshift\nexec "$@"\n', { mode: 0o700 });
-    await writeFile(path.join(bin, "sleep"), "#!/bin/bash\nexit 0\n", { mode: 0o700 });
+    await writeFile(path.join(bin, "timeout"), '#!/bin/bash\nprintf "timeout:%s\\n" "$*" >> "$FIXTURE_LOG"\nshift\nexec "$@"\n', { mode: 0o700 });
+    await writeFile(path.join(bin, "date"), '#!/bin/bash\ncat "$FIXTURE_CLOCK"\n', { mode: 0o700 });
+    await writeFile(path.join(bin, "sleep"), '#!/bin/bash\nclock="$(< "$FIXTURE_CLOCK")"\nprintf "%s\\n" "$((clock + $1 * ${FIXTURE_CLOCK_SPEED:-1}))" > "$FIXTURE_CLOCK"\n', { mode: 0o700 });
     await writeFile(path.join(bin, "node"), '#!/bin/bash\nprintf "smoke:%s\\n" "$*" >> "$FIXTURE_LOG"\nif [ "$FIXTURE_SCENARIO" = "smoke-failure" ]; then echo "$RAILWAY_TOKEN" >&2; exit 1; fi\necho "{\\"checks\\":[\\"traffic kill switch closed\\"]}"\n', { mode: 0o700 });
     script = path.join(directory, "cleanup.sh");
     const block = cleanup?.split("        run: |\n")[1];
@@ -57,8 +61,9 @@ if (args[0] === 'variable') {
       APP_SERVICE_ID: "beta-service", BETA_BASE_URL: "https://beta.example.test",
       RAILWAY_TOKEN: "synthetic-project-token-must-not-leak",
       BETA_ACCESS_TOKEN: "synthetic-beta-token-must-not-leak",
+      BETA_LAUNCH_CANCELLED: "false",
       GITHUB_STEP_SUMMARY: path.join(directory, "summary.md"),
-      FIXTURE_LOG: commandLog, FIXTURE_SCENARIO: "success",
+      FIXTURE_LOG: commandLog, FIXTURE_SCENARIO: "success", FIXTURE_CLOCK: clock,
     };
   });
   afterEach(async () => {
@@ -93,8 +98,35 @@ if (args[0] === 'variable') {
     expect(await readFile(environment.GITHUB_STEP_SUMMARY!, "utf8")).toContain("new-disabled");
   });
 
+  it("waits for a rebuild that succeeds after the original 24-poll limit", async () => {
+    const result = run({ FIXTURE_SCENARIO: "delayed-success" });
+    expect(result.status, result.stderr).toBe(0);
+    expect(Number(await readFile(path.join(environment.BETA_STATE_DIR!, "fixture-count"), "utf8"))).toBe(41);
+    expect(await readFile(commandLog, "utf8")).toContain("smoke:scripts/smoke-beta-external.mjs preflight");
+  }, 15_000);
+
+  it("ends an ordinary failure wait at the 15-minute deployment deadline", async () => {
+    const result = run({ FIXTURE_SCENARIO: "stale", FIXTURE_CLOCK_SPEED: "10" });
+    expect(result.status).toBe(1);
+    expect(Number(await readFile(environment.FIXTURE_CLOCK!, "utf8"))).toBe(900);
+    const commands = await readFile(commandLog, "utf8");
+    expect(commands).toContain("timeout:1050s bash");
+    expect(commands).not.toContain("smoke:");
+    expect(await readFile(environment.GITHUB_STEP_SUMMARY!, "utf8")).toContain("UNVERIFIED");
+  });
+
+  it("keeps cancellation cleanup best effort within its 240-second outer timeout", async () => {
+    const result = run({ BETA_LAUNCH_CANCELLED: "true" });
+    expect(result.status, result.stderr).toBe(0);
+    const commands = await readFile(commandLog, "utf8");
+    expect(commands).toContain("timeout:240s bash");
+    expect(commands).not.toContain("timeout:1050s bash");
+    expect(cleanup).toContain("BETA_LAUNCH_CANCELLED: ${{ cancelled() }}");
+    expect(cleanup).toContain("timeout-minutes: 18");
+  });
+
   it.each(["variable-failure", "redeploy-failure", "snapshot-failure", "terminal-failure", "stale", "smoke-failure"])("fails visibly without exposing raw output for %s", async (scenario) => {
-    const result = run({ FIXTURE_SCENARIO: scenario });
+    const result = run({ FIXTURE_SCENARIO: scenario, FIXTURE_CLOCK_SPEED: "10" });
     expect(result.status).not.toBe(0);
     expect(`${result.stdout}${result.stderr}`).toContain("Beta safety shutdown could not be verified");
     expect(`${result.stdout}${result.stderr}`).not.toContain("synthetic-project-token");
