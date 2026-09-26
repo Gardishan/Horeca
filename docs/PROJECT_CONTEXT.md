@@ -78,7 +78,9 @@ Prisma остаётся 6.19.3; override фиксирует transitive deepmerge
 Локальный seed создаёт administrator, active-supplier и pending-supplier
 сценарии, доступные через role-buttons на `/login`. Точные demo-credentials
 не являются документируемым контрактом. Demo authentication запрещена в
-production; seed создаёт только тестовые документы и данные.
+production; seed создаёт только тестовые документы и данные. Повторный seed
+продлевает от текущего момента срок только demo-подписки `subscription-active`
+и даты её счёта, пока у компании нет другой ACTIVE подписки.
 
 ## Production readiness
 
