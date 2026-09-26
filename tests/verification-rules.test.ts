@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  companyStatusAfterUnblock,
   evaluateCompanyActivation,
   evaluateDocumentDecision,
   evaluateVerificationSubmission,
   evaluateVerificationDecision,
+  isCompanyBlocked,
   isDocumentSafeForApproval,
+  isVerificationSubmissionLocked,
   profileCompletion,
+  type ActivationContext,
 } from "@/lib/domain/verification-rules";
 
 const profile = {
@@ -48,14 +52,35 @@ describe("verification submission", () => {
   });
 });
 
+type ActivationDocument = ActivationContext["documents"][number];
+
+function doc(
+  type: ActivationDocument["type"],
+  status: ActivationDocument["status"],
+  uploadedAt: string,
+  antivirusStatus: ActivationDocument["antivirusStatus"] = "CLEAN",
+): ActivationDocument {
+  return { type, status, antivirusStatus, uploadedAt: new Date(uploadedAt) };
+}
+
+function activation(documents: ActivationDocument[], deployed = true) {
+  return evaluateCompanyActivation({
+    profile,
+    acceptedLegalTypes: ["OFFER", "PRIVACY"],
+    documents,
+    deployed,
+    paymentStatus: "CONFIRMED",
+  });
+}
+
 describe("company activation", () => {
   it("requires all reviewed documents and confirmed payment", () => {
     const accepted = evaluateCompanyActivation({
       profile,
       acceptedLegalTypes: ["OFFER", "PRIVACY"],
       documents: [
-        { status: "APPROVED", antivirusStatus: "CLEAN" },
-        { status: "APPROVED", antivirusStatus: "CLEAN" },
+        doc("REGISTRATION", "APPROVED", "2026-08-01T00:00:00.000Z"),
+        doc("BANK_DETAILS", "APPROVED", "2026-08-01T00:00:00.000Z"),
       ],
       deployed: true,
       paymentStatus: "CONFIRMED",
@@ -65,8 +90,8 @@ describe("company activation", () => {
       profile,
       acceptedLegalTypes: ["OFFER", "PRIVACY"],
       documents: [
-        { status: "APPROVED", antivirusStatus: "CLEAN" },
-        { status: "UNDER_REVIEW", antivirusStatus: "CLEAN" },
+        doc("REGISTRATION", "APPROVED", "2026-08-01T00:00:00.000Z"),
+        doc("BANK_DETAILS", "UNDER_REVIEW", "2026-08-01T00:00:00.000Z"),
       ],
       deployed: true,
       paymentStatus: "PROOF_UPLOADED",
@@ -76,15 +101,9 @@ describe("company activation", () => {
   });
 
   it("rejects an approved legacy mock file in a deployed environment", () => {
-    const result = evaluateCompanyActivation({
-      profile,
-      acceptedLegalTypes: ["OFFER", "PRIVACY"],
-      documents: [
-        { status: "APPROVED", antivirusStatus: "SKIPPED_MOCK" },
-      ],
-      deployed: true,
-      paymentStatus: "CONFIRMED",
-    });
+    const result = activation([
+      doc("REGISTRATION", "APPROVED", "2026-08-01T00:00:00.000Z", "SKIPPED_MOCK"),
+    ]);
 
     expect(result).toEqual({
       allowed: false,
@@ -92,9 +111,96 @@ describe("company activation", () => {
     });
   });
 
+  it.each(["REJECTED", "REUPLOAD_REQUESTED"] as const)(
+    "ignores a %s document superseded by a newer approved upload of the same type",
+    (status) => {
+      expect(activation([
+        doc("REGISTRATION", "APPROVED", "2026-08-05T00:00:00.000Z"),
+        doc("REGISTRATION", status, "2026-08-01T00:00:00.000Z", "PENDING"),
+        doc("PRICE_LIST", "APPROVED", "2026-08-06T00:00:00.000Z"),
+        doc("PRICE_LIST", status, "2026-08-02T00:00:00.000Z"),
+      ])).toEqual({ allowed: true, reasons: [] });
+    },
+  );
+
+  it("keeps a still-rejected current document blocking activation", () => {
+    expect(activation([
+      doc("REGISTRATION", "REJECTED", "2026-08-05T00:00:00.000Z"),
+      doc("REGISTRATION", "APPROVED", "2026-08-01T00:00:00.000Z"),
+    ])).toEqual({ allowed: false, reasons: ["Не все документы одобрены"] });
+    expect(activation([
+      doc("REGISTRATION", "APPROVED", "2026-08-01T00:00:00.000Z"),
+      doc("PRICE_LIST", "REUPLOAD_REQUESTED", "2026-08-02T00:00:00.000Z"),
+    ])).toEqual({ allowed: false, reasons: ["Не все документы одобрены"] });
+  });
+
+  it("does not treat an equally old upload as a replacement", () => {
+    expect(activation([
+      doc("REGISTRATION", "APPROVED", "2026-08-01T00:00:00.000Z"),
+      doc("REGISTRATION", "REJECTED", "2026-08-01T00:00:00.000Z"),
+    ]).allowed).toBe(false);
+  });
+
+  it.each(["UPLOADED", "UNDER_REVIEW"] as const)(
+    "keeps an unreviewed %s replacement blocking activation",
+    (status) => {
+      expect(activation([
+        doc("REGISTRATION", status, "2026-08-05T00:00:00.000Z"),
+        doc("REGISTRATION", "REJECTED", "2026-08-01T00:00:00.000Z"),
+        doc("BIN_IIN", "APPROVED", "2026-08-01T00:00:00.000Z"),
+      ])).toEqual({ allowed: false, reasons: ["Не все документы одобрены"] });
+    },
+  );
+
+  it("requires an approved registration or BIN/IIN document among current documents", () => {
+    expect(activation([doc("CERTIFICATE", "APPROVED", "2026-08-01T00:00:00.000Z")])).toEqual({
+      allowed: false,
+      reasons: ["Нет одобренного свидетельства регистрации или документа БИН/ИИН"],
+    });
+    expect(activation([doc("BIN_IIN", "APPROVED", "2026-08-01T00:00:00.000Z")]).allowed).toBe(true);
+    expect(activation([]).reasons).toEqual([
+      "Не все документы одобрены",
+      "Нет одобренного свидетельства регистрации или документа БИН/ИИН",
+    ]);
+  });
+
+  it("checks antivirus safety only on documents that still count", () => {
+    expect(activation([
+      doc("REGISTRATION", "APPROVED", "2026-08-05T00:00:00.000Z"),
+      doc("REGISTRATION", "REJECTED", "2026-08-01T00:00:00.000Z", "SKIPPED_MOCK"),
+    ])).toEqual({ allowed: true, reasons: [] });
+    expect(activation([
+      doc("REGISTRATION", "APPROVED", "2026-08-05T00:00:00.000Z"),
+      doc("CERTIFICATE", "APPROVED", "2026-08-01T00:00:00.000Z", "SKIPPED_MOCK"),
+    ]).reasons).toEqual(["Не все документы прошли антивирусную проверку"]);
+  });
+
   it("computes profile completeness deterministically", () => {
     expect(profileCompletion(profile)).toMatchObject({ complete: true, percent: 100 });
     expect(profileCompletion({ ...profile, phone: "" }).percent).toBe(90);
+  });
+});
+
+describe("company lifecycle guards", () => {
+  it("locks verification resubmission only for an active company", () => {
+    expect(isVerificationSubmissionLocked("ACTIVE")).toBe(true);
+    for (const status of ["DRAFT", "PENDING_REVIEW", "REJECTED", "BLOCKED"] as const) {
+      expect(isVerificationSubmissionLocked(status)).toBe(false);
+    }
+  });
+
+  it("treats either block marker as blocked", () => {
+    expect(isCompanyBlocked({ status: "BLOCKED", isBlocked: true })).toBe(true);
+    expect(isCompanyBlocked({ status: "ACTIVE", isBlocked: true })).toBe(true);
+    expect(isCompanyBlocked({ status: "BLOCKED", isBlocked: false })).toBe(true);
+    expect(isCompanyBlocked({ status: "ACTIVE", isBlocked: false })).toBe(false);
+  });
+
+  it("returns an unblocked company to a non-public review state, never ACTIVE", () => {
+    expect(companyStatusAfterUnblock("NOT_STARTED")).toBe("DRAFT");
+    for (const status of ["PENDING", "APPROVED", "REJECTED", "REUPLOAD_REQUESTED"] as const) {
+      expect(companyStatusAfterUnblock(status)).toBe("PENDING_REVIEW");
+    }
   });
 });
 
