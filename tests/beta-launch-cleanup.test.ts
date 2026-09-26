@@ -121,7 +121,7 @@ if (args[0] === 'variable') {
     const commands = await readFile(commandLog, "utf8");
     expect(commands).toContain("timeout:240s bash");
     expect(commands).not.toContain("timeout:1050s bash");
-    expect(cleanup).toContain("BETA_LAUNCH_CANCELLED: ${{ cancelled() }}");
+    expect(cleanup).toContain("BETA_LAUNCH_CANCELLED: ${{ job.status == 'cancelled' }}");
     expect(cleanup).toContain("timeout-minutes: 18");
   });
 

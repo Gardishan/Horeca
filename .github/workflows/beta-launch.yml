@@ -638,7 +638,7 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.BETA_RAILWAY_PROJECT_TOKEN }}
           BETA_ACCESS_TOKEN: ${{ secrets.BETA_SMOKE_ACCESS_TOKEN }}
-          BETA_LAUNCH_CANCELLED: ${{ cancelled() }}
+          BETA_LAUNCH_CANCELLED: ${{ job.status == 'cancelled' }}
         run: |
           set -euo pipefail
           umask 077
