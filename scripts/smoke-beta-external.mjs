@@ -215,6 +215,7 @@ async function runCreateMarker() {
       message: `Synthetic persistence marker ${markerLabel}`,
       quantity: 1,
       website: "",
+      betaDemoAcknowledged: true,
     }),
   });
   assert(created.response.status === 201 && created.payload.ok, "Persistence marker creation failed");

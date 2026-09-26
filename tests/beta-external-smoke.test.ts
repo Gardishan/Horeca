@@ -89,6 +89,7 @@ function betaServer(options: FixtureOptions = {}) {
       expect(identity).toBe("supplier");
       const body = JSON.parse(String(init.body));
       expect(body.buyerCompany).toMatch(/^beta-persistence-/);
+      expect(body.betaDemoAcknowledged).toBe(true);
       requestCount += 1;
       return ok({ id: "buyer-marker", createdAt: "2026-09-24T00:00:00Z" }, { status: 201 });
     }
