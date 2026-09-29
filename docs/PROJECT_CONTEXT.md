@@ -1,6 +1,6 @@
 # Project context
 
-Последнее обновление: 25.09.2026.
+Последнее обновление: 29.09.2026.
 
 Это долговременная память для следующего разработчика или coding agent. Она фиксирует текущее состояние, но не заменяет schema, tests и source code.
 
@@ -23,6 +23,7 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 - Заявки: `/dashboard/requests` и `/api/dashboard/requests` читают контакты и сообщения только компании authenticated supplier, по 24 записи на страницу, с `private, no-store` для API.
 - Billing UI связывает счёт с выбранной pending subscription; наличие старого счёта не скрывает создание нового.
 - Параметры каталога проходят общую Zod-проверку на HTTP, page и service boundary; некорректная пагинация не доходит до Prisma.
+- Grid-элементы внутри `.app-shell` имеют `min-width: 0`: на мобильном экране прокручиваются nav/table wrappers, а не весь кабинет.
 
 Подробности: `docs/ARCHITECTURE.md`.
 
