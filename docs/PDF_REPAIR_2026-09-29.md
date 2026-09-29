@@ -58,8 +58,10 @@ PDF MIME, `no-store`, правильные длины, размеры metadata �
 
 ## Проверка исходников
 
-- `npm run verify` — PASS: 320 tests, TypeScript, lint, coverage и production
-  standalone build; независимый review повторил 78 профильных tests.
+- `npm run verify` — PASS: 320 tests до интеграции PR58, затем 357 tests
+  на совместном source с исправлением page gate; TypeScript, lint, coverage и
+  production standalone build. Независимый review повторил 78 профильных tests.
+- `npm run security:audit` — PASS, известных high/critical findings нет.
 - Чистые `db:deploy`, `db:seed`, затем `smoke:http` — PASS на изолированном
   локальном PostgreSQL 14.21. Локальный PostgreSQL17 не был доступен; это
   ограничение не скрывается. CI использует PostgreSQL17.
