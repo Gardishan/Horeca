@@ -192,6 +192,12 @@ Seed, volume bootstrap и persistence probes используют общий
 `PDF_VALIDATION_PYTHON`; порядок установки описан в README. В runtime Python
 не добавлен. Bootstrap `--repair-legacy` заменяет только точные старые пять
 fixtures при выключенной demo-only Beta; неизвестные файлы не перезаписывает.
+29.09.2026 в18:17UTC все восемь известных повреждённых demo PDF восстановлены
+в работающем runtime00a7 отдельным ограниченным ремонтом данных; семь размеров
+согласованы без изменения статусов. Повторные HTTP downloads, strict parsing,
+отрисовка, 24 auth-denial checks и download audit подтверждены в
+`docs/PDF_REPAIR_2026-09-29.md`. Это не deployment нового генератора и не
+завершение общего MVP launch; readiness остаётся незавершённой.
 
 ## Когда обновлять этот файл
 

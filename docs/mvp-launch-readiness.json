@@ -7,17 +7,20 @@
     {
       "id": "critical-flows",
       "title": "Buyer, supplier, admin, billing, verification and private-document flows are reproducible",
-      "status": "done",
+      "status": "in_progress",
       "blocking": true,
       "owner": "Engineering",
       "evidence": [
         "https://github.com/Gardishan/Horeca/actions/runs/36600977390",
         "docs/releases/mvp-beta-2026-09-29/candidate-00a7-launch-evidence.json",
-        "scripts/smoke-http.mjs"
+        "scripts/smoke-http.mjs",
+        "docs/PDF_REPAIR_2026-09-29.md",
+        "docs/audits/2026-09-29/pdf-repair/after.json",
+        "docs/audits/2026-09-29/pdf-repair/authorization.json"
       ],
-      "verifiedAt": "2026-09-29T16:56:58Z",
+      "verifiedAt": null,
       "environment": "ci-postgresql-17 + railway-beta",
-      "notes": "Node 22 main 28d066a Quality passed 276 tests, standalone/container build, clean PostgreSQL 17 migration/seed and authenticated HTTP smoke. Buyer UI request delivery and company isolation passed on prior external candidate 00a7; corrected mobile CSS awaits new runtime."
+      "notes": "Historical HTTP smoke checked PDF signatures only and missed eight unreadable demo PDFs. Sep29 18:17Z bounded data repair restored all eight on runtime00a7; independent HTTP downloads, strict parsing/rendering, 24 auth-denial checks and download audit passed. Seed/bootstrap/probe generators and independent-parser regression checks are corrected in source; deploy this source and rerun the complete external flow before marking done. Other launch controls remain open."
     },
     {
       "id": "controlled-beta-safety",
@@ -81,11 +84,12 @@
         "https://github.com/Gardishan/Horeca/actions/runs/36601519494",
         "docs/releases/mvp-beta-2026-09-29/candidate-00a7-launch-evidence.json",
         "docs/releases/mvp-beta-2026-09-29/candidate-00a7-monitoring-evidence.json",
-        "docs/releases/mvp-beta-2026-09-29/mobile-css-simulation.json"
+        "docs/releases/mvp-beta-2026-09-29/mobile-css-simulation.json",
+        "docs/PDF_REPAIR_2026-09-29.md"
       ],
       "verifiedAt": null,
       "environment": "railway-beta",
-      "notes": "Full external HTTPS invite/auth/role/protected-PDF smoke passed on 00a7; new main 28d066a still requires deployed browser/HTTP verification. Mobile defect reproduced and CSS simulation passed 39/39 viewports; simulation is not runtime evidence for28d066a."
+      "notes": "Historical00a7 external smoke proves ordinary auth/role checks, not PDF readability or prefetch coverage. Eight live PDFs repaired and independently downloaded/parsed/rendered Sep29; new source adds parser and ordinary/prefetch/RSC probes. Corrected launch candidate still needs deployed browser/HTTP verification, including mobile behavior; CSS simulation is not delivered-runtime evidence."
     },
     {
       "id": "android-debug-artifact",
