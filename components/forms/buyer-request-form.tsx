@@ -17,24 +17,29 @@ export function BuyerRequestForm({ productId, productName }: { productId: string
         event.preventDefault();
         setPending(true); setError("");
         const form = new FormData(event.currentTarget);
-        const response = await fetch("/api/buyer-requests", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            productId,
-            buyerName: form.get("buyerName"),
-            buyerCompany: form.get("buyerCompany"),
-            phone: form.get("phone"),
-            email: form.get("email"),
-            quantity: Number(form.get("quantity")),
-            message: form.get("message"),
-            website: form.get("website"),
-          }),
-        });
-        const payload = await response.json();
-        if (response.ok) setSuccess(true);
-        else setError(payload.error?.message ?? "Не удалось отправить запрос");
-        setPending(false);
+        try {
+          const response = await fetch("/api/buyer-requests", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              productId,
+              buyerName: form.get("buyerName"),
+              buyerCompany: form.get("buyerCompany"),
+              phone: form.get("phone"),
+              email: form.get("email"),
+              quantity: Number(form.get("quantity")),
+              message: form.get("message"),
+              website: form.get("website"),
+            }),
+          });
+          const payload = await response.json();
+          if (response.ok) setSuccess(true);
+          else setError(payload.error?.message ?? "Не удалось отправить запрос");
+        } catch {
+          setError("Не удалось получить ответ сервера. Заявка могла быть отправлена. Перед повтором уточните у поставщика, получил ли он её.");
+        } finally {
+          setPending(false);
+        }
       }}
     >
       {error ? <Alert tone="danger">{error}</Alert> : null}

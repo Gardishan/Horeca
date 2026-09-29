@@ -1,0 +1,195 @@
+{
+  "observedAt": "2026-09-29T18:44:26.200Z",
+  "environment": "isolated localhost HTTPS, production standalone, PostgreSQL 14.21 demo database",
+  "phase": "green",
+  "sourceBase": "5984e4f009026a886418bd0bf63ff3085ba7c4b8",
+  "applicationMode": "production",
+  "externalMutations": 0,
+  "rows": [
+    {
+      "kind": "invite",
+      "mode": "network",
+      "requests": 1,
+      "pendingObserved": true,
+      "buttonDisabledAfter": false,
+      "inputPreserved": true,
+      "messages": [
+        "Не удалось получить ответ сервера. Проверьте соединение и попробуйте снова."
+      ],
+      "pageErrors": []
+    },
+    {
+      "kind": "invite",
+      "mode": "html-503",
+      "requests": 1,
+      "pendingObserved": true,
+      "buttonDisabledAfter": false,
+      "inputPreserved": true,
+      "messages": [
+        "Не удалось получить ответ сервера. Проверьте соединение и попробуйте снова."
+      ],
+      "pageErrors": []
+    },
+    {
+      "kind": "invite",
+      "mode": "json-rejection",
+      "requests": 1,
+      "pendingObserved": true,
+      "buttonDisabledAfter": false,
+      "inputPreserved": true,
+      "messages": [
+        "Демонстрационный отказ"
+      ],
+      "pageErrors": []
+    },
+    {
+      "kind": "buyer",
+      "mode": "network",
+      "requests": 1,
+      "pendingObserved": true,
+      "buttonDisabledAfter": false,
+      "inputPreserved": true,
+      "messages": [
+        "Не удалось получить ответ сервера. Заявка могла быть отправлена. Перед повтором уточните у поставщика, получил ли он её."
+      ],
+      "pageErrors": []
+    },
+    {
+      "kind": "buyer",
+      "mode": "html-503",
+      "requests": 1,
+      "pendingObserved": true,
+      "buttonDisabledAfter": false,
+      "inputPreserved": true,
+      "messages": [
+        "Не удалось получить ответ сервера. Заявка могла быть отправлена. Перед повтором уточните у поставщика, получил ли он её."
+      ],
+      "pageErrors": []
+    },
+    {
+      "kind": "buyer",
+      "mode": "json-rejection",
+      "requests": 1,
+      "pendingObserved": true,
+      "buttonDisabledAfter": false,
+      "inputPreserved": true,
+      "messages": [
+        "Демонстрационный отказ"
+      ],
+      "pageErrors": []
+    },
+    {
+      "kind": "cabinet",
+      "role": "SUPPLIER",
+      "width": 320,
+      "visible": true,
+      "keyboardReachable": true,
+      "scrollWidth": 320,
+      "href": "/dashboard/company",
+      "pageErrors": []
+    },
+    {
+      "kind": "cabinet",
+      "role": "SUPPLIER",
+      "width": 390,
+      "visible": true,
+      "keyboardReachable": true,
+      "scrollWidth": 390,
+      "href": "/dashboard/company",
+      "pageErrors": []
+    },
+    {
+      "kind": "cabinet",
+      "role": "SUPPLIER",
+      "width": 768,
+      "visible": true,
+      "keyboardReachable": true,
+      "scrollWidth": 768,
+      "href": "/dashboard/company",
+      "pageErrors": []
+    },
+    {
+      "kind": "cabinet",
+      "role": "SUPPLIER",
+      "width": 1440,
+      "visible": true,
+      "keyboardReachable": true,
+      "scrollWidth": 1440,
+      "href": "/dashboard/company",
+      "pageErrors": []
+    },
+    {
+      "kind": "cabinet",
+      "role": "ADMIN",
+      "width": 320,
+      "visible": true,
+      "keyboardReachable": true,
+      "scrollWidth": 320,
+      "href": "/admin",
+      "pageErrors": []
+    },
+    {
+      "kind": "cabinet",
+      "role": "ADMIN",
+      "width": 390,
+      "visible": true,
+      "keyboardReachable": true,
+      "scrollWidth": 390,
+      "href": "/admin",
+      "pageErrors": []
+    },
+    {
+      "kind": "cabinet",
+      "role": "ADMIN",
+      "width": 768,
+      "visible": true,
+      "keyboardReachable": true,
+      "scrollWidth": 768,
+      "href": "/admin",
+      "pageErrors": []
+    },
+    {
+      "kind": "cabinet",
+      "role": "ADMIN",
+      "width": 1440,
+      "visible": true,
+      "keyboardReachable": true,
+      "scrollWidth": 1440,
+      "href": "/admin",
+      "pageErrors": []
+    },
+    {
+      "kind": "invite-success",
+      "cache": "fresh",
+      "deniedPrefetchObserved": true,
+      "redirect": "/catalog",
+      "documentNavigation": true,
+      "invitePosts": 1,
+      "guestLoginVisible": true,
+      "pageErrors": []
+    },
+    {
+      "kind": "invite-success",
+      "cache": "denied-prefetch",
+      "deniedPrefetchObserved": true,
+      "redirect": "/catalog",
+      "documentNavigation": true,
+      "invitePosts": 1,
+      "guestLoginVisible": true,
+      "pageErrors": []
+    },
+    {
+      "kind": "buyer-success",
+      "actualLocalMutationRequests": 1,
+      "successVisible": true
+    }
+  ],
+  "implementationCommit": "fdb3a1f778275559f746457ff123e0f489cc4786",
+  "testedFilesSha256": {
+    "components/forms/beta-access-form.tsx": "5c1a26713d51dbbf4669b1600a756c6c16a8e7e6bbc9d8b6e068ee731a085032",
+    "components/forms/buyer-request-form.tsx": "42865dd19f847aa5fbad5eca42c127c54ea263a10211e309dc20032274130ea3",
+    "components/site-header.tsx": "d523b275713735dc500a6a4d09554fa41e85fbedb9ad815287a85d68d84e3909",
+    "tests/public-form-recovery.test.ts": "95f37b6116291a043342cbd64297f2f392adaeea532013fa8644d2c7295b9f3d"
+  },
+  "provenance": "Built and tested before a docs-only rebase onto c1cdb35. The application and regression-test files are byte-identical to implementationCommit; this is local evidence, not deployed Railway evidence."
+}

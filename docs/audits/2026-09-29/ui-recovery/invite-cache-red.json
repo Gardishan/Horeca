@@ -1,0 +1,85 @@
+{
+  "observedAt": "2026-09-29T18:41:53.753Z",
+  "stableClientNavigation": false,
+  "beforeReloadH1": [],
+  "postStatus": 200,
+  "cookieNames": [
+    "horeca_beta_access"
+  ],
+  "clientUrlAfterGrant": "https://localhost:3164/beta-access?next=%2Fcatalog",
+  "directCatalogStatus": 200,
+  "urlAfterFullNavigation": "https://localhost:3164/catalog",
+  "h1": [
+    "Проверенные поставщики для HoReCa-закупок"
+  ],
+  "responses": [
+    {
+      "path": "/beta-access",
+      "rsc": false,
+      "status": 200
+    },
+    {
+      "path": "/catalog",
+      "rsc": true,
+      "status": 307
+    },
+    {
+      "path": "/login",
+      "rsc": true,
+      "status": 307
+    },
+    {
+      "path": "/beta-access",
+      "rsc": false,
+      "status": 307
+    },
+    {
+      "path": "/beta-access",
+      "rsc": false,
+      "status": 307
+    },
+    {
+      "path": "/beta-access",
+      "rsc": true,
+      "status": 200
+    },
+    {
+      "path": "/beta-access",
+      "rsc": true,
+      "status": 200
+    },
+    {
+      "path": "/beta-access",
+      "rsc": true,
+      "status": 200
+    },
+    {
+      "path": "/beta-access",
+      "rsc": true,
+      "status": 200
+    },
+    {
+      "path": "/api/beta-access",
+      "rsc": false,
+      "status": 200
+    },
+    {
+      "path": "/beta-access",
+      "rsc": true,
+      "status": 200
+    },
+    {
+      "path": "/beta-access",
+      "rsc": true,
+      "status": 200
+    },
+    {
+      "path": "/catalog",
+      "rsc": false,
+      "status": 200
+    }
+  ],
+  "environment": "isolated localhost HTTPS, production standalone, PostgreSQL 14.21 demo database",
+  "sourceBase": "5984e4f009026a886418bd0bf63ff3085ba7c4b8",
+  "sourceScope": "Intermediate working tree with form error recovery, before replacing client-router navigation after invite grant."
+}

@@ -1,0 +1,46 @@
+{
+  "implementationCommit": "fdb3a1f778275559f746457ff123e0f489cc4786",
+  "baseCommit": "c1cdb35e03937a2fba15af1584ec4945216f2410",
+  "buildTestBase": "5984e4f009026a886418bd0bf63ff3085ba7c4b8",
+  "environment": "Node 22, isolated PostgreSQL 14.21, local production standalone over loopback HTTPS",
+  "testedFilesSha256": {
+    "components/forms/beta-access-form.tsx": "5c1a26713d51dbbf4669b1600a756c6c16a8e7e6bbc9d8b6e068ee731a085032",
+    "components/forms/buyer-request-form.tsx": "42865dd19f847aa5fbad5eca42c127c54ea263a10211e309dc20032274130ea3",
+    "components/site-header.tsx": "d523b275713735dc500a6a4d09554fa41e85fbedb9ad815287a85d68d84e3909",
+    "tests/public-form-recovery.test.ts": "95f37b6116291a043342cbd64297f2f392adaeea532013fa8644d2c7295b9f3d"
+  },
+  "red": {
+    "componentTests": {
+      "failed": 5,
+      "passed": 3
+    },
+    "browserRecoveryFailures": 4,
+    "mobileCabinetHiddenAt390": true,
+    "inviteNavigationRegressionFailed": 1
+  },
+  "green": {
+    "componentTests": 8,
+    "fullVerifyTests": 365,
+    "fullVerifyFiles": 34,
+    "browserScenarios": 17,
+    "independentReviewTests": 15
+  },
+  "commands": [
+    "npm ci",
+    "npm run db:deploy",
+    "npm run db:seed",
+    "npx vitest run tests/public-form-recovery.test.ts",
+    "npm run verify",
+    "UI_RUNTIME_MODE=production node /tmp/horeca-ui-browser-regression.cjs green"
+  ],
+  "scope": "Network/HTML/API rejection, preserved input, busy recovery, no automatic retry, fresh and denied-prefetch invite navigation, supplier/admin keyboard cabinet access at 320/390/768/1440 px, one successful local buyer request.",
+  "limitations": [
+    "No Railway or other external mutations. No deployment performed.",
+    "Browser checks use Chromium only; PostgreSQL 14.21 is the local test database, not deployed PostgreSQL 17.",
+    "Browser failure requests are intercepted locally; the invite success and one buyer request use the actual isolated server.",
+    "The full verify and browser run precede the docs-only rebase; modified application/test bytes were compared and are unchanged."
+  ],
+  "observedAt": "2026-09-29T18:44:26.200Z",
+  "nodeVersion": "22.23.1",
+  "postgresVersion": "14.21"
+}
