@@ -1,5 +1,19 @@
 # Controlled MVP Beta delivery
 
+## Mobile cabinet correction — 2026-09-29
+
+Browser QA after successful candidate run 36225121691 reproduced a supplier
+verification page width of 892 px in a 390 px viewport. Grid items retained
+their intrinsic minimum widths, including the scrolling navigation and document
+table. Setting the shell's grid-item minimum width to zero reduced the actual
+document width to 390 px; navigation and tables retain their local scrolling.
+
+Scope: one shared CSS sizing rule within `.app-shell`; no policy, schema or API
+change. Risk: narrow cards and long labels, checked on supplier/admin pages at
+mobile and desktop widths. Verify the production build, then repeat browser QA
+and the external launch workflow on the corrected commit. The earlier candidate
+is valid historical runtime evidence, not the final release identity.
+
 Scope confirmed by the product owner on 2026-09-24: the existing invite-only,
 demo-only MVP Beta acceptance criteria. Commercial onboarding, real documents,
 real payments, production signing and new infrastructure providers are excluded.

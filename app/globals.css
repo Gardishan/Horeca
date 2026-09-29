@@ -70,6 +70,12 @@ textarea:focus-visible {
   padding-inline: clamp(1rem, 3vw, 2rem);
 }
 
+/* Keep intrinsic grid content inside the viewport; nav/table wrappers scroll. */
+.app-shell.grid > *,
+.app-shell .grid > * {
+  min-width: 0;
+}
+
 .surface {
   border: 1px solid rgba(21, 61, 43, 0.09);
   border-radius: 1.25rem;
