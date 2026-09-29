@@ -1,0 +1,8 @@
+{
+  "testType": "synthetic in-memory audit fixture only; registry not changed",
+  "scenario": "All controls declared done with stale, unrelated, unresolvable HTTPS evidence and unrelated environment",
+  "valid": true,
+  "ready": true,
+  "missingEvidenceFiles": [],
+  "implication": "Validator enforces registry shape/completeness but does not verify source identity, URL reachability, evidence semantics or freshness."
+}

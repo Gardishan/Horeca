@@ -1,0 +1,10 @@
+{
+  "observedAt": "2026-09-29T17:46:55.448307+00:00",
+  "workflowRun": "https://github.com/Gardishan/Horeca/actions/runs/36605746207",
+  "headSha": "3ef4f64fc2b61ca3bc317d72f662f97134e576c6",
+  "logFetchExitCode": 0,
+  "providerIncidentLines": [
+    "launch\tConfigure, deploy, migrate, seed, enable and prove persistence\t2026-09-29T17:33:56.5553280Z Deploys have been paused temporarily"
+  ],
+  "scope": "Read-only failed log extraction; no deployment retry."
+}

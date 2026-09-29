@@ -1,11 +1,21 @@
 # Controlled MVP Beta delivery
 
-Current outcome (2026-09-29): code and CI pass through PR #74, but the final
-release is blocked by the Railway API incident. The previous `00a7b3a` candidate
-remains externally verified; attempted source `28d066a` was not promoted.
-The cancelled deployment is removed and no rollout remains pending. See the
-[timestamped checkpoint](releases/mvp-beta-2026-09-29/README.md) and
-[tester/operator guide](BETA_GUIDE.md). No tag or prerelease has been created.
+Current outcome (2026-09-29, audit at 17:44–17:47 UTC): **NEEDS FIX**. Audited source
+`3ef4f64` had green Quality/Security, while active runtime remains `00a7b3a`.
+PR #58 is now merged as `023a24e`, with the page-gate source correction;
+its external enabled/disabled verification remains pending. Eight synthetic PDFs
+were separately repaired online without replacing the application image;
+[PR #76](https://github.com/Gardishan/Horeca/pull/76), merged as `5984e4f`,
+records that repair and the source regression in the [PDF report](PDF_REPAIR_2026-09-29.md).
+Its Quality/Security passed with 357 tests and PostgreSQL 17 HTTP smoke.
+Retry 36605746207 was rejected by Railway with deployments temporarily paused.
+The audit additionally reproduced an invite-gate bypass for page requests and
+form/mobile UX defects. The old candidate's successful ordinary smoke does not
+prove those missing scenarios; provider recovery alone cannot close the launch.
+See the [critical audit](MVP_BETA_AUDIT_2026-09-29.md),
+[group test plan](BETA_TEST_PLAN.md), and [tester/operator guide](BETA_GUIDE.md).
+No tag or prerelease has been created. The earlier
+[timestamped checkpoint](releases/mvp-beta-2026-09-29/README.md) remains historical.
 
 
 ## Mobile cabinet correction — 2026-09-29

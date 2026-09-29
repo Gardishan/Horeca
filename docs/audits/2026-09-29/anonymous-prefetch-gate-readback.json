@@ -1,0 +1,36 @@
+{
+  "observedAt": "2026-09-29T17:45:26.356377+00:00",
+  "origin": "https://horeca-beta.up.railway.app",
+  "path": "/catalog",
+  "noCookieSent": true,
+  "results": [
+    {
+      "headers": {},
+      "status": 307,
+      "location": "/beta-access?next=%2Fcatalog",
+      "xRobotsTag": null,
+      "containsCatalogProduct": false,
+      "bodyBytes": 28
+    },
+    {
+      "headers": {
+        "purpose": "prefetch"
+      },
+      "status": 200,
+      "location": null,
+      "xRobotsTag": null,
+      "containsCatalogProduct": true,
+      "bodyBytes": 56418
+    },
+    {
+      "headers": {
+        "next-router-prefetch": "1"
+      },
+      "status": 200,
+      "location": null,
+      "xRobotsTag": null,
+      "containsCatalogProduct": true,
+      "bodyBytes": 56418
+    }
+  ]
+}
