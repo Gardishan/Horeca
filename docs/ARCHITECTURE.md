@@ -64,7 +64,7 @@ Cloud-specific IaC намеренно не выбран без owner decision. `
 
 ## Controlled Beta boundary
 
-`APP_ENV=beta` является отдельной launch-средой, а не ослабленной production. До приложения стоит HMAC-подписанная access cookie, выдаваемая только после сравнения secret invitation token; `BETA_ENABLED=false` немедленно блокирует traffic и readiness. По умолчанию self-service registration закрыта. Если используются filesystem/mock scanner/manual payment, UI и API требуют demo-only policy и явное acknowledgement для каждого upload/payment signal. Proxy выставляет `noindex`, а `robots.txt` запрещает индексировать всю Beta. Эти ограничения позволяют проверить реальные B2B flows на синтетических данных, но не закрывают commercial storage, payment, identity или Legal controls.
+`APP_ENV=beta` является отдельной launch-средой, а не ослабленной production. До приложения стоит HMAC-подписанная access cookie, выдаваемая только после сравнения secret invitation token; `BETA_ENABLED=false` немедленно блокирует traffic и readiness. По умолчанию self-service registration закрыта. Если используются filesystem/mock scanner/manual payment, UI и API требуют demo-only policy и явное acknowledgement для каждого upload/payment signal и контактов buyer request. Proxy выставляет `noindex`, а `robots.txt` запрещает индексировать всю Beta. Эти ограничения позволяют проверить реальные B2B flows на синтетических данных, но не закрывают commercial storage, payment, identity или Legal controls.
 
 ## Эволюция на 3–6 месяцев
 

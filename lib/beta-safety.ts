@@ -150,6 +150,23 @@ export function assertBetaManualPayment(
   }
 }
 
+export function assertBetaDemoContact(
+  acknowledged: boolean | undefined,
+  environment: NodeJS.ProcessEnv = process.env,
+) {
+  if (!isBetaEnvironment(environment)) return;
+  if (!isBetaDemoOnly(environment)) {
+    throw new AppError("Контролируемая Beta временно недоступна", 503, "BETA_UNAVAILABLE");
+  }
+  if (acknowledged !== true) {
+    throw new AppError(
+      "Подтвердите, что заявка содержит только вымышленные демонстрационные контакты",
+      422,
+      "BETA_DEMO_CONTACT_REQUIRED",
+    );
+  }
+}
+
 export function safeBetaReturnPath(value: string | null | undefined) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) return "/catalog";
   try {

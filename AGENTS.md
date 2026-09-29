@@ -53,7 +53,7 @@ npm run release:check   # strict commercial-production gate
 - Supplier не управляет административным merchandising-флагом `isFeatured`.
 - Каждое критическое административное решение и скачивание приватного документа журналируется.
 - `APP_ENV=beta` всегда защищён access token + подписанной HttpOnly cookie и операторским kill switch.
-- Controlled Beta принимает только демонстрационные данные; registration, document upload и manual-payment signals проверяются server-side.
+- Controlled Beta принимает только демонстрационные данные; registration, document upload, manual-payment signals и контакты buyer request проверяются server-side.
 
 Меняйте правила в `lib/domain` и `lib/services`, а не только в UI или Route Handler. Добавляйте позитивный и негативный тест каждого изменённого перехода.
 
