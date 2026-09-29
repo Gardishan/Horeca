@@ -1,5 +1,6 @@
 import type {
   AntivirusStatus,
+  CompanyStatus,
   DocumentStatus,
   DocumentType,
   LegalType,
@@ -103,8 +104,10 @@ export type ActivationContext = {
   profile: CompanyProfileSnapshot;
   acceptedLegalTypes: LegalType[];
   documents: Array<{
+    type: DocumentType;
     status: DocumentStatus;
     antivirusStatus: AntivirusStatus;
+    uploadedAt: Date;
   }>;
   deployed: boolean;
   paymentStatus: PaymentStatus | null;
@@ -120,20 +123,53 @@ export function isDocumentSafeForApproval(
   );
 }
 
+const SUPERSEDABLE_DOCUMENT_STATUSES: DocumentStatus[] = ["REJECTED", "REUPLOAD_REQUESTED"];
+const REQUIRED_DOCUMENT_TYPES: DocumentType[] = ["REGISTRATION", "BIN_IIN"];
+
+/**
+ * Documents are immutable review history. A REJECTED or REUPLOAD_REQUESTED
+ * document stops counting only when a strictly newer upload of the same type
+ * exists; every other document, including unreviewed replacements, counts.
+ */
+function currentDocuments(documents: ActivationContext["documents"]) {
+  const newestUploadByType = new Map<DocumentType, number>();
+  for (const document of documents) {
+    const uploadedAt = document.uploadedAt.getTime();
+    if (uploadedAt > (newestUploadByType.get(document.type) ?? Number.NEGATIVE_INFINITY)) {
+      newestUploadByType.set(document.type, uploadedAt);
+    }
+  }
+  return documents.filter(
+    (document) =>
+      !SUPERSEDABLE_DOCUMENT_STATUSES.includes(document.status) ||
+      document.uploadedAt.getTime() === newestUploadByType.get(document.type),
+  );
+}
+
 export function evaluateCompanyActivation(input: ActivationContext): RuleResult {
   const reasons: string[] = [];
   if (!profileCompletion(input.profile).complete) reasons.push("Профиль компании заполнен не полностью");
   if (!input.acceptedLegalTypes.includes("OFFER") || !input.acceptedLegalTypes.includes("PRIVACY")) {
     reasons.push("Нет обязательных юридических согласий");
   }
+  const documents = currentDocuments(input.documents);
   if (
-    !input.documents.length ||
-    input.documents.some((document) => document.status !== "APPROVED")
+    !documents.length ||
+    documents.some((document) => document.status !== "APPROVED")
   ) {
     reasons.push("Не все документы одобрены");
   }
   if (
-    input.documents.some(
+    !documents.some(
+      (document) =>
+        REQUIRED_DOCUMENT_TYPES.includes(document.type) &&
+        document.status === "APPROVED",
+    )
+  ) {
+    reasons.push("Нет одобренного свидетельства регистрации или документа БИН/ИИН");
+  }
+  if (
+    documents.some(
       (document) =>
         !isDocumentSafeForApproval(document.antivirusStatus, input.deployed),
     )
@@ -142,4 +178,22 @@ export function evaluateCompanyActivation(input: ActivationContext): RuleResult 
   }
   if (input.paymentStatus !== "CONFIRMED") reasons.push("Оплата не подтверждена");
   return { allowed: reasons.length === 0, reasons };
+}
+
+export function isCompanyBlocked(company: { status: CompanyStatus; isBlocked: boolean }) {
+  return company.isBlocked || company.status === "BLOCKED";
+}
+
+/** An ACTIVE company is already verified; resubmitting would hide its catalog. */
+export function isVerificationSubmissionLocked(status: CompanyStatus) {
+  return status === "ACTIVE";
+}
+
+/**
+ * Unblocking never restores ACTIVE: public visibility needs a fresh activation.
+ * DRAFT means never submitted; PENDING_REVIEW is the state submission sets and
+ * review decisions keep until activation.
+ */
+export function companyStatusAfterUnblock(verificationStatus: VerificationStatus): CompanyStatus {
+  return verificationStatus === "NOT_STARTED" ? "DRAFT" : "PENDING_REVIEW";
 }
