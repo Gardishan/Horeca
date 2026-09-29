@@ -51,6 +51,11 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Install independent PDF validation tooling
+        run: |
+          python3 -m venv "${RUNNER_TEMP}/horeca-pdf-validation"
+          "${RUNNER_TEMP}/horeca-pdf-validation/bin/pip" install --require-hashes --only-binary=:all: -r scripts/pdf-validation-requirements.txt
+          echo "PDF_VALIDATION_PYTHON=${RUNNER_TEMP}/horeca-pdf-validation/bin/python" >> "${GITHUB_ENV}"
       - run: npm ci
       - run: npm run verify
       - name: Build deployable container

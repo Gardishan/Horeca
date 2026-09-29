@@ -1,0 +1,56 @@
+{
+  "observedAt": "2026-09-29T18:20:14.944Z",
+  "environment": "railway-beta",
+  "runtimeSha": "00a7b3a03fb6d177aadffb1abf8fa6cbe895bda2",
+  "allPassed": true,
+  "files": [
+    {
+      "id": "document-certificate-active",
+      "anonymous": 401,
+      "inviteOnly": 401,
+      "supplier": 403
+    },
+    {
+      "id": "document-bank-active",
+      "anonymous": 401,
+      "inviteOnly": 401,
+      "supplier": 403
+    },
+    {
+      "id": "document-registration-active",
+      "anonymous": 401,
+      "inviteOnly": 401,
+      "supplier": 403
+    },
+    {
+      "id": "cmui1eq8z0007ru01oeysr22o",
+      "anonymous": 401,
+      "inviteOnly": 401,
+      "supplier": 403
+    },
+    {
+      "id": "cmufk7lo00007o501ju25jd9i",
+      "anonymous": 401,
+      "inviteOnly": 401,
+      "supplier": 403
+    },
+    {
+      "id": "cmufjcrty0007pt01no7ilwrk",
+      "anonymous": 401,
+      "inviteOnly": 401,
+      "supplier": 403
+    },
+    {
+      "id": "document-registration-pending",
+      "anonymous": 401,
+      "inviteOnly": 401,
+      "supplier": 403
+    },
+    {
+      "id": "payment-pending",
+      "anonymous": 401,
+      "inviteOnly": 401,
+      "supplier": 403
+    }
+  ]
+}

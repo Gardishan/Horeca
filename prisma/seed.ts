@@ -4,6 +4,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { assertDemoSeedAllowed } from "../lib/runtime-config";
+import { createDemoPdf } from "../scripts/demo-pdf.mjs";
 
 const prisma = new PrismaClient();
 
@@ -35,7 +36,7 @@ async function createMockPdf({ storagePath, title }: DemoFile) {
   const root = path.resolve(process.env.PRIVATE_STORAGE_ROOT ?? "./storage/private");
   const directory = path.dirname(path.join(root, storagePath));
   await mkdir(directory, { recursive: true, mode: 0o700 });
-  const pdf = Buffer.from(`%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n% HoReCa KZ seed document: ${title}\ntrailer<</Root 1 0 R>>\n%%EOF\n`);
+  const pdf = createDemoPdf({ title });
   await writeFile(path.join(root, storagePath), pdf, { mode: 0o600 });
   return { storagePath, size: pdf.length };
 }
@@ -110,6 +111,18 @@ async function main() {
   ];
   for (const document of documents) {
     await prisma.companyDocument.upsert({ where: { id: document.id }, update: {}, create: { ...document, mimeType: "application/pdf", antivirusStatus: "SKIPPED_MOCK" } });
+    const fixture = Object.values(demoFiles).find((file) => file.storagePath === document.storagePath)!;
+    const legacySize = Buffer.byteLength(`%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n% HoReCa KZ seed document: ${fixture.title}\ntrailer<</Root 1 0 R>>\n%%EOF\n`);
+    // Only repair the known placeholder's byte-count metadata. Never reset a
+    // tester's document decision, verification association or review history.
+    await prisma.companyDocument.updateMany({
+      where: {
+        id: document.id, companyId: document.companyId, type: document.type,
+        storagePath: document.storagePath, storedName: document.storedName,
+        originalName: document.originalName, mimeType: "application/pdf", size: legacySize,
+      },
+      data: { size: document.size },
+    });
   }
 
   const products = [

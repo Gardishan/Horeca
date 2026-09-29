@@ -41,6 +41,12 @@ jobs:
           npm install --global @railway/cli@5.41.2
           railway --version
 
+      - name: Install independent PDF validation tooling
+        run: |
+          python3 -m venv "${RUNNER_TEMP}/horeca-pdf-validation"
+          "${RUNNER_TEMP}/horeca-pdf-validation/bin/pip" install --require-hashes --only-binary=:all: -r scripts/pdf-validation-requirements.txt
+          echo "PDF_VALIDATION_PYTHON=${RUNNER_TEMP}/horeca-pdf-validation/bin/python" >> "${GITHUB_ENV}"
+
       - name: Prepare registered SSH identity and relay host trust
         env:
           BETA_SSH_PRIVATE_KEY: ${{ secrets.BETA_RAILWAY_SSH_PRIVATE_KEY }}
@@ -334,7 +340,7 @@ jobs:
           # fixtures in the app's mounted private volume before enabling traffic.
           # The helper refuses missing volumes, enabled traffic and non-demo envs.
           if railway ssh --identity-file "${BETA_SSH_KEY_PATH}" --environment beta --service "${APP_SERVICE_ID}" -- \
-            node /app/beta-bootstrap/seed-beta-files.mjs \
+            node /app/beta-bootstrap/seed-beta-files.mjs --repair-legacy \
             > "${BETA_STATE_DIR}/private-files-bootstrap.log" 2>&1; then
             # The SSH relay can exit 0 before command routing is available.
             # Require the helper's actual completion record, not transport success.
@@ -347,7 +353,8 @@ jobs:
               return result.event === "beta_demo_files_ready" &&
                 Number.isInteger(result.created) && result.created >= 0 &&
                 Number.isInteger(result.existing) && result.existing >= 0 &&
-                result.created + result.existing === 5;
+                Number.isInteger(result.repaired) && result.repaired >= 0 &&
+                result.created + result.existing + result.repaired === 5;
             } catch { return false; }
           });
           if (!completed) {

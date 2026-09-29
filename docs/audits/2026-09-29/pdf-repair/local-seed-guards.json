@@ -1,0 +1,1 @@
+{"ok":true,"observedAt":"2026-09-29T18:15:42.548Z","environment":"local-postgresql-14.21","checks":["exact legacy metadata size repaired","review decision and all non-size fields preserved","mismatched fixture identity left unchanged","unknown existing size left unchanged","second seed idempotent"]}

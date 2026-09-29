@@ -99,6 +99,8 @@ npm run quality:quick
 
 ### Полный локальный gate
 
+Один раз подготовьте независимый PDF parser по [README](../README.md#проверки-качества) и задайте `PDF_VALIDATION_PYTHON`. Проверка страницы и читаемого demo-текста обязательна: один заголовок `%PDF-` не доказывает валидность файла. CI устанавливает hash-pinned parser в отдельный venv; runtime container его не содержит.
+
 ```bash
 npm run verify
 ```

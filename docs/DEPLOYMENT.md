@@ -60,10 +60,17 @@ Railway подключает volume с владельцем root; `chown` в Doc
 
 `db:seed` через DB tunnel создаёт записи и локальные PDF на Actions runner.
 Поэтому до включения traffic workflow отдельно выполняет в приложении
-`node /app/beta-bootstrap/seed-beta-files.mjs` через Railway SSH. Helper
+`node /app/beta-bootstrap/seed-beta-files.mjs --repair-legacy` через Railway SSH. Helper
 разворачивает только пять фиксированных synthetic PDF из общего
 `prisma/demo-files.json`, требует выключенную demo-only Beta и mounted volume,
-не перезаписывает существующие файлы и отклоняет symlinks. Railway SSH запускает
+сохраняет уже корректные файлы и отклоняет symlinks и неизвестное содержимое.
+Флаг `--repair-legacy` разрешает атомарно заменить только точные старые
+повреждённые fixtures; без флага они также отклоняются. Перед первой записью
+проверяются все пять целей. Старые произвольные uploads этим helper не изменяются.
+Seed согласует только размер узнаваемых старых demo-документов, сохраняя решения
+и историю проверки. Внешний smoke разбирает все пять скачанных PDF независимым
+парсером и проверяет запрет скачивания для supplier; одного `%PDF-` недостаточно.
+Railway SSH запускает
 команду от root даже при runtime UID 1001; helper перед записью сбрасывает
 supplementary groups и GID/UID до 1001. Ошибка сброса прав запрещает запись.
 Нужен работающий

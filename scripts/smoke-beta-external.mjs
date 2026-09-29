@@ -1,6 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import process from "node:process";
+import { createDemoPdf } from "./demo-pdf.mjs";
+import { assertReadableDemoPdf } from "./assert-readable-pdf.mjs";
 
 const mode = process.argv[2];
 const supportedModes = new Set(["preflight", "full", "create-marker", "verify-marker"]);
@@ -210,6 +212,9 @@ async function runFull() {
 
   for (const path of [
     "/api/admin/documents/document-registration-active/download",
+    "/api/admin/documents/document-bank-active/download",
+    "/api/admin/documents/document-certificate-active/download",
+    "/api/admin/documents/document-registration-pending/download",
     "/api/admin/payments/payment-pending/proof",
   ]) {
     const denied = await supplier.fetch(path);
@@ -217,6 +222,7 @@ async function runFull() {
     const downloaded = await admin.fetch(path);
     const bytes = Buffer.from(await downloaded.response.arrayBuffer());
     assert(downloaded.response.ok && bytes.subarray(0, 5).toString() === "%PDF-", "Seeded private document or payment proof is absent from runtime storage");
+    assertReadableDemoPdf(bytes);
     assert(downloaded.response.headers.get("cache-control")?.includes("no-store"), "Private file response is cacheable");
   }
 
@@ -270,7 +276,8 @@ async function runCreateMarker() {
   const pendingSupplier = new CookieClient();
   await grantBetaAccess(pendingSupplier);
   await login(pendingSupplier, "pending@horeca.kz");
-  const fileBytes = Buffer.from(`%PDF-1.4\n% Synthetic Beta persistence probe ${nonce}\n%%EOF\n`);
+  const fileBytes = createDemoPdf({ title: "Beta persistence probe", reference: nonce });
+  assertReadableDemoPdf(fileBytes);
   const form = new FormData();
   form.set("type", "OTHER");
   form.set("demoMaterialAcknowledged", "true");
@@ -313,6 +320,7 @@ async function runVerifyMarker() {
   assert(downloaded.response.ok, "Private-file marker did not survive provider lifecycle action");
   const fileBytes = Buffer.from(await downloaded.response.arrayBuffer());
   assert(createHash("sha256").update(fileBytes).digest("hex") === marker.documentSha256, "Private-file marker changed after provider lifecycle action");
+  assertReadableDemoPdf(fileBytes);
   return { checks: ["external marker count retained", "private-file marker SHA-256 retained"], markerId: marker.id };
 }
 

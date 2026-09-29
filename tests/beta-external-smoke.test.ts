@@ -4,12 +4,16 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createDemoPdf } from "../scripts/demo-pdf.mjs";
 
 const origin = "https://beta.example.test";
 const accessToken = "synthetic-beta-access-token-with-at-least-32-characters";
 const deploymentVersion = "synthetic-release-commit";
 const seedPaths = [
   "/api/admin/documents/document-registration-active/download",
+  "/api/admin/documents/document-bank-active/download",
+  "/api/admin/documents/document-certificate-active/download",
+  "/api/admin/documents/document-registration-pending/download",
   "/api/admin/payments/payment-pending/proof",
 ];
 const originalArgv = process.argv;
@@ -22,12 +26,13 @@ type FixtureOptions = {
   missingSeedPath?: string;
   supplierDownloadPath?: string;
   cacheableSeedPath?: string;
+  unreadableSeedPath?: string;
   markerDownload?: "missing" | "changed";
 };
 
 function betaServer(options: FixtureOptions = {}) {
   let requestCount = 3;
-  let markerBytes = Buffer.from("%PDF-1.4\nSynthetic retained marker\n%%EOF\n");
+  let markerBytes = createDemoPdf({ title: "Beta persistence probe", reference: "retained marker" });
   const requests: Array<{ pathname: string; identity: string | undefined }> = [];
   const pageRequests: Array<{ pathname: string; hasBetaAccess: boolean; headers: Headers }> = [];
   const ok = (data: unknown, init?: ResponseInit) => Response.json({ ok: true, data }, init);
@@ -102,7 +107,9 @@ function betaServer(options: FixtureOptions = {}) {
     if (seedPaths.includes(pathname)) {
       if (identity !== "admin" && pathname !== options.supplierDownloadPath) return denied(403);
       if (pathname === options.missingSeedPath) return denied(404, "NOT_FOUND");
-      return pdf(Buffer.from("%PDF-1.4\nSynthetic seed file\n%%EOF\n"), pathname === options.cacheableSeedPath);
+      return pdf(pathname === options.unreadableSeedPath
+        ? Buffer.from("%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF\n")
+        : createDemoPdf({ title: "Synthetic seed file" }), pathname === options.cacheableSeedPath);
     }
     if (pathname === "/api/buyer-requests") {
       expect(identity).toBe("supplier");
@@ -173,7 +180,7 @@ async function writeMarker(server: ReturnType<typeof betaServer>, extra = {}) {
 }
 
 describe("external Beta smoke against controlled HTTP fixtures", () => {
-  it("verifies full access, role boundaries and both seeded private files", async () => {
+  it("verifies full access, role boundaries and all five readable seeded private files", async () => {
     const server = betaServer();
     const result = await runSmoke("full", server);
 
@@ -259,6 +266,10 @@ describe("external Beta smoke against controlled HTTP fixtures", () => {
     );
   });
 
+  it.each(seedPaths)("rejects a signature-only PDF at %s", async (unreadableSeedPath) => {
+    await expect(runSmoke("full", betaServer({ unreadableSeedPath }))).rejects.toThrow("PDF is unreadable");
+  });
+
   it("creates a real upload marker and verifies the same bytes after a lifecycle action", async () => {
     const server = betaServer();
     const created = await runSmoke("create-marker", server);
@@ -272,7 +283,7 @@ describe("external Beta smoke against controlled HTTP fixtures", () => {
       documentId: "document-marker",
       documentSha256: createHash("sha256").update(server.markerBytes).digest("hex"),
     });
-    expect(server.markerBytes.toString()).toContain("Synthetic Beta persistence probe");
+    expect(server.markerBytes.toString()).toContain("Beta persistence probe");
     const verified = await runSmoke("verify-marker", server);
     expect(verified.ok).toBe(true);
     expect(verified.checks).toContain("private-file marker SHA-256 retained");
