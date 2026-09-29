@@ -1,0 +1,104 @@
+{
+  "phase": "before",
+  "observedAt": "2026-09-29T18:03:17.123Z",
+  "origin": "https://horeca-beta.up.railway.app",
+  "rows": [
+    {
+      "id": "document-certificate-active",
+      "status": 200,
+      "contentType": "application/pdf",
+      "contentLength": "116",
+      "cacheControl": "no-store, max-age=0",
+      "metadataSize": 116,
+      "bytes": 116,
+      "sha256": "1e160005bd947d5dc689c63212a6b1e78ec1cfc0a0899ec3170cae6d93de950a",
+      "strictParserPassed": false,
+      "failure": "startxref not found"
+    },
+    {
+      "id": "document-bank-active",
+      "status": 200,
+      "contentType": "application/pdf",
+      "contentLength": "109",
+      "cacheControl": "no-store, max-age=0",
+      "metadataSize": 109,
+      "bytes": 109,
+      "sha256": "30b306abe482c30b3d8dbfe95bed81df4145f83c4fbecdb27b999d6aa129b461",
+      "strictParserPassed": false,
+      "failure": "startxref not found"
+    },
+    {
+      "id": "document-registration-active",
+      "status": 200,
+      "contentType": "application/pdf",
+      "contentLength": "109",
+      "cacheControl": "no-store, max-age=0",
+      "metadataSize": 109,
+      "bytes": 109,
+      "sha256": "5492a30cb4031d35a1fb2d5ec5110e23089f12fac58308f5462bcbab61b0d0fb",
+      "strictParserPassed": false,
+      "failure": "startxref not found"
+    },
+    {
+      "id": "cmui1eq8z0007ru01oeysr22o",
+      "status": 200,
+      "contentType": "application/pdf",
+      "contentLength": "87",
+      "cacheControl": "no-store, max-age=0",
+      "metadataSize": 87,
+      "bytes": 87,
+      "sha256": "aac3346952578fc191fd2b7393df40a8acd06588b7cef6b61306f476522f1e98",
+      "strictParserPassed": false,
+      "failure": "startxref not found"
+    },
+    {
+      "id": "cmufk7lo00007o501ju25jd9i",
+      "status": 200,
+      "contentType": "application/pdf",
+      "contentLength": "87",
+      "cacheControl": "no-store, max-age=0",
+      "metadataSize": 87,
+      "bytes": 87,
+      "sha256": "86d12fbe03ead94037432854e6f27b25e379f72cc1ca6bc73bbec6a6220e851b",
+      "strictParserPassed": false,
+      "failure": "startxref not found"
+    },
+    {
+      "id": "cmufjcrty0007pt01no7ilwrk",
+      "status": 200,
+      "contentType": "application/pdf",
+      "contentLength": "87",
+      "cacheControl": "no-store, max-age=0",
+      "metadataSize": 87,
+      "bytes": 87,
+      "sha256": "cc5e7e31e8f17ad37f341cedea7c0d7a082ba181b9d4dec64d22d8ebb8308ce6",
+      "strictParserPassed": false,
+      "failure": "startxref not found"
+    },
+    {
+      "id": "document-registration-pending",
+      "status": 200,
+      "contentType": "application/pdf",
+      "contentLength": "117",
+      "cacheControl": "no-store, max-age=0",
+      "metadataSize": 117,
+      "bytes": 117,
+      "sha256": "6b1739b89b35c84bba63a4dc724137fc0129255cb2fd668cdbd6f48f58d27462",
+      "strictParserPassed": false,
+      "failure": "startxref not found"
+    },
+    {
+      "id": "payment-pending",
+      "status": 200,
+      "contentType": "application/pdf",
+      "contentLength": "110",
+      "cacheControl": "no-store, max-age=0",
+      "bytes": 110,
+      "sha256": "236a0788b96460577fca457a45393498efb7911a1a1ad3bd8a0210a75827303f",
+      "strictParserPassed": false,
+      "failure": "startxref not found"
+    }
+  ],
+  "environment": "railway-beta",
+  "runtimeSha": "00a7b3a03fb6d177aadffb1abf8fa6cbe895bda2"
+}

@@ -181,6 +181,18 @@ Static/health exemptions и API role guards сохраняются. Registry о�
 | Correlated safe API failures | Generic 500 связывается одним request ID между клиентом и structured log без raw error details |
 | Separate controlled Beta | Beta проверяет продукт на синтетических данных за access gate; её evidence не повышает commercial readiness |
 
+## Читаемость демонстрационных PDF
+
+Seed, volume bootstrap и persistence probes используют общий
+`scripts/demo-pdf.mjs`: одностраничный PDF с явной отметкой DEMO ONLY.
+Прежние placeholders имели только PDF-header без дерева страниц и xref;
+проверка сигнатуры не доказывает читаемость документа. Теперь unit и HTTP smoke
+используют независимый `pypdf` parser в strict mode. Для локального `verify`
+и smoke нужен Python venv с `scripts/pdf-validation-requirements.txt` и
+`PDF_VALIDATION_PYTHON`; порядок установки описан в README. В runtime Python
+не добавлен. Bootstrap `--repair-legacy` заменяет только точные старые пять
+fixtures при выключенной demo-only Beta; неизвестные файлы не перезаписывает.
+
 ## Когда обновлять этот файл
 
 Обновите дату и содержание, если изменились архитектурные границы, critical invariant, canonical command, demo flow, production gap или принятое решение. Не добавляйте временные debugging notes.

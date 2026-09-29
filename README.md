@@ -155,6 +155,14 @@ Route Handlers расположены в `app/api` и возвращают ед�
 
 ## Проверки качества
 
+Для независимой проверки открываемости demo-PDF тестам и HTTP smoke нужен Python с pinned `pypdf`. Это инструмент проверки, не зависимость приложения:
+
+```bash
+python3 -m venv /tmp/horeca-pdf-validation
+/tmp/horeca-pdf-validation/bin/pip install --require-hashes --only-binary=:all: -r scripts/pdf-validation-requirements.txt
+export PDF_VALIDATION_PYTHON=/tmp/horeca-pdf-validation/bin/python
+```
+
 ```bash
 npm run quality:quick
 npm run verify

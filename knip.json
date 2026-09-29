@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": ["scripts/seed-beta-files.mjs"],
+  "ignore": ["scripts/demo-pdf.d.mts", "scripts/assert-readable-pdf.d.mts"],
   "ignoreBinaries": ["ssh-keygen"]
 }

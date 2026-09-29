@@ -3,6 +3,7 @@ import { cp, mkdtemp, readdir, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import process from "node:process";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { assertReadableDemoPdf } from "./assert-readable-pdf.mjs";
 
 const origin = process.env.SMOKE_ORIGIN ?? "http://127.0.0.1:3100";
 const smokeUrl = new URL(origin);
@@ -269,6 +270,7 @@ async function run() {
     paymentProof.ok && paymentProofBytes.subarray(0, 5).toString() === "%PDF-",
     "Admin could not review the private payment proof",
   );
+  assertReadableDemoPdf(paymentProofBytes);
   const rejectedPayment = await json("/api/admin/payments/payment-pending/reject", {
     method: "POST",
     headers: { Cookie: adminCookie, Origin: origin, "Content-Type": "application/json" },
@@ -308,6 +310,7 @@ async function run() {
   });
   const bytes = Buffer.from(await document.arrayBuffer());
   assert(document.ok && bytes.subarray(0, 5).toString() === "%PDF-", "Protected document download failed");
+  assertReadableDemoPdf(bytes);
   checks.push("admin access and protected document download");
 
   return checks;

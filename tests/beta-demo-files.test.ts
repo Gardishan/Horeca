@@ -3,6 +3,7 @@ import { copyFile, lstat, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeF
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { createDemoPdf } from "../scripts/demo-pdf.mjs";
 
 const expectedFiles = [
   ["company-documents/company-active/mock-registration.pdf", "registration"],
@@ -26,6 +27,7 @@ describe("controlled Beta demo file bootstrap", () => {
     await mkdir(bundle);
     script = path.join(bundle, "seed-beta-files.mjs");
     await copyFile("scripts/seed-beta-files.mjs", script);
+    await copyFile("scripts/demo-pdf.mjs", path.join(bundle, "demo-pdf.mjs"));
     await copyFile("prisma/demo-files.json", path.join(bundle, "demo-files.json"));
     environment = {
       ...process.env,
@@ -37,8 +39,20 @@ describe("controlled Beta demo file bootstrap", () => {
     if (directory) await rm(directory, { recursive: true, force: true });
   });
 
-  function run(overrides: Record<string, string | undefined> = {}) {
-    return spawnSync(process.execPath, [script], { env: { ...environment, ...overrides }, encoding: "utf8" });
+  function run(overrides: Record<string, string | undefined> = {}, args: string[] = []) {
+    return spawnSync(process.execPath, [script, ...args], { env: { ...environment, ...overrides }, encoding: "utf8" });
+  }
+
+  function legacyPdf(title: string) {
+    return Buffer.from(`%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n% HoReCa KZ seed document: ${title}\ntrailer<</Root 1 0 R>>\n%%EOF\n`);
+  }
+
+  async function writeLegacyFixtures() {
+    for (const [storagePath, title] of expectedFiles) {
+      const file = path.join(volume, storagePath);
+      await mkdir(path.dirname(file), { recursive: true });
+      await writeFile(file, legacyPdf(title), { mode: 0o600 });
+    }
   }
 
   function runWithIdentity(options: { uid: number; gid: number; failAt?: "setgroups" | "setgid" | "setuid"; retainRoot?: boolean }) {
@@ -136,7 +150,7 @@ describe("controlled Beta demo file bootstrap", () => {
     const initialMtimes = [];
     for (const [storagePath, title] of expectedFiles) {
       const file = path.join(volume, storagePath);
-      expect(await readFile(file, "utf8")).toBe(`%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n% HoReCa KZ seed document: ${title}\ntrailer<</Root 1 0 R>>\n%%EOF\n`);
+      expect(await readFile(file)).toEqual(createDemoPdf({ title }));
       const stats = await lstat(file);
       expect(stats.mode & 0o777).toBe(0o600);
       initialMtimes.push(stats.mtimeMs);
@@ -151,6 +165,97 @@ describe("controlled Beta demo file bootstrap", () => {
     expect(second.stdout).toContain('"existing":5');
     expect(await readFile(unrelated, "utf8")).toBe("existing private file");
     expect(await Promise.all(expectedFiles.map(async ([storagePath]) => (await lstat(path.join(volume, storagePath))).mtimeMs))).toEqual(initialMtimes);
+  });
+
+  it("creates a document page with a page tree instead of a PDF-looking placeholder", async () => {
+    const result = run();
+    expect(result.status, result.stderr).toBe(0);
+    const pdf = await readFile(path.join(volume, expectedFiles[0][0]), "utf8");
+    expect(pdf).toContain("/Type /Pages");
+    expect(pdf).toContain("/Type /Page ");
+    expect(pdf).toContain("DEMO ONLY");
+    expect(pdf).toMatch(/\nxref\n/);
+    expect(pdf).toMatch(/\nstartxref\n\d+\n%%EOF\n$/);
+  });
+
+  it("requires explicit permission to replace exact legacy placeholders", async () => {
+    await writeLegacyFixtures();
+    const result = run();
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("--repair-legacy");
+    for (const [storagePath, title] of expectedFiles) {
+      expect(await readFile(path.join(volume, storagePath))).toEqual(legacyPdf(title));
+    }
+  });
+
+  it("atomically repairs exact legacy fixtures and does not touch the repaired files on repeat", async () => {
+    await writeLegacyFixtures();
+    const originalInodes = await Promise.all(expectedFiles.map(async ([storagePath]) => (await lstat(path.join(volume, storagePath))).ino));
+    const first = run({}, ["--repair-legacy"]);
+
+    expect(first.status, first.stderr).toBe(0);
+    expect(JSON.parse(first.stdout)).toMatchObject({ created: 0, existing: 0, repaired: 5 });
+    const mtimes = [];
+    for (const [index, [storagePath, title]] of expectedFiles.entries()) {
+      const file = path.join(volume, storagePath);
+      expect(await readFile(file)).toEqual(createDemoPdf({ title }));
+      const stats = await lstat(file);
+      expect(stats.ino).not.toBe(originalInodes[index]);
+      expect(stats.mode & 0o777).toBe(0o600);
+      mtimes.push(stats.mtimeMs);
+      expect((await readdir(path.dirname(file))).some((name) => name.startsWith(".demo-pdf-"))).toBe(false);
+    }
+
+    const second = run({}, ["--repair-legacy"]);
+    expect(second.status, second.stderr).toBe(0);
+    expect(JSON.parse(second.stdout)).toMatchObject({ created: 0, existing: 5, repaired: 0 });
+    expect(await Promise.all(expectedFiles.map(async ([storagePath]) => (await lstat(path.join(volume, storagePath))).mtimeMs))).toEqual(mtimes);
+  });
+
+  it("supports a mixed set of current, legacy and absent fixtures", async () => {
+    await writeLegacyFixtures();
+    await writeFile(path.join(volume, expectedFiles[0][0]), createDemoPdf({ title: expectedFiles[0][1] }));
+    await rm(path.join(volume, expectedFiles[4][0]));
+
+    const result = run({}, ["--repair-legacy"]);
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({ created: 1, existing: 1, repaired: 3 });
+  });
+
+  it.each(["unknown", "symlink"])("preflights all legacy candidates before any replacement when the last file is %s", async (kind) => {
+    await writeLegacyFixtures();
+    const firstFile = path.join(volume, expectedFiles[0][0]);
+    const before = await lstat(firstFile);
+    const lastFile = path.join(volume, expectedFiles[4][0]);
+    const outsideFile = path.join(directory, "unrelated.pdf");
+    await writeFile(outsideFile, "must remain untouched");
+    if (kind === "unknown") await writeFile(lastFile, "not a known fixture");
+    else { await rm(lastFile); await symlink(outsideFile, lastFile); }
+
+    const result = run({}, ["--repair-legacy"]);
+
+    expect(result.status).not.toBe(0);
+    expect(await readFile(firstFile)).toEqual(legacyPdf(expectedFiles[0][1]));
+    expect((await lstat(firstFile)).mtimeMs).toBe(before.mtimeMs);
+    expect((await lstat(firstFile)).ino).toBe(before.ino);
+    expect(await readFile(outsideFile, "utf8")).toBe("must remain untouched");
+    if (kind === "unknown") expect(await readFile(lastFile, "utf8")).toBe("not a known fixture");
+    else expect((await lstat(lastFile)).isSymbolicLink()).toBe(true);
+  });
+
+  it.each([{ APP_ENV: "production" }, { BETA_ENABLED: "true" }, { BETA_DEMO_ONLY: "false" }])("does not let the repair flag bypass the environment guard: %j", async (overrides) => {
+    await writeLegacyFixtures();
+    expect(run(overrides, ["--repair-legacy"]).status).not.toBe(0);
+    for (const [storagePath, title] of expectedFiles) {
+      expect(await readFile(path.join(volume, storagePath))).toEqual(legacyPdf(title));
+    }
+  });
+
+  it("rejects unexpected arguments before creating any files", async () => {
+    expect(run({}, ["--repair-all"]).status).not.toBe(0);
+    expect(await readdir(volume)).toEqual([]);
   });
 
   it.each([
@@ -211,6 +316,15 @@ describe("controlled Beta demo file bootstrap", () => {
     await writeFile(path.join(path.dirname(script), "demo-files.json"), JSON.stringify({ bad: { storagePath: "../escaped.pdf", title: "escape" } }));
 
     expect(run().status).not.toBe(0);
+    expect(await readdir(volume)).toEqual([]);
+  });
+
+  it("rejects a well-formed path outside the five fixed fixture identities", async () => {
+    const manifest = JSON.parse(await readFile(path.join(path.dirname(script), "demo-files.json"), "utf8"));
+    manifest.activeRegistration.storagePath = "company-documents/company-active/other.pdf";
+    await writeFile(path.join(path.dirname(script), "demo-files.json"), JSON.stringify(manifest));
+
+    expect(run({}, ["--repair-legacy"]).status).not.toBe(0);
     expect(await readdir(volume)).toEqual([]);
   });
 });

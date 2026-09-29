@@ -1,0 +1,129 @@
+{
+  "event": "known_synthetic_pdf_repair",
+  "environment": "beta",
+  "startedAt": "2026-09-29T18:17:44.902973+00:00",
+  "completedAt": "2026-09-29T18:17:54.252293+00:00",
+  "runtimeCommit": "00a7b3a03fb6d177aadffb1abf8fa6cbe895bda2",
+  "deploymentId": "a8ce2c69-21f2-4023-b537-00c86d035620",
+  "online": true,
+  "frozenManifestSha256": "0ea7beddb9c6fd7aa3fc8eac91454c882b56ba01c6d3c768b3037bb5f48f3ee3",
+  "scope": {
+    "manifestFixtures": 5,
+    "exactLegacySyntheticPersistenceProbes": 3,
+    "totalFiles": 8,
+    "companyDocumentSizeFieldsUpdated": 7,
+    "paymentFieldsUpdated": 0
+  },
+  "fileRepair": {
+    "replacedCount": 8,
+    "allFinalDigestsMatch": true,
+    "backupAllBeforeFirstReplacement": true,
+    "privateBackupMode": "0600",
+    "finalFileOwnerUid": 1001,
+    "finalFileMode": "0600",
+    "atomicity": "atomic rename per file; separate guarded database transaction"
+  },
+  "databaseReadback": {
+    "matchedDocuments": 7,
+    "allSizesMatchNewBytes": true,
+    "allNonSizeFieldsUnchanged": true,
+    "paymentUnchanged": true
+  },
+  "files": [
+    {
+      "key": "activeRegistration",
+      "kind": "fixture",
+      "oldSize": 109,
+      "newSize": 868,
+      "oldSha256": "5492a30cb4031d35a1fb2d5ec5110e23089f12fac58308f5462bcbab61b0d0fb",
+      "newSha256": "2ef4cc13d845c61768deccfbbdef6617eecd074630e0c955861e627d44d0c3f6",
+      "id": "document-registration-active",
+      "status": "APPROVED"
+    },
+    {
+      "key": "activeBank",
+      "kind": "fixture",
+      "oldSize": 109,
+      "newSize": 868,
+      "oldSha256": "30b306abe482c30b3d8dbfe95bed81df4145f83c4fbecdb27b999d6aa129b461",
+      "newSha256": "70a6a711e125b080168fd2128c2a7b0271831642a1d1847df6c14e47255aa4d6",
+      "id": "document-bank-active",
+      "status": "APPROVED"
+    },
+    {
+      "key": "activeCertificate",
+      "kind": "fixture",
+      "oldSize": 116,
+      "newSize": 875,
+      "oldSha256": "1e160005bd947d5dc689c63212a6b1e78ec1cfc0a0899ec3170cae6d93de950a",
+      "newSha256": "6cb2b6fd1602e63f26e15ab94d0eeae9b22723de526ce6b69e8bccfde66a249a",
+      "id": "document-certificate-active",
+      "status": "APPROVED"
+    },
+    {
+      "key": "pendingRegistration",
+      "kind": "fixture",
+      "oldSize": 117,
+      "newSize": 876,
+      "oldSha256": "6b1739b89b35c84bba63a4dc724137fc0129255cb2fd668cdbd6f48f58d27462",
+      "newSha256": "af0c5006c619d5ea70cf11c521baef87d334cb0438fa04bad3de2c9ae1abf4b8",
+      "id": "document-registration-pending",
+      "status": "UNDER_REVIEW"
+    },
+    {
+      "key": "pendingPaymentProof",
+      "kind": "fixture",
+      "oldSize": 110,
+      "newSize": 869,
+      "oldSha256": "236a0788b96460577fca457a45393498efb7911a1a1ad3bd8a0210a75827303f",
+      "newSha256": "26a365c74e57ee2d2c87df8607278e0fde2d08a4f17b542aaddd9f232ecb3012",
+      "id": "payment-pending",
+      "status": "PROOF_UPLOADED"
+    },
+    {
+      "key": "probe-cmufjcrty0007pt01no7ilwrk",
+      "kind": "probe",
+      "oldSize": 87,
+      "newSize": 940,
+      "oldSha256": "cc5e7e31e8f17ad37f341cedea7c0d7a082ba181b9d4dec64d22d8ebb8308ce6",
+      "newSha256": "18874ccb0f2c776af2d67d7f288cd46be2ec9d5f412adad8fdcdaa92f7b81298",
+      "id": "cmufjcrty0007pt01no7ilwrk",
+      "status": "UNDER_REVIEW"
+    },
+    {
+      "key": "probe-cmufk7lo00007o501ju25jd9i",
+      "kind": "probe",
+      "oldSize": 87,
+      "newSize": 940,
+      "oldSha256": "86d12fbe03ead94037432854e6f27b25e379f72cc1ca6bc73bbec6a6220e851b",
+      "newSha256": "2978aed57851fa1233bfca66c01b7ed7c6dda45f1c0bea898bfced57c9cb1fd7",
+      "id": "cmufk7lo00007o501ju25jd9i",
+      "status": "UNDER_REVIEW"
+    },
+    {
+      "key": "probe-cmui1eq8z0007ru01oeysr22o",
+      "kind": "probe",
+      "oldSize": 87,
+      "newSize": 940,
+      "oldSha256": "aac3346952578fc191fd2b7393df40a8acd06588b7cef6b61306f476522f1e98",
+      "newSha256": "e667a5c5cf691058df2a648808bdc588c6da292a798ff5fe2066920da9890a9f",
+      "id": "cmui1eq8z0007ru01oeysr22o",
+      "status": "UNDER_REVIEW"
+    }
+  ],
+  "noDeploymentOrSeedRun": true,
+  "historicalPersistenceEvidencePreserved": true,
+  "note": "The three synthetic persistence-probe byte hashes intentionally changed during this repair; historical pre-repair persistence proofs remain historical, not proofs of unchanged bytes across repair.",
+  "auditDownloadReadback": {
+    "observedAt": "2026-09-29T18:20:25.455326+00:00",
+    "environment": "beta",
+    "sinceUtc": "2026-09-29T18:17:54Z",
+    "matchingVerifierUserAgent": true,
+    "documentDownloadCount": 7,
+    "distinctDocumentCount": 7,
+    "knownRepairedDocumentCount": 7,
+    "unrelatedDocumentCount": 0,
+    "paymentProofDownloadCount": 1,
+    "passed": true
+  }
+}
