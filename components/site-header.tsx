@@ -19,8 +19,9 @@ export async function SiteHeader() {
         <div className="flex items-center gap-2">
           {user ? (
             <>
-              <Link href={user.role === "ADMIN" ? "/admin" : user.role === "SUPPLIER" ? "/dashboard/company" : "/catalog"} className="hidden items-center gap-2 rounded-xl border border-brand-900/10 bg-white px-3 py-2 text-xs font-semibold text-brand-950 sm:flex">
-                {user.role === "ADMIN" ? <ShieldCheck className="size-4" /> : <Building2 className="size-4" />}{user.name}
+              <Link href={user.role === "ADMIN" ? "/admin" : user.role === "SUPPLIER" ? "/dashboard/company" : "/catalog"} className="inline-flex items-center gap-2 rounded-xl border border-brand-900/10 bg-white px-3 py-2 text-xs font-semibold text-brand-950">
+                {user.role === "ADMIN" ? <ShieldCheck className="size-4" /> : <Building2 className="size-4" />}
+                <span className="sm:hidden">Кабинет</span><span className="hidden sm:inline">{user.name}</span>
               </Link>
               <LogoutButton />
             </>
