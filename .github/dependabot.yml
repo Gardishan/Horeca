@@ -9,6 +9,17 @@ updates:
       timezone: Asia/Almaty
     open-pull-requests-limit: 5
     groups:
+      # next и eslint-config-next связаны жёстким CI-гейтом
+      # (scripts/check-repository.mjs:241-246 требует одинаковых версий).
+      # Они обязаны идти ОДНИМ PR, иначе каждый npm-PR детерминированно
+      # роняет Quality — см. PR #41/#42, красные с 2026-08-09.
+      nextjs-lockstep:
+        patterns:
+          - "next"
+          - "eslint-config-next"
+        update-types:
+          - minor
+          - patch
       production-minor-patch:
         dependency-type: production
         update-types:
