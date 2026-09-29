@@ -128,6 +128,19 @@ SHA/image/APK/SBOM, проверить browser/mobile, rollback с restore и ob
 APK verifier проверяет все root DEX; Railway rollback — scalar Boolean с явным true.
 Обычный failure cleanup ждёт до 15 минут; cancellation — best effort 240 секунд.
 
+## Beta page gate: исправление matcher
+
+В проверке 29.09 обнаружен обход page invite/kill switch через клиентские
+prefetch-заголовки: `missing` исключал такие запросы из proxy. PR #58 убирает
+исключение и проверяет реальный matcher Next для обычной навигации, prefetch
+и RSC; cookie не обходит выключенную Beta. Внешний smoke теперь проверяет
+`/catalog`, `/dashboard/company` и `/admin` без приглашения в обоих состояниях
+Beta, а также каталог с действующим приглашением для каждого класса запроса.
+Static/health exemptions и API role guards сохраняются. Registry остаётся
+`in_progress` до нового внешнего enabled/disabled smoke; старое evidence 00a7
+не подтверждает исправленный page gate. Проверка читаемости demo PDF — отдельное
+исправление: этот PR не повышает проверку PDF magic до доказательства валидного PDF.
+
 ## Известные production gaps
 
 - Application-side S3-compatible storage boundary готов; нужно создать private buckets, IAM/KMS/lifecycle/retention controls и приложить staging evidence.
