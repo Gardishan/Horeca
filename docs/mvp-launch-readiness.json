@@ -22,11 +22,14 @@
         "docs/audits/2026-09-29/pdf-repair/after.json",
         "docs/audits/2026-09-29/pdf-repair/authorization.json",
         "https://github.com/Gardishan/Horeca/actions/runs/36611763760",
-        "https://github.com/Gardishan/Horeca/actions/runs/36611763739"
+        "https://github.com/Gardishan/Horeca/actions/runs/36611763739",
+        "tests/public-form-recovery.test.ts",
+        "docs/audits/2026-09-29/ui-recovery/verification.json",
+        "docs/audits/2026-09-29/ui-recovery/browser-green.json"
       ],
       "verifiedAt": null,
       "environment": "ci-postgresql-17 + railway-beta",
-      "notes": "Source corrections for the page gate and readable demo PDFs are merged in PR #58 / PR #76 (main 5984e4f). PR #76 Quality/Security passed:357 tests, container and PostgreSQL 17 migration/seed/HTTP smoke. Eight live PDFs were separately repaired 29 Sep 18:17 UTC; parser/render,24 auth denials and download audit passed. Invite/buyer-request form recovery (F2), mobile cabinet navigation (F3), and delivery of corrected source remain open; data repair does not close the full flow."
+      "notes": "Page-gate and readable-PDF source corrections are merged in PR #58 / PR #76. Eight live PDFs were separately repaired 29 Sep 18:17 UTC with parser/render/auth/audit proof. F2/F3 source candidate fdb3a1f fixes form recovery, post-invite cached redirects and mobile cabinet access; local full verify passed 365 tests, and production standalone Chromium passed 17 scenarios on isolated PostgreSQL 14.21. This is local evidence: corrected source still needs delivery and external critical-flow verification on Railway."
     },
     {
       "id": "controlled-beta-safety",
@@ -89,7 +92,7 @@
       ],
       "verifiedAt": null,
       "environment": "railway-beta",
-      "notes": "Retry 36605746207 for source 3ef was rejected before deployment creation: Deploys have been paused temporarily. Audit 17:44 UTC saw runtime 00a7 / pending 0 and next variables false / version 3ef. PR #58 source fix is merged as 023a24e; F2/F3 and delivery of fixes remain open. Provider recovery alone is insufficient; this docs pass did not retry deployments."
+      "notes": "Retry 36605746207 for source 3ef was rejected before deployment creation: Deploys have been paused temporarily. Audit 17:44 UTC saw runtime 00a7 / pending 0 and next variables false / version 3ef. PR #58 source fix is merged as 023a24e; F2/F3 are fixed in source candidate fdb3a1f with local browser evidence; delivery and external verification remain open. Provider recovery alone is insufficient; this docs pass did not retry deployments."
     },
     {
       "id": "external-https-smoke",
@@ -107,11 +110,12 @@
         "https://github.com/Gardishan/Horeca/actions/runs/36601519494",
         "docs/releases/mvp-beta-2026-09-29/candidate-00a7-launch-evidence.json",
         "docs/releases/mvp-beta-2026-09-29/candidate-00a7-monitoring-evidence.json",
-        "docs/PDF_REPAIR_2026-09-29.md"
+        "docs/PDF_REPAIR_2026-09-29.md",
+        "docs/audits/2026-09-29/ui-recovery/browser-green.json"
       ],
       "verifiedAt": null,
       "environment": "railway-beta",
-      "notes": "Historical ordinary HTTPS/auth/role/download smoke passed on 00a7 but missed prefetch page bypass and malformed PDF contents. PR #58 / PR #76 add gate probes and strict PDF parsing. Eight live PDFs have independent online repair/auth/audit evidence. Corrected deployed source still needs ordinary/prefetch/RSC enabled/disabled gate, form-recovery and mobile-flow checks; CSS simulation 39/39 is not delivered-runtime proof."
+      "notes": "Historical ordinary HTTPS/auth/role/download smoke passed on 00a7 but missed prefetch page bypass and malformed PDF contents. PR #58 / PR #76 add gate probes and strict PDF parsing. Eight live PDFs have independent online repair/auth/audit evidence. Corrected deployed source still needs ordinary/prefetch/RSC enabled/disabled gate, form-recovery and mobile-flow checks; CSS simulation 39/39 is not delivered-runtime proof. F2/F3 and the post-invite cached redirect are corrected in source candidate fdb3a1f; 17 local Chromium scenarios passed, including 320/390/768/1440 px. This does not replace external smoke."
     },
     {
       "id": "android-debug-artifact",

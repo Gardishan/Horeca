@@ -1,0 +1,69 @@
+{
+  "observedAt": "2026-09-29T18:33:59.531Z",
+  "environment": "isolated localhost HTTPS, production standalone, PostgreSQL 14.21 demo database",
+  "phase": "red",
+  "sourceBase": "5984e4f009026a886418bd0bf63ff3085ba7c4b8",
+  "applicationMode": "production",
+  "externalMutations": 0,
+  "rows": [
+    {
+      "kind": "invite",
+      "mode": "network",
+      "requests": 1,
+      "pendingObserved": true,
+      "buttonDisabledAfter": true,
+      "inputPreserved": true,
+      "messages": [],
+      "pageErrors": [
+        "TypeError"
+      ]
+    },
+    {
+      "kind": "invite",
+      "mode": "html-503",
+      "requests": 1,
+      "pendingObserved": true,
+      "buttonDisabledAfter": true,
+      "inputPreserved": true,
+      "messages": [],
+      "pageErrors": [
+        "Uncaught (in promise) SyntaxError"
+      ]
+    },
+    {
+      "kind": "buyer",
+      "mode": "network",
+      "requests": 1,
+      "pendingObserved": true,
+      "buttonDisabledAfter": true,
+      "inputPreserved": true,
+      "messages": [],
+      "pageErrors": [
+        "TypeError"
+      ]
+    },
+    {
+      "kind": "buyer",
+      "mode": "html-503",
+      "requests": 1,
+      "pendingObserved": true,
+      "buttonDisabledAfter": true,
+      "inputPreserved": true,
+      "messages": [],
+      "pageErrors": [
+        "Uncaught (in promise) SyntaxError"
+      ]
+    },
+    {
+      "kind": "cabinet",
+      "role": "SUPPLIER",
+      "width": 390,
+      "visible": false,
+      "keyboardReachable": false,
+      "scrollWidth": 390,
+      "href": "/dashboard/company",
+      "pageErrors": []
+    }
+  ],
+  "sourceScope": "Original application components before this UI fix."
+}

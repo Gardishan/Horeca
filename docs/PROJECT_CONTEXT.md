@@ -108,7 +108,8 @@ Auto-deploy выключен. PostgreSQL 17.11/TLS1.3, migration, cluster и о�
 proxy matcher (P1); invite/buyer-request формы зависают без ошибки при network/
 non-JSON failure; на 390 px скрыта ссылка возврата в кабинет (P2). Исходный аудит эти дефекты
 не исправлял. Затем PR #58 merged как 023a24e устранил P1 в source; в runtime 00a7
-он ещё остаётся. F2/F3 не закрыты. Mobile grid overflow уже исправлен в source
+он ещё остаётся. F2/F3 исправлены в source `fdb3a1f778275559f746457ff123e0f489cc4786`,
+но ожидают доставки и внешней проверки. Mobile grid overflow уже исправлен в source
 PR #74, но исправленный CSS ещё не доставлен в runtime. Прежнее утверждение
 «остался только Railway» и safety=done неверны. API/role guards не объявляются
 обойдёнными: доказан page perimeter bypass.
@@ -148,6 +149,25 @@ Static/health exemptions и API role guards сохраняются. Registry о�
 PR #76 merged как `5984e4f`; Quality 36611763760 и Security 36611763739
 прошли с 357 tests, container и PostgreSQL 17 migration/seed/HTTP smoke. Ремонт данных не доставляет новые application fixes;
 исторические PDF magic assertions не считаются parser/render evidence.
+
+## Восстановление форм и мобильный кабинет
+
+Source `fdb3a1f778275559f746457ff123e0f489cc4786` добавляет recovery для invite и
+buyer-request форм: network/non-JSON ошибки показываются безопасным текстом,
+`finally` снимает pending, ввод сохраняется, автоматического повтора нет.
+Неизвестный результат заявки не объявляется отказом: перед повтором нужно
+уточнить получение у поставщика. После успешного приглашения выполняется
+полный document replace на `nextPath`, уже проверенный `safeBetaReturnPath`:
+это устраняет локально воспроизведённый цикл client Router Cache после denied
+prefetch. Server policy и API не менялись.
+
+Шапка показывает «Кабинет» на телефоне, имя на широком экране; role href сохранён.
+Полный local verify: 365 tests. Production standalone browser: 17 сценариев,
+включая 320/390/768/1440 px, supplier/admin Tab/Enter, свежий и заранее прогретый
+denied prefetch, ошибки и успешную локальную заявку. Локальная БД — PostgreSQL
+14.21, внешний CI использует PostgreSQL 17. Доказательства и hashes исходников:
+`docs/audits/2026-09-29/ui-recovery/`. Это source/local completion;
+runtime `00a7b3a` не изменялся и не подтверждён этим проходом.
 
 ## Известные production gaps
 
