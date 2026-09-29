@@ -1,0 +1,60 @@
+{
+  "result": "VERIFIED_BETA_CANDIDATE",
+  "launchCommit": "00a7b3a03fb6d177aadffb1abf8fa6cbe895bda2",
+  "baselineMainSha": "",
+  "workflowRunUrl": "https://github.com/Gardishan/Horeca/actions/runs/36225121691",
+  "provider": {
+    "project": "horeca-kz-beta",
+    "environment": "beta",
+    "appService": {
+      "id": "2f4e1206-828e-4fc2-86d3-34ff2da48c7c",
+      "name": "Horeca"
+    },
+    "databaseService": {
+      "id": "e00c10d9-97d9-486e-9c9d-aed1f0034c2d",
+      "name": "PostgreSQL17"
+    },
+    "betaBaseUrl": "https://horeca-beta.up.railway.app"
+  },
+  "runtime": {
+    "secretsValidatedWithoutValues": true,
+    "railwayTokenAbsentFromRuntime": true,
+    "betaTokenParity": true,
+    "databaseTlsRequired": true
+  },
+  "migration": {
+    "command": "npm run db:deploy",
+    "status": "passed"
+  },
+  "seed": {
+    "profile": "demo-only",
+    "status": "passed"
+  },
+  "deployments": {
+    "initial": "d81986c8-732b-479a-9235-476eee09e6f9",
+    "enabled": "360b08f8-13c0-4097-872f-df7117c2949a",
+    "persistenceCandidate": "84470318-8437-423e-b3b5-582447f1d67c",
+    "rollback": "0876198f-71f2-4b1b-800b-729f8aada85a",
+    "restored": "a8ce2c69-21f2-4023-b537-00c86d035620",
+    "imageDigest": "sha256:596a8bf870ed0a996cce82cad0cee3f4ab58105588f0fd75538854588b040e95"
+  },
+  "externalSmoke": {
+    "invite": "passed",
+    "authentication": "passed",
+    "authorization": "passed",
+    "https": "passed"
+  },
+  "persistence": {
+    "markerId": "cmui1epfi0005ru01xbmqbllm",
+    "markerLabelSha256": "9553caed592fb8d8245e87cf89535f7d463f82ec8e66c6a4f1097b6595b6ca1b",
+    "afterRedeploy": "passed",
+    "afterRollback": "passed",
+    "afterRestore": "passed"
+  },
+  "android": {
+    "variant": "debug",
+    "baseUrl": "https://horeca-beta.up.railway.app",
+    "sha256": "bc317eac3f3fb5633d17f1d04435720fe6c95ac438fad56e5c7098852bbdcff6"
+  },
+  "verifiedAt": "2026-09-26T06:59:27Z"
+}

@@ -89,32 +89,44 @@ MVP deliverable проверен, но commercial production readiness не за
 
 ## MVP Beta launch readiness
 
-`docs/mvp-launch-readiness.json` отдельно учитывает controlled Beta и требует
-все восемь обязательных blocking controls. Историческое CI evidence не заменяет
-проверку нового launch commit. На 24.09.2026 Railway Hobby и CLI активны,
-проект/среда — `horeca-kz-beta` / `beta`; PostgreSQL 17.11 с TLS 1.3 и private
-volume подготовлены. Три GitHub Environment secrets настроены; SSH host record
-сохранён после initial-trust подключения. `https://horeca-beta.up.railway.app`
-существует, но Beta выключена и внешний launch gate ещё не пройден. Launch
-остаётся незавершённым в [issue 44](https://github.com/Gardishan/Horeca/issues/44).
+Registry `docs/mvp-launch-readiness.json` требует восемь обязательных controls.
+На 29.09.2026: 3 done, 2 in progress, 3 blocked. Финальный запуск не объявлен;
+[issue 44](https://github.com/Gardishan/Horeca/issues/44) остаётся открытой.
 
-Railway Beta требует persistent volume `/app/storage/private` и отдельный
-bootstrap synthetic PDF в runtime; seed на Actions runner не переносит файлы
-в приложение. External smoke проверяет download и SHA-256 нового upload после
-redeploy/rollback. Workflow без image digest не формирует successful candidate
-evidence и не объявляет launch. Текущий change contract и ограничения:
-`docs/MVP_BETA_DELIVERY.md`. До внешних доказательств strict MVP gate красный. GitHub auto-deploy для app
-выключен: rollout выполняет ручной Beta workflow, чтобы evidence-only merge
-не заменял проверенный image незарегистрированным deployment.
+Railway Hobby, проект `horeca-kz-beta` / среда `beta`, PostgreSQL 17.11 с TLS 1.3
+и persistent volumes настроены. Три GitHub Environment secrets присутствуют;
+SSH host pin получен через initial trust, без независимой проверки fingerprint.
+GitHub auto-deploy выключен; rollout выполняется ручным **Beta Launch**.
 
-Runtime-проверки 24–25.09 подтвердили migration/seed, TLS и физический restart
-PostgreSQL, private-file persistence и APK с внешним origin. Финальный launch
-ещё требует успешного rollback/restore. Live Railway API возвращает scalar
-`Boolean!` из `deploymentRollback`; workflow требует явного `true` перед
-проверкой нового deployment. После обычного сбоя cleanup ждёт deployment до
-15 минут; отмена workflow ограничена best-effort попыткой в 240 секунд.
-APK verifier проверяет точную URL-константу во всех корневых DEX-файлах,
-поскольку Android может поместить её в `classes2.dex`.
+Кандидат `00a7b3a03fb6d177aadffb1abf8fa6cbe895bda2` прошёл workflow 36225121691:
+external HTTPS invite/auth/roles/private-download smoke, DB/file persistence,
+provider rollback/restore одной версии и APK с внешним origin. Физический restart
+PostgreSQL 24.09 и continuity readback 29.09 подтверждают сохранность той же БД.
+Свежее ограниченное наблюдение 00a7: 193 HTTP rows / 0 HTTP 5xx; один 401 auth log event
+при быстрой смене страниц исследован отдельным успешным обычным logout.
+
+PR #74 исправил мобильный overflow кабинетов; main
+`28d066a9b05e24384cc271eb6511973f33b8355d` прошёл Quality 36600977390 и
+Security 36600977405 (276 tests, container/DB/HTTP smoke, audit и signed SBOM).
+Browser CSS simulation прошла 39/39 измерений, но новый runtime ещё не проверен.
+Railway API incident YYTG8I10 задержал deployment; workflow 36601519494 отменён
+до enable, deployment e63096f1 подтверждён REMOVED, pending deployments нет.
+Внешняя readiness 17:10 UTC продолжает показывать 200 / 00a7. Сохранённые переменные
+следующего deployment: BETA_ENABLED=false, DEPLOYMENT_VERSION=28d066a; это не
+текущее окружение уже запущенного процесса. Cross-version rehearsal подготовлен,
+но не выполнялся; условный launcher остановлен. Tag/Release не созданы.
+
+Возобновление: после восстановления провайдера проверить отсутствие pending
+rollouts, выполнить Beta Launch на актуальном зелёном main, собрать matching
+SHA/image/APK/SBOM, проверить browser/mobile, rollback с restore и observe window.
+Затем полный strict MVP gate, exact-SHA prerelease и закрытие #44. Docs-only merge
+меняет следующий launch SHA, поэтому старые артефакты нельзя переименовывать.
+
+Точные факты и ограничения: `docs/releases/mvp-beta-2026-09-29/README.md`;
+инструкция участникам/оператору: `docs/BETA_GUIDE.md`. Bootstrap private PDF
+остаётся отдельным runtime-шагом; seed runner не переносит файлы в volume.
+APK verifier проверяет все root DEX; Railway rollback — scalar Boolean с явным true.
+Обычный failure cleanup ждёт до 15 минут; cancellation — best effort 240 секунд.
 
 ## Известные production gaps
 
@@ -140,7 +152,7 @@ APK verifier проверяет точную URL-константу во все�
 | Evidence-driven DoD | Review-ready, merge и runtime completion нельзя смешивать |
 | Machine-readable readiness | Production blockers имеют status, owner, evidence и next action |
 | Fail-closed abuse boundary | Production не продолжает rate-limited flow при отсутствии shared backend |
-| Provider-neutral OCI baseline | Hosting ещё не выбран; immutable standalone image сохраняет переносимость и единый tested artifact |
+| Provider-neutral OCI baseline | Railway выбран для controlled Beta; commercial cutover ещё не согласован, immutable standalone image сохраняет переносимость |
 | Split health probes | Liveness управляет restart, readiness не пускает traffic без config + PostgreSQL |
 | Dependabot minor/patch automation | Major toolchain upgrades требуют совместимой migration всей матрицы; security updates остаются независимыми |
 | Runtime/type major alignment | Node.js runtime, engine pins и `@types/node` остаются на одной major-ветке; repository gate блокирует drift |

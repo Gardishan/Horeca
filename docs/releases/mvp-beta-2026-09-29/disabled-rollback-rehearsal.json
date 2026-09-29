@@ -1,0 +1,63 @@
+{
+  "kind": "disabled-to-disabled provider rollback rehearsal",
+  "auth": "account CLI; not CI project-token proof",
+  "verifiedBeforeAt": "2026-09-26T06:32:39.507710+00:00",
+  "environment": "beta",
+  "project": "horeca-kz-beta",
+  "serviceId": "2f4e1206-828e-4fc2-86d3-34ff2da48c7c",
+  "launchCommit": "f5455cbbf0de4aaf105350747be24befb36493a9",
+  "betaEnabledBefore": false,
+  "externalPreflightBefore": {
+    "ok": true,
+    "mode": "preflight",
+    "origin": "https://horeca-beta.up.railway.app",
+    "checks": [
+      "external HTTPS liveness",
+      "readiness closed",
+      "traffic kill switch closed"
+    ]
+  },
+  "target": {
+    "id": "90a86722-024b-4503-a4a3-f6112373116a",
+    "status": "REMOVED",
+    "canRollback": true,
+    "imageDigest": "sha256:ecd3fcf00a02a287c9aa3c80f356a7e627e36cb98db0cba4772e53545eedc704"
+  },
+  "mutationAttemptedAt": "2026-09-26T06:34:25.320188+00:00",
+  "mutationExitCode": 0,
+  "mutationAccepted": true,
+  "resultDeployment": {
+    "id": "4c4eba77-4916-4bec-b4cd-071bb159d4a7",
+    "status": "SUCCESS",
+    "createdAt": "2026-09-26T06:34:23.557Z",
+    "updatedAt": "2026-09-26T06:34:31.851Z",
+    "imageDigest": "sha256:ecd3fcf00a02a287c9aa3c80f356a7e627e36cb98db0cba4772e53545eedc704"
+  },
+  "imageDigestMatchesTarget": true,
+  "newDeploymentIdCreated": true,
+  "externalPreflightAfter": {
+    "ok": true,
+    "mode": "preflight",
+    "origin": "https://horeca-beta.up.railway.app",
+    "checks": [
+      "external HTTPS liveness",
+      "readiness closed",
+      "traffic kill switch closed"
+    ]
+  },
+  "runtimeAfter": {
+    "event": "disabled-rollback-runtime",
+    "appEnv": "beta",
+    "betaEnabled": "false",
+    "deploymentVersion": "f5455cbbf0de4aaf105350747be24befb36493a9",
+    "pid1Uid": [
+      1001,
+      1001,
+      1001,
+      1001
+    ],
+    "observedAt": "2026-09-26T06:40:01.751Z"
+  },
+  "verifiedAfterAt": "2026-09-26T06:41:29.042876+00:00",
+  "result": "DISABLED_ROLLBACK_REHEARSAL_PASSED"
+}

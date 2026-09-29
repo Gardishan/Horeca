@@ -2,7 +2,7 @@
   "version": 1,
   "product": "HoReCa KZ",
   "target": "mvp-beta",
-  "updatedAt": "2026-09-24",
+  "updatedAt": "2026-09-29",
   "controls": [
     {
       "id": "critical-flows",
@@ -11,14 +11,13 @@
       "blocking": true,
       "owner": "Engineering",
       "evidence": [
-        "scripts/smoke-http.mjs",
-        ".github/workflows/quality.yml",
-        "https://github.com/Gardishan/Horeca/commit/410c98ef80ace5e5c12e30552229a4f8a1d5df40",
-        "https://github.com/Gardishan/Horeca/actions/runs/31822731617"
+        "https://github.com/Gardishan/Horeca/actions/runs/36600977390",
+        "docs/releases/mvp-beta-2026-09-29/candidate-00a7-launch-evidence.json",
+        "scripts/smoke-http.mjs"
       ],
-      "verifiedAt": "2026-08-14T17:12:42Z",
-      "environment": "ci-postgresql-17",
-      "notes": "Post-merge Quality #61 passed authenticated HTTP smoke, PostgreSQL 17 migration/seed, immutable container build and dependency audit on main 410c98ef."
+      "verifiedAt": "2026-09-29T16:56:58Z",
+      "environment": "ci-postgresql-17 + railway-beta",
+      "notes": "Node 22 main 28d066a Quality passed 276 tests, standalone/container build, clean PostgreSQL 17 migration/seed and authenticated HTTP smoke. Buyer UI request delivery and company isolation passed on prior external candidate 00a7; corrected mobile CSS awaits new runtime."
     },
     {
       "id": "controlled-beta-safety",
@@ -27,61 +26,47 @@
       "blocking": true,
       "owner": "Engineering",
       "evidence": [
-        "lib/beta-safety.ts",
-        "tests/beta-safety.test.ts",
-        "proxy.ts",
-        "https://github.com/Gardishan/Horeca/pull/45",
-        "https://github.com/Gardishan/Horeca/actions/runs/31822731617",
-        "https://github.com/Gardishan/Horeca/actions/runs/31822731478"
+        "https://github.com/Gardishan/Horeca/actions/runs/36600977390",
+        "https://github.com/Gardishan/Horeca/actions/runs/36600977405",
+        "docs/releases/mvp-beta-2026-09-29/candidate-00a7-launch-evidence.json",
+        "docs/releases/mvp-beta-2026-09-29/disabled-rollback-rehearsal.json"
       ],
-      "verifiedAt": "2026-08-14T17:12:42Z",
-      "environment": "main-ci",
-      "notes": "PR #45 merged as main 410c98ef after green Quality/Security; post-merge Quality #61, Security #63 and the signed-expiry/kill-switch policy tests passed."
+      "verifiedAt": "2026-09-29T17:07:45Z",
+      "environment": "railway-beta",
+      "notes": "Current main policy tests and prior external invite/cookie/auth/role/demo-only/kill-switch evidence pass. Readiness200 for active 00a7 and anonymous catalog 307 to invite gate were rechecked on Sep 29. This does not promote28d066a to runtime."
     },
     {
       "id": "beta-database",
       "title": "The Beta database is migrated, seeded with demo-only data and persists across restart",
-      "status": "in_progress",
+      "status": "done",
       "blocking": true,
       "owner": "Product owner + Platform/DevOps",
       "evidence": [
-        "prisma/schema.prisma",
-        "prisma/migrations",
-        "prisma/seed.ts",
-        ".github/workflows/beta-launch.yml",
-        "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
-        "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
-        "https://github.com/Gardishan/Horeca/actions/runs/31877000013",
-        "https://github.com/Gardishan/Horeca/issues/44#issuecomment-5301594684",
-        "docs/MVP_BETA_DELIVERY.md",
-        "https://github.com/Gardishan/Horeca/actions/runs/31879629530"
+        "docs/releases/mvp-beta-2026-09-29/postgres-restart-evidence.json",
+        "docs/releases/mvp-beta-2026-09-29/candidate-00a7-runtime-cluster-readback.json",
+        "docs/releases/mvp-beta-2026-09-29/candidate-00a7-volume-readback.json",
+        "docs/releases/mvp-beta-2026-09-29/candidate-00a7-launch-evidence.json"
       ],
-      "verifiedAt": null,
-      "environment": "beta",
-      "notes": "Railway PostgreSQL17.11 is deployed with persistent volume; an actual pg_stat_ssl session proved TLS1.3 on 2026-09-24. No public TCP proxy. Provider migration/demo seed and lifecycle persistence proof remain pending. Local clean PostgreSQL17.11 migration/seed and isolated artifact HTTP smoke pass."
+      "verifiedAt": "2026-09-29T16:45:38Z",
+      "environment": "railway-beta",
+      "notes": "Physical PostgreSQL 17.11 restart Sep 24 preserved exact marker/migration/cluster and volume; Sep 29 read-only continuity confirms same cluster, postmaster start, migration checksum and READY volume with TLS1.3. Workflow 36225121691 additionally proved DB/private-file persistence across redeploy/rollback/restore. No schema change in 28d066a."
     },
     {
       "id": "beta-deployment",
       "title": "An immutable application image is deployed at an external HTTPS provider URL",
-      "status": "in_progress",
+      "status": "blocked",
       "blocking": true,
       "owner": "Product owner + Platform/DevOps",
       "evidence": [
-        "Dockerfile",
-        "docs/DEPLOYMENT.md",
-        ".github/workflows/beta-launch.yml",
-        "https://github.com/Gardishan/Horeca/pull/47",
-        "https://github.com/Gardishan/Horeca/commit/7ca30e415b6ccf90f8c44c48800c5047e9e9f1c4",
-        "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
-        "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
-        "https://github.com/Gardishan/Horeca/actions/runs/31877000013",
-        "https://github.com/Gardishan/Horeca/issues/44#issuecomment-5301594684",
-        "docs/MVP_BETA_DELIVERY.md",
-        "https://github.com/Gardishan/Horeca/actions/runs/31879629530"
+        "https://github.com/Gardishan/Horeca/actions/runs/36600977390",
+        "https://github.com/Gardishan/Horeca/actions/runs/36225121691",
+        "https://github.com/Gardishan/Horeca/actions/runs/36601519494",
+        "https://status.railway.com/incident/YYTG8I10",
+        "docs/releases/mvp-beta-2026-09-29/launch-checkpoint.json"
       ],
       "verifiedAt": null,
-      "environment": "beta",
-      "notes": "Owner-approved horeca-kz-beta / beta resources and three GitHub Environment secrets are configured. HTTPS origin https://horeca-beta.up.railway.app exists; appPID1UID1001 and volumeowner1001/mode0700 are verified. Beta remains disabled. Maina332671 runtime exposed missing Prisma alias in Turbopack standalone; Webpack+isolated-smoke correction requires CI and fresh external deployment before this control is done."
+      "environment": "railway-beta",
+      "notes": "Release source 28d066a has green main CI. Railway API incident held new deployment e63096f1 in INITIALIZING; workflow 36601519494 was cancelled before enable. Prior00a7 remains the observed active candidate. Resume external launch after provider recovery and absence of pending deployments; final image/identity unverified."
     },
     {
       "id": "external-https-smoke",
@@ -90,36 +75,30 @@
       "blocking": true,
       "owner": "Engineering + Platform/DevOps",
       "evidence": [
-        "scripts/smoke-http.mjs",
-        "scripts/smoke-beta-external.mjs",
-        "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
-        "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
-        "https://github.com/Gardishan/Horeca/issues/44#issuecomment-5301594684",
-        "docs/MVP_BETA_DELIVERY.md",
-        "https://github.com/Gardishan/Horeca/actions/runs/31879629530"
+        "https://github.com/Gardishan/Horeca/actions/runs/36225121691",
+        "https://github.com/Gardishan/Horeca/actions/runs/36601519494",
+        "docs/releases/mvp-beta-2026-09-29/candidate-00a7-launch-evidence.json",
+        "docs/releases/mvp-beta-2026-09-29/candidate-00a7-monitoring-evidence.json",
+        "docs/releases/mvp-beta-2026-09-29/mobile-css-simulation.json"
       ],
       "verifiedAt": null,
-      "environment": "beta",
-      "notes": "External disabled-Beta probe on 2026-09-24: liveness200 and catalog503 BETA_DISABLED; readiness500 exposed missing Prisma runtime. Isolated local smoke now reproduces this packaging class. Fix requires external redeploy, then invite/auth/roles, protected PDF downloads and synthetic-upload hashes across lifecycle changes."
+      "environment": "railway-beta",
+      "notes": "Full external HTTPS invite/auth/role/protected-PDF smoke passed on 00a7; new main 28d066a still requires deployed browser/HTTP verification. Mobile defect reproduced and CSS simulation passed 39/39 viewports; simulation is not runtime evidence for28d066a."
     },
     {
       "id": "android-debug-artifact",
       "title": "A debug APK built from the launch commit is available as a CI or release artifact",
-      "status": "in_progress",
+      "status": "blocked",
       "blocking": true,
       "owner": "Engineering",
       "evidence": [
-        "android/app/build.gradle.kts",
-        "android/app/src/main/java/kz/horeca/app/MainActivity.java",
-        "https://github.com/Gardishan/Horeca/actions/runs/31822731617",
-        "https://github.com/Gardishan/Horeca/actions/runs/31822731617/artifacts/9227617669",
-        "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
-        "docs/MVP_BETA_DELIVERY.md",
-        "https://github.com/Gardishan/Horeca/actions/runs/31879629530"
+        "https://github.com/Gardishan/Horeca/actions/runs/36225121691",
+        "https://github.com/Gardishan/Horeca/actions/runs/36600977390",
+        "docs/releases/mvp-beta-2026-09-29/candidate-00a7-launch-evidence.json"
       ],
       "verifiedAt": null,
-      "environment": "beta",
-      "notes": "Historical CI built an emulator-targeted debug APK. No external Beta origin or launch-commit APK/checksum is available. Rebuild the debug APK using the verified external origin after a successful candidate deployment; production signing stays out of scope."
+      "environment": "railway-beta",
+      "notes": "Previous00a7 external-origin APK SHA-256 bc317eac3f3fb5633d17f1d04435720fe6c95ac438fad56e5c7098852bbdcff6 was downloaded and verified across two DEX files. New28d066a Quality built an emulator APK, but external-origin APK step was not reached during cancelled provider launch. No physical Android test or production signing claim."
     },
     {
       "id": "release-identity",
@@ -128,20 +107,14 @@
       "blocking": true,
       "owner": "Release manager",
       "evidence": [
-        ".github/workflows/security.yml",
-        ".github/workflows/beta-launch.yml",
-        "docs/DEPLOYMENT.md",
-        "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
-        "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
-        "https://github.com/Gardishan/Horeca/actions/runs/31877000013",
-        "https://github.com/Gardishan/Horeca/commit/410c98ef80ace5e5c12e30552229a4f8a1d5df40",
-        "https://github.com/Gardishan/Horeca/actions/runs/31822731478/artifacts/9227592566",
-        "docs/MVP_BETA_DELIVERY.md",
-        "https://github.com/Gardishan/Horeca/actions/runs/31879629530"
+        "https://github.com/Gardishan/Horeca/actions/runs/36600977390",
+        "https://github.com/Gardishan/Horeca/actions/runs/36600977405",
+        "docs/releases/mvp-beta-2026-09-29/sbom-verification.json",
+        "docs/releases/mvp-beta-2026-09-29/launch-checkpoint.json"
       ],
       "verifiedAt": null,
-      "environment": "beta",
-      "notes": "PR57 merged as a332671fc0d2a4710fca91bdb27df7b15a793cc4; post-merge Quality35997366753 and Security35997366746 passed. External packaging correction is still required, so a332671 is not a verified launch candidate. Record the corrected mainSHA, actual image digest, external-origin APK/SBOM and strict-gate/prerelease identity after runtime verification."
+      "environment": "railway-beta",
+      "notes": "Release source 28d066a and signed CycloneDX SBOM are verified. Final image digest/external APK/runtime/strict gate remain pending. No tag, draft Release or prerelease has been created; reserved naming is not completed release identity."
     },
     {
       "id": "beta-operations",
@@ -150,19 +123,16 @@
       "blocking": true,
       "owner": "Platform/DevOps + Release manager",
       "evidence": [
-        "docs/DEPLOYMENT.md",
-        ".github/workflows/beta-launch.yml",
-        "lib/beta-safety.ts",
-        "tests/beta-safety.test.ts",
-        "https://github.com/Gardishan/Horeca/actions/runs/31867427255",
-        "https://github.com/Gardishan/Horeca/actions/runs/31876896260",
-        "https://github.com/Gardishan/Horeca/issues/44#issuecomment-5301594684",
-        "docs/MVP_BETA_DELIVERY.md",
-        "https://github.com/Gardishan/Horeca/actions/runs/31879629530"
+        "https://github.com/Gardishan/Horeca/actions/runs/36225121691",
+        "docs/releases/mvp-beta-2026-09-29/disabled-rollback-rehearsal.json",
+        "docs/releases/mvp-beta-2026-09-29/candidate-00a7-provider-readback.json",
+        "docs/releases/mvp-beta-2026-09-29/candidate-00a7-monitoring-evidence.json",
+        "docs/releases/mvp-beta-2026-09-29/launch-checkpoint.json",
+        "docs/BETA_GUIDE.md"
       ],
       "verifiedAt": null,
-      "environment": "beta",
-      "notes": "Local policy and workflow failure-cleanup fixtures pass; provider rollout/rollback and monitoring observation remain unverified. After provisioning, prove DB and private-file persistence across redeploy/rollback/restore. Failure cleanup is best effort if the runner or provider becomes unavailable. Record monitoring access and an observation window. Owner-approved project/environment renaming is complete; provider lifecycle proof remains pending."
+      "environment": "railway-beta",
+      "notes": "Previous provider same-code rollback/restore, kill-switch and 199-second observation are recorded;193 HTTP rows / 0 HTTP 5xx, plus one logged 401 auth event during rapid UI navigation. Ordinary logout passed separately. Cross-version rehearsal is prepared but never executed; its conditional launcher was stopped for the Railway incident. Observe the final corrected runtime only after safe rollout/restore. Auto-deploy stays disabled."
     }
   ]
 }

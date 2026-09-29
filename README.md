@@ -192,6 +192,8 @@ Provider-neutral rollout, migration и rollback contract описаны в `docs
 - `docs/KNOWLEDGE_POLICY.md` — authority источников и правила evidence.
 - `docs/PRODUCTION_READINESS.md` — текущий commercial launch status.
 - `docs/mvp-launch-readiness.json` — отдельный проверяемый статус Controlled MVP Beta.
+- `docs/BETA_GUIDE.md` — инструкция участникам и оператору закрытой demo-only Beta.
+- `docs/releases/mvp-beta-2026-09-29/README.md` — текущий launch checkpoint: предыдущий runtime, исправления и внешний блокер Railway.
 - `CONTRIBUTING.md` — воспроизводимый процесс изменения и PR.
 
 Процесс адаптирован из MIT-проекта [Everything Claude Code / ECC](https://github.com/affaan-m/ECC); атрибуция сохранена в `THIRD_PARTY_NOTICES.md`.

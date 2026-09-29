@@ -1,0 +1,60 @@
+{
+  "app": {
+    "access": true,
+    "data": {
+      "observedAt": "2026-09-29T16:45:38.556Z",
+      "source": "SSH process environment (PID 1 environ read denied); actual PID 1 UID from proc status",
+      "pid1Uid": [
+        1001,
+        1001,
+        1001,
+        1001
+      ],
+      "config": {
+        "APP_ENV": "beta",
+        "BETA_ENABLED": "true",
+        "BETA_DEMO_ONLY": "true",
+        "BETA_REGISTRATION_ENABLED": "false",
+        "DEMO_AUTH_ENABLED": "true",
+        "DEPLOYMENT_VERSION": "00a7b3a03fb6d177aadffb1abf8fa6cbe895bda2",
+        "PRIVATE_STORAGE_MODE": "filesystem",
+        "RATE_LIMIT_MODE": "memory",
+        "RATE_LIMIT_ALLOW_IN_MEMORY": "true",
+        "MALWARE_SCAN_MODE": "mock"
+      },
+      "railwayTokenInAppEnvironment": false
+    }
+  },
+  "database": {
+    "access": true,
+    "data": {
+      "observedAt": "2026-09-29T16:45:38.702475+00:00",
+      "readOnly": "on",
+      "serverVersion": "17.11 (Debian 17.11-1.pgdg13+2)",
+      "dataDirectory": "/var/lib/postgresql/data/pgdata",
+      "postmasterStartedAt": "2026-09-24T13:04:08.514032+00:00",
+      "clusterSystemId": "7689071758798798909",
+      "tls": {
+        "ssl": true,
+        "version": "TLSv1.3",
+        "cipher": "TLS_AES_256_GCM_SHA384"
+      },
+      "migrations": [
+        {
+          "name": "202607160001_init",
+          "checksum": "9f4c051cf3ed3b0687a6f1c3c367736d5093f745d0dcc5ce142e20d2a4ddf445",
+          "finishedAt": "2026-09-24T12:55:23.06195+00:00",
+          "rolledBackAt": null,
+          "appliedSteps": 1
+        }
+      ]
+    }
+  },
+  "historicalRestartContinuity": {
+    "historicalVerifiedAt": "2026-09-24T13:05:36.621453+00:00",
+    "clusterSystemIdMatches": true,
+    "postmasterStartedAtMatches": true,
+    "migrationChecksumsMatch": true,
+    "noRestartOrMigrationPerformedInThisReadback": true
+  }
+}
