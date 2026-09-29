@@ -1,0 +1,11 @@
+{
+  "verifiedAt": "2026-09-29T16:57:11.878209+00:00",
+  "launchCommit": "28d066a9b05e24384cc271eb6511973f33b8355d",
+  "workflowRunUrl": "https://github.com/Gardishan/Horeca/actions/runs/36600977405",
+  "artifactId": 11048453737,
+  "sbomSha256": "d8d1c793d12dc0e98bdfd70d38ba22609fcc78e8016ebfd43c821d6bbc153a34",
+  "artifactZipDigest": "sha256:8aaa2dddcd8928eceff47516c1a7a1d74618bf032af8ee4d8eb687ff0d64c713",
+  "attestationPredicate": "https://cyclonedx.org/bom",
+  "sourceDigestAndSignerWorkflowVerified": true,
+  "downloadedSbomEqualsVerifiedPredicate": true
+}

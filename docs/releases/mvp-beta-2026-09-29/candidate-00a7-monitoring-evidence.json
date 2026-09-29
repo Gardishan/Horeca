@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-09-29T16:45:57.045486+00:00",
+  "environment": "horeca-kz-beta / beta",
+  "projectId": "0c684f12-6b8d-441e-938d-48d312cc8bc3",
+  "environmentId": "e52a9c65-52ea-4e3d-8eba-d8f953f330a7",
+  "serviceId": "2f4e1206-828e-4fc2-86d3-34ff2da48c7c",
+  "deploymentId": "a8ce2c69-21f2-4023-b537-00c86d035620",
+  "commitSha": "00a7b3a03fb6d177aadffb1abf8fa6cbe895bda2",
+  "window": {
+    "start": "2026-09-29T16:42:00Z",
+    "end": "2026-09-29T16:45:19Z",
+    "durationSeconds": 199.0
+  },
+  "access": {
+    "http": {
+      "exitCode": 0,
+      "succeeded": true
+    },
+    "runtime": {
+      "exitCode": 0,
+      "succeeded": true
+    },
+    "metrics": {
+      "exitCode": 0,
+      "succeeded": true
+    },
+    "identity": {
+      "exitCode": 0,
+      "succeeded": true
+    },
+    "database": {
+      "exitCode": 0,
+      "succeeded": true
+    }
+  },
+  "deploymentReadback": {
+    "id": "a8ce2c69-21f2-4023-b537-00c86d035620",
+    "status": "SUCCESS",
+    "createdAt": "2026-09-26T06:59:08.498Z",
+    "updatedAt": "2026-09-26T06:59:16.037Z",
+    "deploymentStopped": false,
+    "environmentId": "e52a9c65-52ea-4e3d-8eba-d8f953f330a7",
+    "serviceId": "2f4e1206-828e-4fc2-86d3-34ff2da48c7c",
+    "imageDigest": "sha256:596a8bf870ed0a996cce82cad0cee3f4ab58105588f0fd75538854588b040e95",
+    "latestDeployment": {
+      "id": "a8ce2c69-21f2-4023-b537-00c86d035620",
+      "status": "SUCCESS"
+    },
+    "isLatestDeployment": true
+  },
+  "httpDeploymentLogs": {
+    "scope": "exact deployment and inclusive time bounds",
+    "receivedRows": 193,
+    "includedRows": 193,
+    "excludedRows": 0,
+    "unparseableRows": 0,
+    "possiblyTruncated": false,
+    "statusCounts": {
+      "307": 1,
+      "200": 159,
+      "404": 2,
+      "201": 1,
+      "499": 29,
+      "403": 1
+    },
+    "serverErrorCount": 0,
+    "durationMs": {
+      "sampleCount": 193,
+      "min": 1,
+      "max": 264,
+      "mean": 17.17616580310881
+    },
+    "statusClassification": {
+      "favicon404": 2,
+      "clientClosedRequest499": 29,
+      "source": "Provider responseDetails explicitly reports client closed the request before server response for all 499 rows."
+    }
+  },
+  "runtimeLogs": {
+    "scope": "explicit deployment ID and time bounds",
+    "receivedRows": 10,
+    "includedRows": 10,
+    "excludedRows": 0,
+    "unparseableRows": 0,
+    "possiblyTruncated": false,
+    "levelCounts": {
+      "error": 10
+    },
+    "errorOrFatalOrKnownRuntimeFailureRows": 10,
+    "classification": {
+      "authorizationFailureEvents": 1,
+      "authorizationFailureLogRows": 10,
+      "eventAt": "2026-09-29T16:44:35.233066954Z",
+      "code": "UNAUTHORIZED",
+      "status": 401,
+      "component": "dashboard/company Server Component calling supplier authorization",
+      "causeConfirmed": false,
+      "impact": "No HTTP 5xx occurred in this window; application logged an authorization error with framework stack. Parent notified to investigate protected navigation/logout."
+    }
+  },
+  "serviceWindowMetrics": {
+    "sampleRateSeconds": 60,
+    "statusCounts": {
+      "200": 159,
+      "201": 1,
+      "307": 1,
+      "403": 1,
+      "404": 2,
+      "499": 29
+    },
+    "latencyBucketPercentilesMs": {
+      "p50": {
+        "sampleCount": 2,
+        "min": 9,
+        "max": 15,
+        "mean": 12
+      },
+      "p90": {
+        "sampleCount": 2,
+        "min": 25,
+        "max": 38,
+        "mean": 31.5
+      },
+      "p95": {
+        "sampleCount": 2,
+        "min": 35,
+        "max": 117,
+        "mean": 76
+      },
+      "p99": {
+        "sampleCount": 2,
+        "min": 117,
+        "max": 257,
+        "mean": 187
+      }
+    },
+    "app": {
+      "CPU_USAGE": {
+        "sampleCount": 4,
+        "min": 2.383333333333333e-06,
+        "max": 0.0230671,
+        "mean": 0.007874724999999999
+      },
+      "MEMORY_USAGE_GB": {
+        "sampleCount": 4,
+        "min": 0.077631488,
+        "max": 0.17866752,
+        "mean": 0.13506764799999998
+      }
+    },
+    "database": {
+      "CPU_USAGE": {
+        "sampleCount": 4,
+        "min": 0,
+        "max": 0.0019318,
+        "mean": 0.0010324499999999999
+      },
+      "MEMORY_USAGE_GB": {
+        "sampleCount": 4,
+        "min": 0.060551168,
+        "max": 0.081440768,
+        "mean": 0.074233344
+      }
+    }
+  },
+  "databaseSnapshot": {
+    "observedAt": "2026-09-29T16:45:38.125564+00:00",
+    "health": 1,
+    "serverVersion": "17.11 (Debian 17.11-1.pgdg13+2)",
+    "tls": true,
+    "tlsVersion": "TLSv1.3",
+    "connectionCount": 8,
+    "activeConnections": 0,
+    "idleConnections": 8,
+    "idleInTransactionConnections": 0,
+    "maxConnections": "500"
+  },
+  "limits": [
+    "Observation is a bounded low-traffic closed-Beta check, not a load/SLA or commercial production assessment.",
+    "HTTP and resource metric APIs are service/window scoped, not deployment scoped; exact-deployment logs are separate.",
+    "Resource metrics use provider measurement units: CPU_USAGE and MEMORY_USAGE_GB.",
+    "HTTP metric percentiles are per 60-second provider buckets, not a recomputed whole-window percentile.",
+    "Logs are capped at 1000 rows per request; the artifact flags a possibly truncated result.",
+    "Database activity is a single read-only snapshot after the observation window, excluding the probe connection.",
+    "No raw log message, request identifier, client IP, user agent, URL query string, secret or credential is copied into this artifact.",
+    "This observation belongs only to 00a7b3a candidate and cannot be relabelled as a later release observation."
+  ],
+  "candidateState": "Superseded candidate observation; mobile layout issue found during browser verification, later release must have its own SHA/deployment observation."
+}

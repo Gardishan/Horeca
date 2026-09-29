@@ -1,0 +1,1262 @@
+{
+  "kind": "Pre-deploy CSS simulation only; inline element minWidth0 applied after each loaded page",
+  "environment": "Railway beta",
+  "appVersion": "00a7b3a03fb6d177aadffb1abf8fa6cbe895bda2",
+  "proposedCssCommit": "c528603",
+  "selector": ".app-shell.grid > *, .app-shell .grid > *",
+  "startedAt": "2026-09-29T16:51:58.469Z",
+  "finishedAt": "2026-09-29T16:53:00.391Z",
+  "rows": [
+    {
+      "role": "buyer",
+      "path": "/catalog",
+      "width": 390,
+      "status": 200,
+      "h1": [
+        "Проверенные поставщики для HoReCa-закупок"
+      ],
+      "before": 390,
+      "applied": 11,
+      "viewport": 390,
+      "documentWidth": 390,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "class": "absolute -right-20 -top-28 size-80 rounded-full bg-brand-500/15 blur-2xl",
+          "left": 134,
+          "right": 454,
+          "width": 320
+        }
+      ],
+      "scrollWrappers": [],
+      "pass": true
+    },
+    {
+      "role": "buyer",
+      "path": "/catalog/arabica-blend-1kg",
+      "width": 390,
+      "status": 200,
+      "h1": [
+        "Кофе в зернах Arabica Blend 1 кг"
+      ],
+      "before": 390,
+      "applied": 27,
+      "viewport": 390,
+      "documentWidth": 390,
+      "offenders": [],
+      "scrollWrappers": [],
+      "pass": true
+    },
+    {
+      "role": "buyer",
+      "path": "/catalog",
+      "width": 768,
+      "status": 200,
+      "h1": [
+        "Проверенные поставщики для HoReCa-закупок"
+      ],
+      "before": 768,
+      "applied": 11,
+      "viewport": 768,
+      "documentWidth": 768,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "class": "absolute -right-20 -top-28 size-80 rounded-full bg-brand-500/15 blur-2xl",
+          "left": 505,
+          "right": 825,
+          "width": 320
+        }
+      ],
+      "scrollWrappers": [],
+      "pass": true
+    },
+    {
+      "role": "buyer",
+      "path": "/catalog/arabica-blend-1kg",
+      "width": 768,
+      "status": 200,
+      "h1": [
+        "Кофе в зернах Arabica Blend 1 кг"
+      ],
+      "before": 768,
+      "applied": 27,
+      "viewport": 768,
+      "documentWidth": 768,
+      "offenders": [],
+      "scrollWrappers": [],
+      "pass": true
+    },
+    {
+      "role": "buyer",
+      "path": "/catalog",
+      "width": 1440,
+      "status": 200,
+      "h1": [
+        "Проверенные поставщики для HoReCa-закупок"
+      ],
+      "before": 1440,
+      "applied": 11,
+      "viewport": 1440,
+      "documentWidth": 1440,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "class": "absolute -right-20 -top-28 size-80 rounded-full bg-brand-500/15 blur-2xl",
+          "left": 1168,
+          "right": 1488,
+          "width": 320
+        }
+      ],
+      "scrollWrappers": [],
+      "pass": true
+    },
+    {
+      "role": "buyer",
+      "path": "/catalog/arabica-blend-1kg",
+      "width": 1440,
+      "status": 200,
+      "h1": [
+        "Кофе в зернах Arabica Blend 1 кг"
+      ],
+      "before": 1440,
+      "applied": 27,
+      "viewport": 1440,
+      "documentWidth": 1440,
+      "offenders": [],
+      "scrollWrappers": [],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/company",
+      "width": 390,
+      "status": 200,
+      "h1": [
+        "Fresh Horeca Distribution"
+      ],
+      "before": 892,
+      "applied": 37,
+      "viewport": 390,
+      "documentWidth": 390,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 332,
+          "scrollWidth": 850,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/company/profile",
+      "width": 390,
+      "status": 200,
+      "h1": [
+        "Профиль поставщика"
+      ],
+      "before": 892,
+      "applied": 29,
+      "viewport": 390,
+      "documentWidth": 390,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 332,
+          "scrollWidth": 850,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/company/billing",
+      "width": 390,
+      "status": 200,
+      "h1": [
+        "Тариф и оплата"
+      ],
+      "before": 892,
+      "applied": 28,
+      "viewport": 390,
+      "documentWidth": 390,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 332,
+          "scrollWidth": 850,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 356,
+          "scrollWidth": 389,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/company/verification",
+      "width": 390,
+      "status": 200,
+      "h1": [
+        "Верификация поставщика"
+      ],
+      "before": 892,
+      "applied": 15,
+      "viewport": 390,
+      "documentWidth": 390,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 332,
+          "scrollWidth": 850,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 314,
+          "scrollWidth": 517,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/products",
+      "width": 390,
+      "status": 200,
+      "h1": [
+        "Товары компании"
+      ],
+      "before": 892,
+      "applied": 6,
+      "viewport": 390,
+      "documentWidth": 390,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "class": "flex justify-end gap-2",
+          "left": 539,
+          "right": 805,
+          "width": 266
+        },
+        {
+          "tag": "DIV",
+          "class": "flex justify-end gap-2",
+          "left": 539,
+          "right": 805,
+          "width": 266
+        }
+      ],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 332,
+          "scrollWidth": 850,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 356,
+          "scrollWidth": 801,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/requests",
+      "width": 390,
+      "status": 200,
+      "h1": [
+        "Заявки покупателей"
+      ],
+      "before": 892,
+      "applied": 9,
+      "viewport": 390,
+      "documentWidth": 390,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 332,
+          "scrollWidth": 850,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/company",
+      "width": 768,
+      "status": 200,
+      "h1": [
+        "Fresh Horeca Distribution"
+      ],
+      "before": 899,
+      "applied": 37,
+      "viewport": 768,
+      "documentWidth": 768,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 696,
+          "scrollWidth": 850,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/company/profile",
+      "width": 768,
+      "status": 200,
+      "h1": [
+        "Профиль поставщика"
+      ],
+      "before": 899,
+      "applied": 29,
+      "viewport": 768,
+      "documentWidth": 768,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 696,
+          "scrollWidth": 850,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/company/billing",
+      "width": 768,
+      "status": 200,
+      "h1": [
+        "Тариф и оплата"
+      ],
+      "before": 899,
+      "applied": 28,
+      "viewport": 768,
+      "documentWidth": 768,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 696,
+          "scrollWidth": 850,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 720,
+          "scrollWidth": 720,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/company/verification",
+      "width": 768,
+      "status": 200,
+      "h1": [
+        "Верификация поставщика"
+      ],
+      "before": 899,
+      "applied": 15,
+      "viewport": 768,
+      "documentWidth": 768,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 696,
+          "scrollWidth": 850,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 678,
+          "scrollWidth": 678,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/products",
+      "width": 768,
+      "status": 200,
+      "h1": [
+        "Товары компании"
+      ],
+      "before": 899,
+      "applied": 6,
+      "viewport": 768,
+      "documentWidth": 768,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "class": "flex justify-end gap-2",
+          "left": 546,
+          "right": 812,
+          "width": 266
+        },
+        {
+          "tag": "DIV",
+          "class": "flex justify-end gap-2",
+          "left": 546,
+          "right": 812,
+          "width": 266
+        }
+      ],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 696,
+          "scrollWidth": 850,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 720,
+          "scrollWidth": 801,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/requests",
+      "width": 768,
+      "status": 200,
+      "h1": [
+        "Заявки покупателей"
+      ],
+      "before": 899,
+      "applied": 9,
+      "viewport": 768,
+      "documentWidth": 768,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 696,
+          "scrollWidth": 850,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/company",
+      "width": 1440,
+      "status": 200,
+      "h1": [
+        "Fresh Horeca Distribution"
+      ],
+      "before": 1440,
+      "applied": 37,
+      "viewport": 1440,
+      "documentWidth": 1440,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 204,
+          "scrollWidth": 204,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/company/profile",
+      "width": 1440,
+      "status": 200,
+      "h1": [
+        "Профиль поставщика"
+      ],
+      "before": 1440,
+      "applied": 29,
+      "viewport": 1440,
+      "documentWidth": 1440,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 204,
+          "scrollWidth": 204,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/company/billing",
+      "width": 1440,
+      "status": 200,
+      "h1": [
+        "Тариф и оплата"
+      ],
+      "before": 1440,
+      "applied": 28,
+      "viewport": 1440,
+      "documentWidth": 1440,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 204,
+          "scrollWidth": 204,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 1120,
+          "scrollWidth": 1120,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/company/verification",
+      "width": 1440,
+      "status": 200,
+      "h1": [
+        "Верификация поставщика"
+      ],
+      "before": 1440,
+      "applied": 15,
+      "viewport": 1440,
+      "documentWidth": 1440,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 204,
+          "scrollWidth": 204,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 1078,
+          "scrollWidth": 1078,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/products",
+      "width": 1440,
+      "status": 200,
+      "h1": [
+        "Товары компании"
+      ],
+      "before": 1440,
+      "applied": 6,
+      "viewport": 1440,
+      "documentWidth": 1440,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 204,
+          "scrollWidth": 204,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 1120,
+          "scrollWidth": 1120,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Pending Supplier",
+      "path": "/dashboard/requests",
+      "width": 1440,
+      "status": 200,
+      "h1": [
+        "Заявки покупателей"
+      ],
+      "before": 1440,
+      "applied": 9,
+      "viewport": 1440,
+      "documentWidth": 1440,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 204,
+          "scrollWidth": 204,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Demo Admin",
+      "path": "/admin",
+      "width": 390,
+      "status": 200,
+      "h1": [
+        "Админ-панель"
+      ],
+      "before": 593,
+      "applied": 23,
+      "viewport": 390,
+      "documentWidth": 390,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 332,
+          "scrollWidth": 490,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 356,
+          "scrollWidth": 575,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Demo Admin",
+      "path": "/admin/company",
+      "width": 390,
+      "status": 200,
+      "h1": [
+        "Компании"
+      ],
+      "before": 532,
+      "applied": 7,
+      "viewport": 390,
+      "documentWidth": 390,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 332,
+          "scrollWidth": 490,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 356,
+          "scrollWidth": 766,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Demo Admin",
+      "path": "/admin/company/company-pending",
+      "width": 390,
+      "status": 200,
+      "h1": [
+        "Fresh Horeca Distribution"
+      ],
+      "before": 632,
+      "applied": 34,
+      "viewport": 390,
+      "documentWidth": 390,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 332,
+          "scrollWidth": 490,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 356,
+          "scrollWidth": 605,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 356,
+          "scrollWidth": 614,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 356,
+          "scrollWidth": 423,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 356,
+          "scrollWidth": 542,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Demo Admin",
+      "path": "/admin/verifications",
+      "width": 390,
+      "status": 200,
+      "h1": [
+        "Верификации"
+      ],
+      "before": 747,
+      "applied": 7,
+      "viewport": 390,
+      "documentWidth": 390,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "class": "",
+          "left": 552,
+          "right": 712,
+          "width": 160
+        },
+        {
+          "tag": "DIV",
+          "class": "flex flex-wrap gap-2",
+          "left": 552,
+          "right": 712,
+          "width": 160
+        },
+        {
+          "tag": "DIV",
+          "class": "",
+          "left": 552,
+          "right": 712,
+          "width": 160
+        },
+        {
+          "tag": "DIV",
+          "class": "flex flex-wrap gap-2",
+          "left": 552,
+          "right": 712,
+          "width": 160
+        },
+        {
+          "tag": "DIV",
+          "class": "",
+          "left": 552,
+          "right": 712,
+          "width": 160
+        },
+        {
+          "tag": "DIV",
+          "class": "flex flex-wrap gap-2",
+          "left": 552,
+          "right": 712,
+          "width": 160
+        },
+        {
+          "tag": "DIV",
+          "class": "",
+          "left": 552,
+          "right": 712,
+          "width": 160
+        },
+        {
+          "tag": "DIV",
+          "class": "flex flex-wrap gap-2",
+          "left": 552,
+          "right": 712,
+          "width": 160
+        }
+      ],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 332,
+          "scrollWidth": 490,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 314,
+          "scrollWidth": 687,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Demo Admin",
+      "path": "/admin/products",
+      "width": 390,
+      "status": 200,
+      "h1": [
+        "Управление товарами"
+      ],
+      "before": 532,
+      "applied": 7,
+      "viewport": 390,
+      "documentWidth": 390,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "class": "flex flex-wrap gap-1",
+          "left": 678,
+          "right": 826,
+          "width": 147
+        },
+        {
+          "tag": "DIV",
+          "class": "flex flex-wrap gap-1",
+          "left": 678,
+          "right": 826,
+          "width": 147
+        },
+        {
+          "tag": "DIV",
+          "class": "flex flex-wrap gap-1",
+          "left": 678,
+          "right": 826,
+          "width": 147
+        },
+        {
+          "tag": "DIV",
+          "class": "flex flex-wrap gap-1",
+          "left": 678,
+          "right": 826,
+          "width": 147
+        },
+        {
+          "tag": "DIV",
+          "class": "flex flex-wrap gap-1",
+          "left": 678,
+          "right": 826,
+          "width": 147
+        },
+        {
+          "tag": "DIV",
+          "class": "flex flex-wrap gap-1",
+          "left": 678,
+          "right": 826,
+          "width": 147
+        }
+      ],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 332,
+          "scrollWidth": 490,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 356,
+          "scrollWidth": 821,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Demo Admin",
+      "path": "/admin",
+      "width": 768,
+      "status": 200,
+      "h1": [
+        "Админ-панель"
+      ],
+      "before": 768,
+      "applied": 23,
+      "viewport": 768,
+      "documentWidth": 768,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 696,
+          "scrollWidth": 696,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 720,
+          "scrollWidth": 720,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Demo Admin",
+      "path": "/admin/company",
+      "width": 768,
+      "status": 200,
+      "h1": [
+        "Компании"
+      ],
+      "before": 768,
+      "applied": 7,
+      "viewport": 768,
+      "documentWidth": 768,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 696,
+          "scrollWidth": 696,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 720,
+          "scrollWidth": 766,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Demo Admin",
+      "path": "/admin/company/company-pending",
+      "width": 768,
+      "status": 200,
+      "h1": [
+        "Fresh Horeca Distribution"
+      ],
+      "before": 768,
+      "applied": 34,
+      "viewport": 768,
+      "documentWidth": 768,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 696,
+          "scrollWidth": 696,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 720,
+          "scrollWidth": 720,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 720,
+          "scrollWidth": 720,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 720,
+          "scrollWidth": 720,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 720,
+          "scrollWidth": 720,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Demo Admin",
+      "path": "/admin/verifications",
+      "width": 768,
+      "status": 200,
+      "h1": [
+        "Верификации"
+      ],
+      "before": 768,
+      "applied": 7,
+      "viewport": 768,
+      "documentWidth": 768,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 696,
+          "scrollWidth": 696,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 678,
+          "scrollWidth": 687,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Demo Admin",
+      "path": "/admin/products",
+      "width": 768,
+      "status": 200,
+      "h1": [
+        "Управление товарами"
+      ],
+      "before": 768,
+      "applied": 7,
+      "viewport": 768,
+      "documentWidth": 768,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "class": "flex flex-wrap gap-1",
+          "left": 685,
+          "right": 833,
+          "width": 147
+        },
+        {
+          "tag": "DIV",
+          "class": "flex flex-wrap gap-1",
+          "left": 685,
+          "right": 833,
+          "width": 147
+        },
+        {
+          "tag": "DIV",
+          "class": "flex flex-wrap gap-1",
+          "left": 685,
+          "right": 833,
+          "width": 147
+        },
+        {
+          "tag": "DIV",
+          "class": "flex flex-wrap gap-1",
+          "left": 685,
+          "right": 833,
+          "width": 147
+        },
+        {
+          "tag": "DIV",
+          "class": "flex flex-wrap gap-1",
+          "left": 685,
+          "right": 833,
+          "width": 147
+        },
+        {
+          "tag": "DIV",
+          "class": "flex flex-wrap gap-1",
+          "left": 685,
+          "right": 833,
+          "width": 147
+        }
+      ],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 696,
+          "scrollWidth": 696,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 720,
+          "scrollWidth": 821,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Demo Admin",
+      "path": "/admin",
+      "width": 1440,
+      "status": 200,
+      "h1": [
+        "Админ-панель"
+      ],
+      "before": 1440,
+      "applied": 23,
+      "viewport": 1440,
+      "documentWidth": 1440,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 204,
+          "scrollWidth": 204,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 1120,
+          "scrollWidth": 1120,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Demo Admin",
+      "path": "/admin/company",
+      "width": 1440,
+      "status": 200,
+      "h1": [
+        "Компании"
+      ],
+      "before": 1440,
+      "applied": 7,
+      "viewport": 1440,
+      "documentWidth": 1440,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 204,
+          "scrollWidth": 204,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 1120,
+          "scrollWidth": 1120,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Demo Admin",
+      "path": "/admin/company/company-pending",
+      "width": 1440,
+      "status": 200,
+      "h1": [
+        "Fresh Horeca Distribution"
+      ],
+      "before": 1440,
+      "applied": 34,
+      "viewport": 1440,
+      "documentWidth": 1440,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 204,
+          "scrollWidth": 204,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 1120,
+          "scrollWidth": 1120,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 1120,
+          "scrollWidth": 1120,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 1120,
+          "scrollWidth": 1120,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 1120,
+          "scrollWidth": 1120,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Demo Admin",
+      "path": "/admin/verifications",
+      "width": 1440,
+      "status": 200,
+      "h1": [
+        "Верификации"
+      ],
+      "before": 1440,
+      "applied": 7,
+      "viewport": 1440,
+      "documentWidth": 1440,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 204,
+          "scrollWidth": 204,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 1078,
+          "scrollWidth": 1078,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "role": "Demo Admin",
+      "path": "/admin/products",
+      "width": 1440,
+      "status": 200,
+      "h1": [
+        "Управление товарами"
+      ],
+      "before": 1440,
+      "applied": 7,
+      "viewport": 1440,
+      "documentWidth": 1440,
+      "offenders": [],
+      "scrollWrappers": [
+        {
+          "tag": "NAV",
+          "clientWidth": 204,
+          "scrollWidth": 204,
+          "overflowX": "auto"
+        },
+        {
+          "tag": "DIV",
+          "clientWidth": 1120,
+          "scrollWidth": 1120,
+          "overflowX": "auto"
+        }
+      ],
+      "pass": true
+    }
+  ],
+  "failures": []
+}

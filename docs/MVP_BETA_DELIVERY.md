@@ -1,5 +1,13 @@
 # Controlled MVP Beta delivery
 
+Current outcome (2026-09-29): code and CI pass through PR #74, but the final
+release is blocked by the Railway API incident. The previous `00a7b3a` candidate
+remains externally verified; attempted source `28d066a` was not promoted.
+The cancelled deployment is removed and no rollout remains pending. See the
+[timestamped checkpoint](releases/mvp-beta-2026-09-29/README.md) and
+[tester/operator guide](BETA_GUIDE.md). No tag or prerelease has been created.
+
+
 ## Mobile cabinet correction — 2026-09-29
 
 Browser QA after successful candidate run 36225121691 reproduced a supplier

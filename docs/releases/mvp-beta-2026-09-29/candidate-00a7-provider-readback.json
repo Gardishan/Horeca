@@ -1,0 +1,70 @@
+{
+  "observedAt": "2026-09-29T16:43:39.970899+00:00",
+  "projectId": "0c684f12-6b8d-441e-938d-48d312cc8bc3",
+  "environmentId": "e52a9c65-52ea-4e3d-8eba-d8f953f330a7",
+  "commitSha": "00a7b3a03fb6d177aadffb1abf8fa6cbe895bda2",
+  "deployments": {
+    "enabled": {
+      "id": "360b08f8-13c0-4097-872f-df7117c2949a",
+      "status": "REMOVED",
+      "createdAt": "2026-09-26T06:56:49.661Z",
+      "updatedAt": "2026-09-26T06:58:01.311Z",
+      "deploymentStopped": true,
+      "environmentId": "e52a9c65-52ea-4e3d-8eba-d8f953f330a7",
+      "serviceId": "2f4e1206-828e-4fc2-86d3-34ff2da48c7c",
+      "imageDigest": "sha256:596a8bf870ed0a996cce82cad0cee3f4ab58105588f0fd75538854588b040e95"
+    },
+    "persistence": {
+      "id": "84470318-8437-423e-b3b5-582447f1d67c",
+      "status": "REMOVED",
+      "createdAt": "2026-09-26T06:57:19.549Z",
+      "updatedAt": "2026-09-26T06:58:56.684Z",
+      "deploymentStopped": true,
+      "environmentId": "e52a9c65-52ea-4e3d-8eba-d8f953f330a7",
+      "serviceId": "2f4e1206-828e-4fc2-86d3-34ff2da48c7c",
+      "imageDigest": "sha256:596a8bf870ed0a996cce82cad0cee3f4ab58105588f0fd75538854588b040e95"
+    },
+    "rollback": {
+      "id": "0876198f-71f2-4b1b-800b-729f8aada85a",
+      "status": "REMOVED",
+      "createdAt": "2026-09-26T06:58:47.765Z",
+      "updatedAt": "2026-09-26T06:59:17.995Z",
+      "deploymentStopped": true,
+      "environmentId": "e52a9c65-52ea-4e3d-8eba-d8f953f330a7",
+      "serviceId": "2f4e1206-828e-4fc2-86d3-34ff2da48c7c",
+      "imageDigest": "sha256:596a8bf870ed0a996cce82cad0cee3f4ab58105588f0fd75538854588b040e95"
+    },
+    "restore": {
+      "id": "a8ce2c69-21f2-4023-b537-00c86d035620",
+      "status": "SUCCESS",
+      "createdAt": "2026-09-26T06:59:08.498Z",
+      "updatedAt": "2026-09-26T06:59:16.037Z",
+      "deploymentStopped": false,
+      "environmentId": "e52a9c65-52ea-4e3d-8eba-d8f953f330a7",
+      "serviceId": "2f4e1206-828e-4fc2-86d3-34ff2da48c7c",
+      "imageDigest": "sha256:596a8bf870ed0a996cce82cad0cee3f4ab58105588f0fd75538854588b040e95"
+    }
+  },
+  "app": {
+    "instanceId": "14d5c0ec-3e29-4f2c-8880-18238e0c1dc8",
+    "latestDeployment": {
+      "id": "a8ce2c69-21f2-4023-b537-00c86d035620",
+      "status": "SUCCESS"
+    },
+    "imageDigest": "sha256:596a8bf870ed0a996cce82cad0cee3f4ab58105588f0fd75538854588b040e95"
+  },
+  "database": {
+    "instanceId": "b258072a-bc5d-431c-9706-19493714d60d",
+    "latestDeployment": {
+      "id": "9e853fa2-faa6-4726-8b83-5341f5a70142",
+      "status": "SUCCESS"
+    },
+    "imageDigest": "sha256:a2a686db487c03fd134378cf3dfa26ca7c5558a977c3938fe6652f5d9fda6242"
+  },
+  "autoDeploy": {
+    "canEnable": true,
+    "enabled": false
+  },
+  "rollbackScope": "Same application code/image across enabled, persistence, rollback and restore deployments; this proves provider rollback/restore and persistence, not rollback to a previous application version.",
+  "allDeploymentImageDigestsEqual": true
+}
