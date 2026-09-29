@@ -11,16 +11,22 @@
       "blocking": true,
       "owner": "Engineering",
       "evidence": [
+        "https://github.com/Gardishan/Horeca/actions/runs/36604287305",
+        "docs/MVP_BETA_AUDIT_2026-09-29.md",
+        "docs/audits/2026-09-29/form-recovery-readback.json",
+        "docs/audits/2026-09-29/mobile-navigation-readback.json",
+        "scripts/smoke-http.mjs",
         "https://github.com/Gardishan/Horeca/actions/runs/36600977390",
         "docs/releases/mvp-beta-2026-09-29/candidate-00a7-launch-evidence.json",
-        "scripts/smoke-http.mjs",
         "docs/PDF_REPAIR_2026-09-29.md",
         "docs/audits/2026-09-29/pdf-repair/after.json",
-        "docs/audits/2026-09-29/pdf-repair/authorization.json"
+        "docs/audits/2026-09-29/pdf-repair/authorization.json",
+        "https://github.com/Gardishan/Horeca/actions/runs/36611763760",
+        "https://github.com/Gardishan/Horeca/actions/runs/36611763739"
       ],
       "verifiedAt": null,
       "environment": "ci-postgresql-17 + railway-beta",
-      "notes": "Historical HTTP smoke checked PDF signatures only and missed eight unreadable demo PDFs. Sep29 18:17Z bounded data repair restored all eight on runtime00a7; independent HTTP downloads, strict parsing/rendering, 24 auth-denial checks and download audit passed. Seed/bootstrap/probe generators and independent-parser regression checks are corrected in source; deploy this source and rerun the complete external flow before marking done. Other launch controls remain open."
+      "notes": "Source corrections for the page gate and readable demo PDFs are merged in PR #58 / PR #76 (main 5984e4f). PR #76 Quality/Security passed:357 tests, container and PostgreSQL 17 migration/seed/HTTP smoke. Eight live PDFs were separately repaired 29 Sep 18:17 UTC; parser/render,24 auth denials and download audit passed. Invite/buyer-request form recovery (F2), mobile cabinet navigation (F3), and delivery of corrected source remain open; data repair does not close the full flow."
     },
     {
       "id": "controlled-beta-safety",
@@ -29,16 +35,21 @@
       "blocking": true,
       "owner": "Engineering",
       "evidence": [
+        "docs/MVP_BETA_AUDIT_2026-09-29.md",
+        "docs/audits/2026-09-29/anonymous-prefetch-gate-readback.json",
+        "proxy.ts",
+        "scripts/smoke-beta-external.mjs",
+        "https://github.com/Gardishan/Horeca/pull/58",
+        "https://github.com/Gardishan/Horeca/actions/runs/36611044707",
+        "tests/proxy.test.ts",
         "https://github.com/Gardishan/Horeca/actions/runs/36600977390",
         "https://github.com/Gardishan/Horeca/actions/runs/36600977405",
         "docs/releases/mvp-beta-2026-09-29/candidate-00a7-launch-evidence.json",
-        "docs/releases/mvp-beta-2026-09-29/disabled-rollback-rehearsal.json",
-        "tests/proxy.test.ts",
-        "scripts/smoke-beta-external.mjs"
+        "docs/releases/mvp-beta-2026-09-29/disabled-rollback-rehearsal.json"
       ],
       "verifiedAt": null,
       "environment": "railway-beta",
-      "notes": "Prior external invite/cookie/auth/role/demo-only/kill-switch evidence covered ordinary navigation only. A matcher regression reproduced that client-supplied prefetch headers bypassed the page invite gate and kill switch on deployed00a7. PR58 removes this exclusion, tests the installed Next matcher and enabled/disabled policy for ordinary, prefetch and RSC traffic, and extends external page probes. The corrected image requires fresh external enabled/disabled evidence; existing API role guards remain in place."
+      "notes": "P1 was confirmed on deployed 00a7 and audited source 3ef: anonymous prefetch page requests bypassed the invite matcher. PR #58 merged as 023a24e, removes the exclusion and adds actual-matcher plus external ordinary/prefetch/RSC probes; local 313 tests and isolated 60 HTTP checks passed. Runtime remains00a7: corrected external enabled/disabled gate evidence is pending. Independent API/role guards remain in place; historical ordinary-request smoke did not cover this path."
     },
     {
       "id": "beta-database",
@@ -50,11 +61,13 @@
         "docs/releases/mvp-beta-2026-09-29/postgres-restart-evidence.json",
         "docs/releases/mvp-beta-2026-09-29/candidate-00a7-runtime-cluster-readback.json",
         "docs/releases/mvp-beta-2026-09-29/candidate-00a7-volume-readback.json",
-        "docs/releases/mvp-beta-2026-09-29/candidate-00a7-launch-evidence.json"
+        "docs/releases/mvp-beta-2026-09-29/candidate-00a7-launch-evidence.json",
+        "docs/audits/2026-09-29/runtime-cluster-readback.json",
+        "docs/audits/2026-09-29/volume-readback.json"
       ],
-      "verifiedAt": "2026-09-29T16:45:38Z",
+      "verifiedAt": "2026-09-29T17:46:55Z",
       "environment": "railway-beta",
-      "notes": "Physical PostgreSQL 17.11 restart Sep 24 preserved exact marker/migration/cluster and volume; Sep 29 read-only continuity confirms same cluster, postmaster start, migration checksum and READY volume with TLS1.3. Workflow 36225121691 additionally proved DB/private-file persistence across redeploy/rollback/restore. No schema change in 28d066a."
+      "notes": "Physical PostgreSQL 17.11 restart Sep24 preserved exact marker/migration/cluster. Sep29 17:44\u201317:46 UTC read-only continuity again confirms the same TLS1.3 cluster/migration/start time and both READY volumes. No schema change in main 3ef. Restart persistence is not a backup/restore drill."
     },
     {
       "id": "beta-deployment",
@@ -63,6 +76,11 @@
       "blocking": true,
       "owner": "Product owner + Platform/DevOps",
       "evidence": [
+        "https://github.com/Gardishan/Horeca/actions/runs/36604287305",
+        "https://github.com/Gardishan/Horeca/actions/runs/36604287314",
+        "https://github.com/Gardishan/Horeca/actions/runs/36605746207",
+        "docs/audits/2026-09-29/failed-retry-cause.json",
+        "docs/audits/2026-09-29/operations-readback.json",
         "https://github.com/Gardishan/Horeca/actions/runs/36600977390",
         "https://github.com/Gardishan/Horeca/actions/runs/36225121691",
         "https://github.com/Gardishan/Horeca/actions/runs/36601519494",
@@ -71,7 +89,7 @@
       ],
       "verifiedAt": null,
       "environment": "railway-beta",
-      "notes": "Release source 28d066a has green main CI. Railway API incident held new deployment e63096f1 in INITIALIZING; workflow 36601519494 was cancelled before enable. Prior00a7 remains the observed active candidate. Resume external launch after provider recovery and absence of pending deployments; final image/identity unverified."
+      "notes": "Retry 36605746207 for source 3ef was rejected before deployment creation: Deploys have been paused temporarily. Audit 17:44 UTC saw runtime 00a7 / pending 0 and next variables false / version 3ef. PR #58 source fix is merged as 023a24e; F2/F3 and delivery of fixes remain open. Provider recovery alone is insufficient; this docs pass did not retry deployments."
     },
     {
       "id": "external-https-smoke",
@@ -80,16 +98,20 @@
       "blocking": true,
       "owner": "Engineering + Platform/DevOps",
       "evidence": [
+        "docs/MVP_BETA_AUDIT_2026-09-29.md",
+        "docs/audits/2026-09-29/anonymous-prefetch-gate-readback.json",
+        "docs/audits/2026-09-29/form-recovery-readback.json",
+        "docs/audits/2026-09-29/mobile-navigation-readback.json",
+        "docs/releases/mvp-beta-2026-09-29/mobile-css-simulation.json",
         "https://github.com/Gardishan/Horeca/actions/runs/36225121691",
         "https://github.com/Gardishan/Horeca/actions/runs/36601519494",
         "docs/releases/mvp-beta-2026-09-29/candidate-00a7-launch-evidence.json",
         "docs/releases/mvp-beta-2026-09-29/candidate-00a7-monitoring-evidence.json",
-        "docs/releases/mvp-beta-2026-09-29/mobile-css-simulation.json",
         "docs/PDF_REPAIR_2026-09-29.md"
       ],
       "verifiedAt": null,
       "environment": "railway-beta",
-      "notes": "Historical00a7 external smoke proves ordinary auth/role checks, not PDF readability or prefetch coverage. Eight live PDFs repaired and independently downloaded/parsed/rendered Sep29; new source adds parser and ordinary/prefetch/RSC probes. Corrected launch candidate still needs deployed browser/HTTP verification, including mobile behavior; CSS simulation is not delivered-runtime evidence."
+      "notes": "Historical ordinary HTTPS/auth/role/download smoke passed on 00a7 but missed prefetch page bypass and malformed PDF contents. PR #58 / PR #76 add gate probes and strict PDF parsing. Eight live PDFs have independent online repair/auth/audit evidence. Corrected deployed source still needs ordinary/prefetch/RSC enabled/disabled gate, form-recovery and mobile-flow checks; CSS simulation 39/39 is not delivered-runtime proof."
     },
     {
       "id": "android-debug-artifact",
@@ -98,13 +120,15 @@
       "blocking": true,
       "owner": "Engineering",
       "evidence": [
+        "docs/audits/2026-09-29/artifact-identity-audit.json",
         "https://github.com/Gardishan/Horeca/actions/runs/36225121691",
+        "https://github.com/Gardishan/Horeca/actions/runs/36604287305",
         "https://github.com/Gardishan/Horeca/actions/runs/36600977390",
         "docs/releases/mvp-beta-2026-09-29/candidate-00a7-launch-evidence.json"
       ],
       "verifiedAt": null,
       "environment": "railway-beta",
-      "notes": "Previous00a7 external-origin APK SHA-256 bc317eac3f3fb5633d17f1d04435720fe6c95ac438fad56e5c7098852bbdcff6 was downloaded and verified across two DEX files. New28d066a Quality built an emulator APK, but external-origin APK step was not reached during cancelled provider launch. No physical Android test or production signing claim."
+      "notes": "Only historical 00a7 external-origin APK is verified; checksum bc317eac3f3fb5633d17f1d04435720fe6c95ac438fad56e5c7098852bbdcff6 and URL across two DEX files were rechecked. Main 3ef has emulator APK only. Produce matching external APK after corrected launch; no physical-device or store-signing claim. Browser feedback does not require installing APK."
     },
     {
       "id": "release-identity",
@@ -113,6 +137,11 @@
       "blocking": true,
       "owner": "Release manager",
       "evidence": [
+        "https://github.com/Gardishan/Horeca/actions/runs/36604287305",
+        "https://github.com/Gardishan/Horeca/actions/runs/36604287314",
+        "docs/audits/2026-09-29/artifact-identity-audit.json",
+        "docs/audits/2026-09-29/sbom-verification.json",
+        "docs/MVP_BETA_AUDIT_2026-09-29.md",
         "https://github.com/Gardishan/Horeca/actions/runs/36600977390",
         "https://github.com/Gardishan/Horeca/actions/runs/36600977405",
         "docs/releases/mvp-beta-2026-09-29/sbom-verification.json",
@@ -120,7 +149,7 @@
       ],
       "verifiedAt": null,
       "environment": "railway-beta",
-      "notes": "Release source 28d066a and signed CycloneDX SBOM are verified. Final image digest/external APK/runtime/strict gate remain pending. No tag, draft Release or prerelease has been created; reserved naming is not completed release identity."
+      "notes": "Audited source 3ef signed production-npm SBOM verified; runtime/APK remain 00a7. PR #58 is now merged; PDF data repair is separately evidenced. No exact final image/APK/SBOM release identity is established. Freeze a corrected deployed main SHA and bind image/APK/SBOM/migration/evidence; later docs commits must retain the actual runtime identity. Publication remains pending strict gate."
     },
     {
       "id": "beta-operations",
@@ -134,11 +163,13 @@
         "docs/releases/mvp-beta-2026-09-29/candidate-00a7-provider-readback.json",
         "docs/releases/mvp-beta-2026-09-29/candidate-00a7-monitoring-evidence.json",
         "docs/releases/mvp-beta-2026-09-29/launch-checkpoint.json",
-        "docs/BETA_GUIDE.md"
+        "docs/BETA_GUIDE.md",
+        "docs/MVP_BETA_AUDIT_2026-09-29.md",
+        "docs/audits/2026-09-29/operations-readback.json"
       ],
       "verifiedAt": null,
       "environment": "railway-beta",
-      "notes": "Previous provider same-code rollback/restore, kill-switch and 199-second observation are recorded;193 HTTP rows / 0 HTTP 5xx, plus one logged 401 auth event during rapid UI navigation. Ordinary logout passed separately. Cross-version rehearsal is prepared but never executed; its conditional launcher was stopped for the Railway incident. Observe the final corrected runtime only after safe rollout/restore. Auto-deploy stays disabled."
+      "notes": "Historical same-code provider rollback, persistence, kill-switch ordinary-API checks and 199-second observation exist. Audit shows page kill-switch coverage incomplete. Do not execute prepared rollback to 00a7: it now has known P1 and is not a safe baseline; CSS-only helper requires review after security changes. Verify safe recovery and a bounded observation on corrected deployment. Autodeploy remains disabled. The scoped PDF repair changed historical probe hashes; keep original evidence dated and verify fresh markers for future lifecycle claims."
     }
   ]
 }

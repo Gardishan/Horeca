@@ -1,0 +1,59 @@
+{
+  "observedAt": "2026-09-29T17:47:11.535Z",
+  "runtimeCommit": "00a7b3a03fb6d177aadffb1abf8fa6cbe895bda2",
+  "sourceCommit": "3ef4f64fc2b61ca3bc317d72f662f97134e576c6",
+  "scenario": "Pending Supplier normal login then catalog at mobile and tablet widths",
+  "mutationScope": "Session login only; no company/request/document/payment mutations",
+  "rows": [
+    {
+      "width": 390,
+      "url": "https://horeca-beta.up.railway.app/catalog",
+      "h1": [
+        "Проверенные поставщики для HoReCa-закупок"
+      ],
+      "cabinetLinks": [
+        {
+          "href": "/dashboard/company",
+          "visible": false
+        }
+      ],
+      "visibleHeaderLinks": [
+        {
+          "href": "/catalog",
+          "text": "HoReCa KZB2B marketplace"
+        }
+      ]
+    },
+    {
+      "width": 768,
+      "url": "https://horeca-beta.up.railway.app/catalog",
+      "h1": [
+        "Проверенные поставщики для HoReCa-закупок"
+      ],
+      "cabinetLinks": [
+        {
+          "href": "/dashboard/company",
+          "visible": true
+        }
+      ],
+      "visibleHeaderLinks": [
+        {
+          "href": "/catalog",
+          "text": "HoReCa KZB2B marketplace"
+        },
+        {
+          "href": "/catalog",
+          "text": "Каталог"
+        },
+        {
+          "href": "/legal/supplier-verification",
+          "text": "Как проверяем"
+        },
+        {
+          "href": "/dashboard/company",
+          "text": "Timur Pending"
+        }
+      ]
+    }
+  ]
+}

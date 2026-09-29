@@ -89,49 +89,53 @@ MVP deliverable проверен, но commercial production readiness не за
 
 ## MVP Beta launch readiness
 
-Registry `docs/mvp-launch-readiness.json` требует восемь обязательных controls.
-На 29.09.2026: 3 done, 2 in progress, 3 blocked. Финальный запуск не объявлен;
-[issue 44](https://github.com/Gardishan/Horeca/issues/44) остаётся открытой.
+Аудит 29.09.2026 изменил оценку: **NEEDS FIX**, 1 done, 4 in progress, 3 blocked после source-исправления F1.
+[Issue 44](https://github.com/Gardishan/Horeca/issues/44) остаётся открытой.
+Аудитория подтверждена владельцем: небольшая доверенная группа, команда и знакомые;
+общие demo-роли, включая администратора, согласованы.
 
-Railway Hobby, проект `horeca-kz-beta` / среда `beta`, PostgreSQL 17.11 с TLS 1.3
-и persistent volumes настроены. Три GitHub Environment secrets присутствуют;
-SSH host pin получен через initial trust, без независимой проверки fingerprint.
-GitHub auto-deploy выключен; rollout выполняется ручным **Beta Launch**.
+Исходный аудит source `3ef4f64fc2b61ca3bc317d72f662f97134e576c6`: Quality 36604287305 и Security
+36604287314 зелёные, signed production-npm SBOM проверен. Активный Railway runtime
+по HTTPS и фактическому PID1 readback 17:44 UTC — всё ещё `00a7b3a`,
+deployment `a8ce2c69-21f2-4023-b537-00c86d035620`, UID1001, BETA_ENABLED=true.
+Retry 36605746207 был отклонён в17:33:56UTC сообщением
+`Deploys have been paused temporarily`; новый deployment не создан, pending0.
+Следующие сохранённые variables: BETA_ENABLED=false, DEPLOYMENT_VERSION=3ef4f64.
+Auto-deploy выключен. PostgreSQL 17.11/TLS1.3, migration, cluster и оба volumes
+подтверждены заново; исторический restart24.09 не выполнялся повторно.
 
-Кандидат `00a7b3a03fb6d177aadffb1abf8fa6cbe895bda2` прошёл workflow 36225121691:
-external HTTPS invite/auth/roles/private-download smoke, DB/file persistence,
-provider rollback/restore одной версии и APK с внешним origin. Физический restart
-PostgreSQL 24.09 и continuity readback 29.09 подтверждают сохранность той же БД.
-Свежее ограниченное наблюдение 00a7: 193 HTTP rows / 0 HTTP 5xx; один 401 auth log event
-при быстрой смене страниц исследован отдельным успешным обычным logout.
+**Новые подтверждённые дефекты:** prefetch headers обходят page invite gate в
+proxy matcher (P1); invite/buyer-request формы зависают без ошибки при network/
+non-JSON failure; на 390 px скрыта ссылка возврата в кабинет (P2). Исходный аудит эти дефекты
+не исправлял. Затем PR #58 merged как 023a24e устранил P1 в source; в runtime 00a7
+он ещё остаётся. F2/F3 не закрыты. Mobile grid overflow уже исправлен в source
+PR #74, но исправленный CSS ещё не доставлен в runtime. Прежнее утверждение
+«остался только Railway» и safety=done неверны. API/role guards не объявляются
+обойдёнными: доказан page perimeter bypass.
 
-PR #74 исправил мобильный overflow кабинетов; main
-`28d066a9b05e24384cc271eb6511973f33b8355d` прошёл Quality 36600977390 и
-Security 36600977405 (276 tests, container/DB/HTTP smoke, audit и signed SBOM).
-Browser CSS simulation прошла 39/39 измерений, но новый runtime ещё не проверен.
-Railway API incident YYTG8I10 задержал deployment; workflow 36601519494 отменён
-до enable, deployment e63096f1 подтверждён REMOVED, pending deployments нет.
-Внешняя readiness 17:10 UTC продолжает показывать 200 / 00a7. Сохранённые переменные
-следующего deployment: BETA_ENABLED=false, DEPLOYMENT_VERSION=28d066a; это не
-текущее окружение уже запущенного процесса. Cross-version rehearsal подготовлен,
-но не выполнялся; условный launcher остановлен. Tag/Release не созданы.
+Подготовленный cross-version rollback на00a7 **не запускать**: это известный
+уязвимый baseline, а CSS/docs-only helper неприменим к новым security changes без
+review. После исправлений нужны новый зелёный main, deployed negative/positive
+page gate tests, browser/mobile recovery, безопасное восстановление и observe.
+Затем matching external APK/release identity, полный strict MVP gate и prerelease
+с target на точный launch SHA. Evidence-only commit хранится отдельно от runtime
+identity; не требуется бесконечно передеплоивать только ради документации.
 
-Возобновление: после восстановления провайдера проверить отсутствие pending
-rollouts, выполнить Beta Launch на актуальном зелёном main, собрать matching
-SHA/image/APK/SBOM, проверить browser/mobile, rollback с restore и observe window.
-Затем полный strict MVP gate, exact-SHA prerelease и закрытие #44. Docs-only merge
-меняет следующий launch SHA, поэтому старые артефакты нельзя переименовывать.
+Readiness checker валидирует декларации и наличие локальных файлов, не истину и
+свежесть HTTPS evidence. Coverage относится к выбранным lib modules; зелёные
+276 tests исходного аудита не покрывали matcher/browser scenarios. PR #58 прошёл
+313 tests и60 isolated HTTP checks, но не является внешним runtime-evidence. Свежие 40 targeted tests
+и dependency audit прошли, strict readiness остался красным.
 
-Точные факты и ограничения: `docs/releases/mvp-beta-2026-09-29/README.md`;
-инструкция участникам/оператору: `docs/BETA_GUIDE.md`. Bootstrap private PDF
-остаётся отдельным runtime-шагом; seed runner не переносит файлы в volume.
-APK verifier проверяет все root DEX; Railway rollback — scalar Boolean с явным true.
-Обычный failure cleanup ждёт до 15 минут; cancellation — best effort 240 секунд.
+Подробности и safe timestamped evidence: `docs/MVP_BETA_AUDIT_2026-09-29.md`,
+`docs/audits/2026-09-29/`. План для группы: `docs/BETA_TEST_PLAN.md`; полная
+инструкция: `docs/BETA_GUIDE.md`. Исторический launch checkpoint сохраняется в
+`docs/releases/mvp-beta-2026-09-29/` со своими исходными версиями и датами.
 
 ## Beta page gate: исправление matcher
 
 В проверке 29.09 обнаружен обход page invite/kill switch через клиентские
-prefetch-заголовки: `missing` исключал такие запросы из proxy. PR #58 убирает
+prefetch-заголовки: `missing` исключал такие запросы из proxy. PR #58 merged как `023a24e` и убирает
 исключение и проверяет реальный matcher Next для обычной навигации, prefetch
 и RSC; cookie не обходит выключенную Beta. Внешний smoke теперь проверяет
 `/catalog`, `/dashboard/company` и `/admin` без приглашения в обоих состояниях
@@ -139,7 +143,11 @@ Beta, а также каталог с действующим приглашен�
 Static/health exemptions и API role guards сохраняются. Registry остаётся
 `in_progress` до нового внешнего enabled/disabled smoke; старое evidence 00a7
 не подтверждает исправленный page gate. Проверка читаемости demo PDF — отдельное
-исправление: этот PR не повышает проверку PDF magic до доказательства валидного PDF.
+исправление: восемь demo PDF отремонтированы онлайн29.09, их readability/auth/audit
+подтверждены в отдельном [PDF-отчёте](PDF_REPAIR_2026-09-29.md).
+PR #76 merged как `5984e4f`; Quality 36611763760 и Security 36611763739
+прошли с 357 tests, container и PostgreSQL 17 migration/seed/HTTP smoke. Ремонт данных не доставляет новые application fixes;
+исторические PDF magic assertions не считаются parser/render evidence.
 
 ## Известные production gaps
 
@@ -193,7 +201,7 @@ Seed, volume bootstrap и persistence probes используют общий
 не добавлен. Bootstrap `--repair-legacy` заменяет только точные старые пять
 fixtures при выключенной demo-only Beta; неизвестные файлы не перезаписывает.
 29.09.2026 в18:17UTC все восемь известных повреждённых demo PDF восстановлены
-в работающем runtime00a7 отдельным ограниченным ремонтом данных; семь размеров
+в работающем runtime 00a7 отдельным ограниченным ремонтом данных; семь размеров
 согласованы без изменения статусов. Повторные HTTP downloads, strict parsing,
 отрисовка, 24 auth-denial checks и download audit подтверждены в
 `docs/PDF_REPAIR_2026-09-29.md`. Это не deployment нового генератора и не

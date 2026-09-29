@@ -1,0 +1,21 @@
+{
+  "verifiedAt": "2026-09-29T17:46:01.913261+00:00",
+  "mainSha": "3ef4f64fc2b61ca3bc317d72f662f97134e576c6",
+  "mainSbom": {
+    "sha256": "a6e3446341c7a385f9f28edd7d7c869a1dffaf88bad4ce0a34cbae98c4934c15",
+    "sourceDigestAndSignerWorkflowFreshVerification": true,
+    "downloadedSbomEqualsVerifiedPredicate": true,
+    "subject": "package-lock.json",
+    "scope": "Production npm dependencies; not a full OS/container or Android SBOM"
+  },
+  "availableExternalApk": {
+    "sourceSha": "00a7b3a03fb6d177aadffb1abf8fa6cbe895bda2",
+    "sha256": "bc317eac3f3fb5633d17f1d04435720fe6c95ac438fad56e5c7098852bbdcff6",
+    "matchesChecksumFile": true,
+    "externalUrlVerifier": "passed: exact https://horeca-beta.up.railway.app in classes2.dex; 2 DEX files scanned",
+    "scope": "Historical debug WebView APK; no current-main external APK, physical-device or store-signing proof claimed",
+    "workflowRunUrl": "https://github.com/Gardishan/Horeca/actions/runs/36225121691"
+  },
+  "githubTags": [],
+  "githubReleases": []
+}

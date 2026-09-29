@@ -1,0 +1,77 @@
+{
+  "observedAt": "2026-09-29T17:46:21.296Z",
+  "environment": "Railway beta",
+  "runtimeCommit": "00a7b3a03fb6d177aadffb1abf8fa6cbe895bda2",
+  "sourceCommit": "3ef4f64fc2b61ca3bc317d72f662f97134e576c6",
+  "method": "Independent browser contexts; POST intercepted locally and never sent; only page GETs reached provider",
+  "cases": [
+    {
+      "flow": "invite",
+      "mode": "network-abort",
+      "interceptedPostRequests": 1,
+      "realMutationRequests": 0,
+      "url": "https://horeca-beta.up.railway.app/beta-access",
+      "buttonDisabled": true,
+      "buttonText": "Проверяем…",
+      "alerts": [
+        ""
+      ],
+      "pageErrors": [
+        {
+          "name": "TypeError"
+        }
+      ]
+    },
+    {
+      "flow": "invite",
+      "mode": "non-json-503",
+      "interceptedPostRequests": 1,
+      "realMutationRequests": 0,
+      "url": "https://horeca-beta.up.railway.app/beta-access",
+      "buttonDisabled": true,
+      "buttonText": "Проверяем…",
+      "alerts": [
+        ""
+      ],
+      "pageErrors": [
+        {
+          "name": "Uncaught (in promise) SyntaxError"
+        }
+      ]
+    },
+    {
+      "flow": "buyer-request",
+      "mode": "network-abort",
+      "interceptedPostRequests": 1,
+      "realMutationRequests": 0,
+      "url": "https://horeca-beta.up.railway.app/catalog/arabica-blend-1kg",
+      "buttonDisabled": true,
+      "buttonText": "Отправляем…",
+      "alerts": [
+        ""
+      ],
+      "pageErrors": [
+        {
+          "name": "TypeError"
+        }
+      ]
+    },
+    {
+      "flow": "buyer-request",
+      "mode": "non-json-503",
+      "interceptedPostRequests": 1,
+      "realMutationRequests": 0,
+      "url": "https://horeca-beta.up.railway.app/catalog/arabica-blend-1kg",
+      "buttonDisabled": true,
+      "buttonText": "Отправляем…",
+      "alerts": [
+        ""
+      ],
+      "pageErrors": [
+        {
+          "name": "Uncaught (in promise) SyntaxError"
+        }
+      ]
+    }
+  ]
+}
