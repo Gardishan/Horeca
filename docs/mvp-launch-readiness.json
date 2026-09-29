@@ -22,18 +22,20 @@
     {
       "id": "controlled-beta-safety",
       "title": "Controlled Beta access, kill switch, demo-only data policy and noindex are enforced server-side",
-      "status": "done",
+      "status": "in_progress",
       "blocking": true,
       "owner": "Engineering",
       "evidence": [
         "https://github.com/Gardishan/Horeca/actions/runs/36600977390",
         "https://github.com/Gardishan/Horeca/actions/runs/36600977405",
         "docs/releases/mvp-beta-2026-09-29/candidate-00a7-launch-evidence.json",
-        "docs/releases/mvp-beta-2026-09-29/disabled-rollback-rehearsal.json"
+        "docs/releases/mvp-beta-2026-09-29/disabled-rollback-rehearsal.json",
+        "tests/proxy.test.ts",
+        "scripts/smoke-beta-external.mjs"
       ],
-      "verifiedAt": "2026-09-29T17:07:45Z",
+      "verifiedAt": null,
       "environment": "railway-beta",
-      "notes": "Current main policy tests and prior external invite/cookie/auth/role/demo-only/kill-switch evidence pass. Readiness200 for active 00a7 and anonymous catalog 307 to invite gate were rechecked on Sep 29. This does not promote28d066a to runtime."
+      "notes": "Prior external invite/cookie/auth/role/demo-only/kill-switch evidence covered ordinary navigation only. A matcher regression reproduced that client-supplied prefetch headers bypassed the page invite gate and kill switch on deployed00a7. PR58 removes this exclusion, tests the installed Next matcher and enabled/disabled policy for ordinary, prefetch and RSC traffic, and extends external page probes. The corrected image requires fresh external enabled/disabled evidence; existing API role guards remain in place."
     },
     {
       "id": "beta-database",

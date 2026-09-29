@@ -16,6 +16,9 @@ const originalArgv = process.argv;
 const scriptUrl = pathToFileURL(path.join(process.cwd(), "scripts/smoke-beta-external.mjs")).href;
 
 type FixtureOptions = {
+  betaDisabled?: boolean;
+  invitedRscRedirect?: "foreign" | "invite" | "loop";
+  bypassPrefetchGate?: "next-router-prefetch" | "purpose";
   missingSeedPath?: string;
   supplierDownloadPath?: string;
   cacheableSeedPath?: string;
@@ -26,6 +29,7 @@ function betaServer(options: FixtureOptions = {}) {
   let requestCount = 3;
   let markerBytes = Buffer.from("%PDF-1.4\nSynthetic retained marker\n%%EOF\n");
   const requests: Array<{ pathname: string; identity: string | undefined }> = [];
+  const pageRequests: Array<{ pathname: string; hasBetaAccess: boolean; headers: Headers }> = [];
   const ok = (data: unknown, init?: ResponseInit) => Response.json({ ok: true, data }, init);
   const denied = (status: number, code = "FORBIDDEN") => (
     Response.json({ ok: false, error: { code } }, { status })
@@ -49,10 +53,25 @@ function betaServer(options: FixtureOptions = {}) {
     if (pathname === "/api/health/live") {
       return ok({ status: "alive" }, { headers: { "Cache-Control": "no-store" } });
     }
-    if (pathname === "/api/health/ready") return ok({ deploymentVersion });
-    if (pathname === "/catalog") {
-      return new Response(null, { status: 307, headers: { Location: `${origin}/beta-access` } });
+    if (pathname === "/api/health/ready") {
+      return options.betaDisabled ? denied(503, "NOT_READY") : ok({ deploymentVersion });
     }
+    if (["/catalog", "/dashboard/company", "/admin"].includes(pathname)) {
+      pageRequests.push({ pathname, hasBetaAccess, headers });
+      if (options.bypassPrefetchGate && headers.has(options.bypassPrefetchGate)) {
+        return new Response("Page bypassed Beta gate");
+      }
+      if (options.betaDisabled) return new Response("Beta disabled", { status: 503, headers: { "Cache-Control": "no-store" } });
+      if (!hasBetaAccess) return new Response(null, { status: 307, headers: { Location: `${origin}/beta-access` } });
+      if (headers.get("rsc") === "1" && (!url.searchParams.has("_rsc") || options.invitedRscRedirect === "loop")) {
+        const target = options.invitedRscRedirect === "foreign"
+          ? "https://other.example/catalog?_rsc=fixture"
+          : options.invitedRscRedirect === "invite" ? "/beta-access" : "/catalog?_rsc=fixture";
+        return new Response(null, { status: 307, headers: { Location: target } });
+      }
+      return new Response("Demo catalog");
+    }
+    if (options.betaDisabled) return denied(503, "BETA_DISABLED");
     if (pathname === "/api/beta-access") {
       const body = JSON.parse(String(init.body));
       return body.accessToken === accessToken
@@ -111,7 +130,7 @@ function betaServer(options: FixtureOptions = {}) {
     throw new Error(`Unexpected fixture request: ${pathname}`);
   });
 
-  return { fetch, requests, get markerBytes() { return markerBytes; } };
+  return { fetch, requests, pageRequests, get markerBytes() { return markerBytes; } };
 }
 
 let directory: string;
@@ -167,6 +186,60 @@ describe("external Beta smoke against controlled HTTP fixtures", () => {
       ]);
     }
   });
+
+  it("checks ordinary, prefetch and RSC page requests before and after invite access", async () => {
+    const server = betaServer();
+    await runSmoke("full", server);
+
+    const anonymous = server.pageRequests.filter((request) => !request.hasBetaAccess);
+    for (const pathname of ["/catalog", "/dashboard/company", "/admin"]) {
+      expect(anonymous.filter((request) => request.pathname === pathname)).toHaveLength(5);
+    }
+    expect(server.pageRequests.filter((request) => request.hasBetaAccess)).toHaveLength(7);
+    expect(anonymous.some(({ headers }) => headers.get("purpose") === "prefetch")).toBe(true);
+    expect(anonymous.some(({ headers }) => headers.get("rsc") === "1" && headers.get("next-router-prefetch") === "1")).toBe(true);
+  });
+
+  it.each(["foreign", "invite"] as const)(
+    "rejects an invited RSC %s redirect instead of following it",
+    async (invitedRscRedirect) => {
+      await expect(runSmoke("full", betaServer({ invitedRscRedirect }))).rejects.toThrow(
+        "Unexpected RSC redirect for an invited page",
+      );
+    },
+  );
+
+  it("rejects a repeated RSC normalization redirect", async () => {
+    await expect(runSmoke("full", betaServer({ invitedRscRedirect: "loop" }))).rejects.toThrow(
+      "Invited page request was blocked",
+    );
+  });
+
+  it("checks disabled-Beta page traffic for ordinary, prefetch and RSC requests", async () => {
+    const server = betaServer({ betaDisabled: true });
+    const result = await runSmoke("preflight", server);
+
+    expect(result.ok).toBe(true);
+    expect(server.pageRequests).toHaveLength(15);
+  });
+
+  it.each(["next-router-prefetch", "purpose"] as const)(
+    "rejects an enabled-Beta page bypass via %s",
+    async (bypassPrefetchGate) => {
+      await expect(runSmoke("full", betaServer({ bypassPrefetchGate }))).rejects.toThrow(
+        "Anonymous page request bypassed the invite gate",
+      );
+    },
+  );
+
+  it.each(["next-router-prefetch", "purpose"] as const)(
+    "rejects a disabled-Beta page bypass via %s",
+    async (bypassPrefetchGate) => {
+      await expect(runSmoke("preflight", betaServer({ betaDisabled: true, bypassPrefetchGate }))).rejects.toThrow(
+        "Page traffic bypassed the Beta kill switch",
+      );
+    },
+  );
 
   it.each(seedPaths)("rejects missing seeded private file %s", async (missingSeedPath) => {
     await expect(runSmoke("full", betaServer({ missingSeedPath }))).rejects.toThrow(

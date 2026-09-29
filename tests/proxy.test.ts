@@ -15,8 +15,8 @@ const navigationHeaders = [
   ["plain navigation", {}],
   ["next-router-prefetch", { "next-router-prefetch": "1" }],
   ["purpose=prefetch", { purpose: "prefetch" }],
-  ["RSC navigation", { RSC: "1" }],
-  ["RSC prefetch", { RSC: "1", "Next-Router-Prefetch": "1" }],
+  ["RSC navigation", { rsc: "1" }],
+  ["RSC prefetch", { rsc: "1", "next-router-prefetch": "1" }],
 ] as const;
 
 const prefetchHeaders = [
@@ -42,7 +42,7 @@ describe("controlled Beta proxy", () => {
     vi.unstubAllEnvs();
   });
 
-  it.each(prefetchHeaders)(
+  it.each(navigationHeaders)(
     "does not let %s bypass the disabled-Beta gate",
     async (_label, headers) => {
       vi.stubEnv("APP_ENV", "beta");
@@ -107,6 +107,8 @@ describe("controlled Beta proxy", () => {
       const cookie = createBetaAccessCookieValue();
       const url = "https://beta.horeca.example/dashboard/company";
 
+      expect(unstable_doesMiddlewareMatch({ config, url, headers })).toBe(true);
+
       // Кука действительна: при включённой Beta тот же запрос проходит.
       expect(proxy(requestWith(url, headers, cookie)).status).toBe(200);
 
@@ -124,6 +126,7 @@ describe("controlled Beta proxy", () => {
     (_label, headers) => {
       enableBeta();
       const url = "https://beta.horeca.example/catalog";
+      expect(unstable_doesMiddlewareMatch({ config, url, headers })).toBe(true);
       const response = proxy(requestWith(url, headers, createBetaAccessCookieValue()));
 
       expect(response.status).toBe(200);

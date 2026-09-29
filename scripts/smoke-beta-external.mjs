@@ -97,6 +97,31 @@ async function expectLive() {
   assert(response.headers.get("cache-control")?.includes("no-store"), "Liveness response is cacheable");
 }
 
+const pageNavigationHeaders = [
+  ["navigation", {}],
+  ["next-router-prefetch", { "next-router-prefetch": "1" }],
+  ["purpose-prefetch", { purpose: "prefetch" }],
+  ["RSC navigation", { rsc: "1" }],
+  ["RSC prefetch", { rsc: "1", "next-router-prefetch": "1" }],
+];
+
+async function assertAnonymousPageGate(client, enabled) {
+  for (const pathname of ["/catalog", "/dashboard/company", "/admin"]) {
+    for (const [navigation, headers] of pageNavigationHeaders) {
+      const { response } = await client.fetch(pathname, { headers });
+      if (enabled) {
+        assert([307, 308].includes(response.status), `Anonymous page request bypassed the invite gate: ${pathname} (${navigation})`);
+        const target = new URL(response.headers.get("location") ?? "", origin);
+        assert(target.origin === origin.origin && target.pathname === "/beta-access", "Invite redirect target is missing");
+      } else {
+        assert(response.status === 503, `Page traffic bypassed the Beta kill switch: ${pathname} (${navigation})`);
+        assert(response.headers.get("cache-control")?.includes("no-store"), "Disabled Beta page response is cacheable");
+      }
+      await response.arrayBuffer();
+    }
+  }
+}
+
 async function runPreflight() {
   await expectLive();
   const client = new CookieClient();
@@ -110,7 +135,8 @@ async function runPreflight() {
     catalog.response.status === 503 && catalog.payload.error?.code === "BETA_DISABLED",
     "Beta traffic kill switch is not closed during preflight",
   );
-  return ["external HTTPS liveness", "readiness closed", "traffic kill switch closed"];
+  await assertAnonymousPageGate(client, false);
+  return ["external HTTPS liveness", "readiness closed", "traffic kill switch closed", "page kill switch for navigation, prefetch and RSC"];
 }
 
 async function runFull() {
@@ -124,9 +150,7 @@ async function runFull() {
     "Readiness reports a different deployment version",
   );
 
-  const page = await anonymous.fetch("/catalog");
-  assert([307, 308].includes(page.response.status), "Anonymous page request did not redirect to the invite gate");
-  assert(page.response.headers.get("location")?.includes("/beta-access"), "Invite redirect target is missing");
+  await assertAnonymousPageGate(anonymous, true);
   const anonymousCatalog = await anonymous.json("/api/catalog/products");
   assert(
     anonymousCatalog.response.status === 401 && anonymousCatalog.payload.error?.code === "BETA_ACCESS_REQUIRED",
@@ -143,6 +167,24 @@ async function runFull() {
 
   const supplier = new CookieClient();
   await grantBetaAccess(supplier);
+  for (const [navigation, headers] of pageNavigationHeaders) {
+    let { response } = await supplier.fetch("/catalog", { headers });
+    // Next normalizes missing RSC cache keys before rendering the invited page.
+    // Follow that one same-page redirect; an invite or foreign redirect is a failure.
+    if (headers.rsc === "1" && response.status === 307) {
+      const target = new URL(response.headers.get("location") ?? "", origin);
+      assert(
+        target.origin === origin.origin && target.pathname === "/catalog" &&
+        !target.hash && !target.username && !target.password &&
+        target.searchParams.has("_rsc") && [...target.searchParams.keys()].length === 1,
+        `Unexpected RSC redirect for an invited page: ${navigation}`,
+      );
+      await response.arrayBuffer();
+      ({ response } = await supplier.fetch(`${target.pathname}${target.search}`, { headers }));
+    }
+    assert(response.status === 200, `Invited page request was blocked: ${navigation}`);
+    await response.arrayBuffer();
+  }
   const catalog = await supplier.json("/api/catalog/products");
   assert(catalog.response.status === 200 && catalog.payload.data.items.length >= 1, "Invite-gated catalog is unavailable");
   const supplierIdentity = await login(supplier, "supplier@horeca.kz");
@@ -181,6 +223,8 @@ async function runFull() {
   return [
     "HTTPS liveness and readiness",
     "anonymous invite enforcement",
+    "page invite gate for navigation, prefetch and RSC",
+    "invited page navigation, prefetch and RSC",
     "invalid invite rejection",
     "secure invite cookie",
     "demo authentication",
