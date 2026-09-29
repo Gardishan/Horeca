@@ -1,6 +1,6 @@
 # Project context
 
-Последнее обновление: 24.09.2026.
+Последнее обновление: 29.09.2026.
 
 Это долговременная память для следующего разработчика или coding agent. Она фиксирует текущее состояние, но не заменяет schema, tests и source code.
 
@@ -18,11 +18,12 @@ HoReCa KZ — B2B marketplace проверенных поставщиков дл
 - PostgreSQL/Prisma: `prisma/schema.prisma` и versioned migrations.
 - Private uploads: filesystem разрешён в dev/test и demo-only single-replica Beta; staging/production требуют S3-compatible boundary, никогда не `/public`.
 - Session: подписанная HMAC HttpOnly cookie.
-- Deployment: Next.js standalone non-root image, отдельный migration target, startup validation, split liveness/readiness и fail-closed проверка состава runtime artifact.
+- Deployment: Next.js standalone non-root image, отдельный migration target, startup validation, split liveness/readiness и fail-closed проверка состава runtime artifact. Production build использует `next build --webpack`: Turbopack 16.3.6 пропускает Prisma external alias в standalone. HTTP smoke запускает копию runtime вне репозитория и запрещает escaping symlinks, чтобы родительский `node_modules` не скрывал отсутствующие зависимости.
 - Controlled Beta: access token → подписанная HttpOnly cookie, runtime kill switch, noindex и demo-only upload/payment policy.
 - Заявки: `/dashboard/requests` и `/api/dashboard/requests` читают контакты и сообщения только компании authenticated supplier, по 24 записи на страницу, с `private, no-store` для API.
 - Billing UI связывает счёт с выбранной pending subscription; наличие старого счёта не скрывает создание нового.
 - Параметры каталога проходят общую Zod-проверку на HTTP, page и service boundary; некорректная пагинация не доходит до Prisma.
+- Grid-элементы внутри `.app-shell` имеют `min-width: 0`: на мобильном экране прокручиваются nav/table wrappers, а не весь кабинет.
 
 Подробности: `docs/ARCHITECTURE.md`.
 
@@ -88,19 +89,44 @@ MVP deliverable проверен, но commercial production readiness не за
 
 ## MVP Beta launch readiness
 
-`docs/mvp-launch-readiness.json` отдельно учитывает controlled Beta и требует
-все восемь обязательных blocking controls. Историческое CI evidence не заменяет
-проверку нового launch commit. GitHub readback 24.09.2026 подтверждает Environment
-`beta`, но списки repository/Environment secrets пусты; последний Beta Launch
-`31879629530` завершился failure и не содержит внешнего URL. Launch остаётся
-незавершённым в [issue 44](https://github.com/Gardishan/Horeca/issues/44).
+Registry `docs/mvp-launch-readiness.json` требует восемь обязательных controls.
+На 29.09.2026: 3 done, 2 in progress, 3 blocked. Финальный запуск не объявлен;
+[issue 44](https://github.com/Gardishan/Horeca/issues/44) остаётся открытой.
 
-Railway Beta требует persistent volume `/app/storage/private` и отдельный
-bootstrap synthetic PDF в runtime; seed на Actions runner не переносит файлы
-в приложение. External smoke проверяет download и SHA-256 нового upload после
-redeploy/rollback. Workflow без image digest не формирует successful candidate
-evidence и не объявляет launch. Текущий change contract и ограничения:
-`docs/MVP_BETA_DELIVERY.md`. До внешних доказательств strict MVP gate красный.
+Railway Hobby, проект `horeca-kz-beta` / среда `beta`, PostgreSQL 17.11 с TLS 1.3
+и persistent volumes настроены. Три GitHub Environment secrets присутствуют;
+SSH host pin получен через initial trust, без независимой проверки fingerprint.
+GitHub auto-deploy выключен; rollout выполняется ручным **Beta Launch**.
+
+Кандидат `00a7b3a03fb6d177aadffb1abf8fa6cbe895bda2` прошёл workflow 36225121691:
+external HTTPS invite/auth/roles/private-download smoke, DB/file persistence,
+provider rollback/restore одной версии и APK с внешним origin. Физический restart
+PostgreSQL 24.09 и continuity readback 29.09 подтверждают сохранность той же БД.
+Свежее ограниченное наблюдение 00a7: 193 HTTP rows / 0 HTTP 5xx; один 401 auth log event
+при быстрой смене страниц исследован отдельным успешным обычным logout.
+
+PR #74 исправил мобильный overflow кабинетов; main
+`28d066a9b05e24384cc271eb6511973f33b8355d` прошёл Quality 36600977390 и
+Security 36600977405 (276 tests, container/DB/HTTP smoke, audit и signed SBOM).
+Browser CSS simulation прошла 39/39 измерений, но новый runtime ещё не проверен.
+Railway API incident YYTG8I10 задержал deployment; workflow 36601519494 отменён
+до enable, deployment e63096f1 подтверждён REMOVED, pending deployments нет.
+Внешняя readiness 17:10 UTC продолжает показывать 200 / 00a7. Сохранённые переменные
+следующего deployment: BETA_ENABLED=false, DEPLOYMENT_VERSION=28d066a; это не
+текущее окружение уже запущенного процесса. Cross-version rehearsal подготовлен,
+но не выполнялся; условный launcher остановлен. Tag/Release не созданы.
+
+Возобновление: после восстановления провайдера проверить отсутствие pending
+rollouts, выполнить Beta Launch на актуальном зелёном main, собрать matching
+SHA/image/APK/SBOM, проверить browser/mobile, rollback с restore и observe window.
+Затем полный strict MVP gate, exact-SHA prerelease и закрытие #44. Docs-only merge
+меняет следующий launch SHA, поэтому старые артефакты нельзя переименовывать.
+
+Точные факты и ограничения: `docs/releases/mvp-beta-2026-09-29/README.md`;
+инструкция участникам/оператору: `docs/BETA_GUIDE.md`. Bootstrap private PDF
+остаётся отдельным runtime-шагом; seed runner не переносит файлы в volume.
+APK verifier проверяет все root DEX; Railway rollback — scalar Boolean с явным true.
+Обычный failure cleanup ждёт до 15 минут; cancellation — best effort 240 секунд.
 
 ## Известные production gaps
 
@@ -126,7 +152,7 @@ evidence и не объявляет launch. Текущий change contract и о
 | Evidence-driven DoD | Review-ready, merge и runtime completion нельзя смешивать |
 | Machine-readable readiness | Production blockers имеют status, owner, evidence и next action |
 | Fail-closed abuse boundary | Production не продолжает rate-limited flow при отсутствии shared backend |
-| Provider-neutral OCI baseline | Hosting ещё не выбран; immutable standalone image сохраняет переносимость и единый tested artifact |
+| Provider-neutral OCI baseline | Railway выбран для controlled Beta; commercial cutover ещё не согласован, immutable standalone image сохраняет переносимость |
 | Split health probes | Liveness управляет restart, readiness не пускает traffic без config + PostgreSQL |
 | Dependabot minor/patch automation | Major toolchain upgrades требуют совместимой migration всей матрицы; security updates остаются независимыми |
 | Runtime/type major alignment | Node.js runtime, engine pins и `@types/node` остаются на одной major-ветке; repository gate блокирует drift |

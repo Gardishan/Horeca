@@ -267,7 +267,7 @@ jobs:
             | tee "${BETA_STATE_DIR}/runtime-validation.json"
 
           snapshot_deployments "${BETA_STATE_DIR}/before-initial-deploy.json"
-          railway up . \
+          railway up \
             --ci \
             --environment beta \
             --service "${APP_SERVICE_ID}" \
@@ -427,10 +427,9 @@ jobs:
           )
           cp android/app/build/outputs/apk/debug/app-debug.apk \
             "${RUNNER_TEMP}/horeca-beta-artifacts/horeca-kz-beta-debug.apk"
-          unzip -p "${RUNNER_TEMP}/horeca-beta-artifacts/horeca-kz-beta-debug.apk" classes.dex \
-            | strings \
-            | grep --fixed-strings "${BETA_BASE_URL}" \
-            > /dev/null
+          node scripts/verify-apk-url.mjs \
+            "${RUNNER_TEMP}/horeca-beta-artifacts/horeca-kz-beta-debug.apk" \
+            "${BETA_BASE_URL}"
           apk_sha256="$(sha256sum "${RUNNER_TEMP}/horeca-beta-artifacts/horeca-kz-beta-debug.apk" | cut -d' ' -f1)"
           printf '%s  %s\n' "${apk_sha256}" "horeca-kz-beta-debug.apk" \
             > "${RUNNER_TEMP}/horeca-beta-artifacts/APK_SHA256SUMS"
@@ -500,8 +499,9 @@ jobs:
             > "${BETA_STATE_DIR}/before-rollback.json"
           railway api --compact \
             --raw-var "id=${ENABLED_DEPLOYMENT_ID}" \
-            'mutation RollbackDeployment($id: String!) { deploymentRollback(id: $id) { id status } }' \
+            'mutation RollbackDeployment($id: String!) { deploymentRollback(id: $id) }' \
             > "${BETA_STATE_DIR}/rollback-mutation.json"
+          jq -e '.data.deploymentRollback == true' "${BETA_STATE_DIR}/rollback-mutation.json" > /dev/null
           rollback_deployment_id="$(wait_for_new_success "${BETA_STATE_DIR}/before-rollback.json" "rollback")"
 
           EXPECTED_DEPLOYMENT_VERSION="${GITHUB_SHA}" node scripts/smoke-beta-external.mjs full \
@@ -561,8 +561,9 @@ jobs:
             > "${BETA_STATE_DIR}/before-restore.json"
           railway api --compact \
             --raw-var "id=${CANDIDATE_DEPLOYMENT_ID}" \
-            'mutation RestoreDeployment($id: String!) { deploymentRollback(id: $id) { id status } }' \
+            'mutation RestoreDeployment($id: String!) { deploymentRollback(id: $id) }' \
             > "${BETA_STATE_DIR}/restore-mutation.json"
+          jq -e '.data.deploymentRollback == true' "${BETA_STATE_DIR}/restore-mutation.json" > /dev/null
           restored_deployment_id="$(wait_for_new_success "${BETA_STATE_DIR}/before-restore.json" "candidate restore")"
 
           EXPECTED_DEPLOYMENT_VERSION="${GITHUB_SHA}" node scripts/smoke-beta-external.mjs full \
@@ -633,10 +634,11 @@ jobs:
 
       - name: Disable Beta after an unsuccessful launch
         if: ${{ always() && (failure() || cancelled()) && env.BETA_ENABLE_ATTEMPTED == 'true' }}
-        timeout-minutes: 5
+        timeout-minutes: 18
         env:
           RAILWAY_TOKEN: ${{ secrets.BETA_RAILWAY_PROJECT_TOKEN }}
           BETA_ACCESS_TOKEN: ${{ secrets.BETA_SMOKE_ACCESS_TOKEN }}
+          BETA_LAUNCH_CANCELLED: ${{ job.status == 'cancelled' }}
         run: |
           set -euo pipefail
           umask 077
@@ -646,9 +648,13 @@ jobs:
             echo "::error::Beta safety shutdown could not be verified: launch context is missing" >&2
             exit 1
           fi
-          # Keep within GitHub's cancellation grace period. A lost runner or
-          # unavailable provider still requires operator verification of the kill switch.
-          if ! timeout 240s bash > "${BETA_STATE_DIR}/cleanup-attempt.log" 2>&1 <<'CLEANUP'
+          # Ordinary failures need the same 15-minute deployment wait as launch,
+          # plus provider setup and external preflight. Cancellation remains best
+          # effort within its shorter grace period; runner loss/provider outage
+          # still requires an operator to verify the kill switch.
+          cleanup_timeout=1050s
+          if [ "${BETA_LAUNCH_CANCELLED}" = "true" ]; then cleanup_timeout=240s; fi
+          if ! timeout "${cleanup_timeout}" bash > "${BETA_STATE_DIR}/cleanup-attempt.log" 2>&1 <<'CLEANUP'
           set -euo pipefail
           before_file="${BETA_STATE_DIR}/before-safety-shutdown.json"
           current_file="${BETA_STATE_DIR}/safety-shutdown-deployments.json"
@@ -669,7 +675,8 @@ jobs:
           test "${snapshot_available}" = "true"
 
           deployment_id=""
-          for attempt in $(seq 1 24); do
+          deployment_deadline="$(( $(date +%s) + 900 ))"
+          while [ "$(date +%s)" -lt "${deployment_deadline}" ]; do
             timeout 20s railway deployment list --environment beta --service "${APP_SERVICE_ID}" --json > "${current_file}"
             deployment_id="$(jq -r --slurpfile before "${before_file}" '
               ($before[0] | map(.id)) as $known |

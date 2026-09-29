@@ -1,6 +1,8 @@
 import { spawn } from "node:child_process";
+import { cp, mkdtemp, readdir, realpath, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import process from "node:process";
-import { join } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 
 const origin = process.env.SMOKE_ORIGIN ?? "http://127.0.0.1:3100";
 const smokeUrl = new URL(origin);
@@ -8,31 +10,41 @@ if (!["127.0.0.1", "localhost", "::1"].includes(smokeUrl.hostname)) {
   throw new Error("smoke:http may only launch against a local origin");
 }
 const port = smokeUrl.port || "3100";
-const standaloneServer = join(process.cwd(), ".next", "standalone", "server.js");
-const app = spawn(process.execPath, [standaloneServer], {
-  env: {
-    ...process.env,
-    APP_ENV: "test",
-    DEPLOYMENT_VERSION: "http-smoke",
-    APP_URL: origin,
-    NEXT_PUBLIC_APP_URL: origin,
-    PRIVATE_STORAGE_MODE: "filesystem",
-    DEMO_AUTH_ENABLED: "true",
-    RATE_LIMIT_MODE: "memory",
-    RATE_LIMIT_ALLOW_IN_MEMORY: "true",
-    MALWARE_SCAN_MODE: "mock",
-    HOSTNAME: "127.0.0.1",
-    PORT: port,
-  },
-  stdio: ["ignore", "pipe", "pipe"],
-});
-
+const standaloneSource = join(process.cwd(), ".next", "standalone");
+const privateStorageRoot = resolve(process.env.PRIVATE_STORAGE_ROOT ?? "./storage/private");
+let isolatedRoot;
+let app;
+let appStopped;
+let startupError;
 let logs = "";
-app.stdout.on("data", (chunk) => { logs += chunk.toString(); });
-app.stderr.on("data", (chunk) => { logs += chunk.toString(); });
+
+function containsPath(root, target) {
+  const pathFromRoot = relative(root, target);
+  return !isAbsolute(pathFromRoot) && pathFromRoot !== ".." && !pathFromRoot.startsWith(`..${sep}`);
+}
+
+async function assertSelfContainedLinks(directory, root) {
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const entryPath = join(directory, entry.name);
+    if (entry.isSymbolicLink()) {
+      let target;
+      try { target = await realpath(entryPath); } catch {
+        throw new Error("Standalone artifact contains a broken symbolic link");
+      }
+      if (!containsPath(root, target)) {
+        throw new Error("Standalone artifact contains a symbolic link outside its runtime root");
+      }
+    } else if (entry.isDirectory()) {
+      await assertSelfContainedLinks(entryPath, root);
+    }
+  }
+}
 
 async function waitUntilReady() {
   for (let attempt = 0; attempt < 60; attempt += 1) {
+    if (startupError || app.exitCode !== null || app.signalCode !== null) {
+      throw new Error(`Isolated Next.js server stopped before becoming ready.\n${logs}`);
+    }
     try {
       const response = await fetch(`${origin}/api/catalog/products`, { signal: AbortSignal.timeout(5_000) });
       if (response.ok) return;
@@ -302,6 +314,38 @@ async function run() {
 }
 
 try {
+  // A sibling repository node_modules must never satisfy missing runtime files.
+  isolatedRoot = await mkdtemp(join(tmpdir(), "horeca-http-smoke-"));
+  const isolatedRealRoot = await realpath(isolatedRoot);
+  if (containsPath(await realpath(process.cwd()), isolatedRealRoot)) {
+    throw new Error("HTTP smoke requires a temporary directory outside the repository");
+  }
+  await cp(standaloneSource, isolatedRoot, { recursive: true, verbatimSymlinks: true });
+  await assertSelfContainedLinks(isolatedRoot, isolatedRealRoot);
+  app = spawn(process.execPath, [join(isolatedRoot, "server.js")], {
+    cwd: isolatedRoot,
+    env: {
+      ...process.env,
+      NODE_PATH: "",
+      APP_ENV: "test",
+      DEPLOYMENT_VERSION: "http-smoke",
+      APP_URL: origin,
+      NEXT_PUBLIC_APP_URL: origin,
+      PRIVATE_STORAGE_MODE: "filesystem",
+      PRIVATE_STORAGE_ROOT: privateStorageRoot,
+      DEMO_AUTH_ENABLED: "true",
+      RATE_LIMIT_MODE: "memory",
+      RATE_LIMIT_ALLOW_IN_MEMORY: "true",
+      MALWARE_SCAN_MODE: "mock",
+      HOSTNAME: "127.0.0.1",
+      PORT: port,
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  appStopped = new Promise((resolveStopped) => app.once("close", resolveStopped));
+  app.once("error", (error) => { startupError = error; });
+  app.stdout.on("data", (chunk) => { logs += chunk.toString(); });
+  app.stderr.on("data", (chunk) => { logs += chunk.toString(); });
   const checks = await run();
   console.log(JSON.stringify({ ok: true, checks }, null, 2));
 } catch (error) {
@@ -309,14 +353,13 @@ try {
   console.error(logs);
   process.exitCode = 1;
 } finally {
-  app.kill("SIGTERM");
-  await new Promise((resolve) => {
-    const timeout = setTimeout(() => {
-      app.kill("SIGKILL");
-      resolve();
-    }, 2_000);
-    app.once("exit", () => { clearTimeout(timeout); resolve(); });
-  });
-  app.stdout.destroy();
-  app.stderr.destroy();
+  if (app) {
+    const timeout = setTimeout(() => app.kill("SIGKILL"), 2_000);
+    app.kill("SIGTERM");
+    await appStopped;
+    clearTimeout(timeout);
+    app.stdout.destroy();
+    app.stderr.destroy();
+  }
+  if (isolatedRoot) await rm(isolatedRoot, { recursive: true, force: true });
 }

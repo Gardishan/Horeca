@@ -1,0 +1,29 @@
+{
+  "environment": "Railway beta",
+  "appVersion": "00a7b3a03fb6d177aadffb1abf8fa6cbe895bda2",
+  "startedAt": "2026-09-29T16:48:52.318Z",
+  "clickedAt": "2026-09-29T16:49:03.429Z",
+  "finishedAt": "2026-09-29T16:49:05.756Z",
+  "scenario": "Pending Supplier verification; one logout click; wait for catalog; no competing navigation",
+  "before": {
+    "url": "https://horeca-beta.up.railway.app/dashboard/company/verification",
+    "h1": [
+      "Верификация поставщика"
+    ]
+  },
+  "after": {
+    "url": "https://horeca-beta.up.railway.app/catalog",
+    "h1": [
+      "Проверенные поставщики для HoReCa-закупок"
+    ],
+    "loginLinkVisible": true,
+    "errorHeadingVisible": false
+  },
+  "logoutResponses": [
+    {
+      "status": 200
+    }
+  ],
+  "pageErrors": [],
+  "http5xx": []
+}

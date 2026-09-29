@@ -1,5 +1,27 @@
 # Controlled MVP Beta delivery
 
+Current outcome (2026-09-29): code and CI pass through PR #74, but the final
+release is blocked by the Railway API incident. The previous `00a7b3a` candidate
+remains externally verified; attempted source `28d066a` was not promoted.
+The cancelled deployment is removed and no rollout remains pending. See the
+[timestamped checkpoint](releases/mvp-beta-2026-09-29/README.md) and
+[tester/operator guide](BETA_GUIDE.md). No tag or prerelease has been created.
+
+
+## Mobile cabinet correction — 2026-09-29
+
+Browser QA after successful candidate run 36225121691 reproduced a supplier
+verification page width of 892 px in a 390 px viewport. Grid items retained
+their intrinsic minimum widths, including the scrolling navigation and document
+table. Setting the shell's grid-item minimum width to zero reduced the actual
+document width to 390 px; navigation and tables retain their local scrolling.
+
+Scope: one shared CSS sizing rule within `.app-shell`; no policy, schema or API
+change. Risk: narrow cards and long labels, checked on supplier/admin pages at
+mobile and desktop widths. Verify the production build, then repeat browser QA
+and the external launch workflow on the corrected commit. The earlier candidate
+is valid historical runtime evidence, not the final release identity.
+
 Scope confirmed by the product owner on 2026-09-24: the existing invite-only,
 demo-only MVP Beta acceptance criteria. Commercial onboarding, real documents,
 real payments, production signing and new infrastructure providers are excluded.
@@ -113,3 +135,89 @@ cleanup; operators must then use the documented manual kill-switch procedure.
 Local verification is not evidence of an external launch. Keep unresolved
 controls in `docs/mvp-launch-readiness.json` open until their actual runtime,
 APK, rollback, observation and release-identity criteria pass.
+
+## Runtime packaging correction
+
+External disabled-Beta preflight on 2026-09-24 found liveness 200 but readiness
+500 on deployment `dd55767a-48ed-4531-b7eb-343c178e244b`, main `a332671f`.
+The log identifies missing `@prisma/client-2c3a283f134fdcb6`. Turbopack created
+that alias in `.next/node_modules` but omitted it and Prisma from standalone
+NFT traces. A local copy outside the repository reproduces missing runtime
+modules; the previous smoke inherited the repository's parent `node_modules`.
+The catalog kill switch remains closed (`503 BETA_DISABLED`).
+
+Change contract: use Next's supported `next build --webpack` production build
+and run the existing HTTP smoke from an isolated temporary artifact. Keep Next
+16.3.6 security fixes, application policy and schema unchanged. Risks are build
+output/CSP/RSC differences, covered by the full gate and existing role/HTML/HTTP
+smoke. No ad hoc rewriting of generated external-module aliases. Related upstream
+trace report: [Next.js #95816](https://github.com/vercel/next.js/issues/95816);
+[documented CLI build flags](https://nextjs.org/docs/app/api-reference/cli/next).
+
+The same provider probe confirmed that SSH commands run as UID 0 even when the
+application PID1 runs as UID 1001. Bootstrap must clear supplementary groups and
+drop GID/UID to the Docker application's 1001 before creating private directories
+or files. A failed privilege change must prevent writes; do not widen file modes
+or recursively change ownership as a workaround. Runtime PID1, mounted-volume
+ownership and write access as UID1001 were independently verified while traffic
+remained disabled.
+
+## Railway upload-path correction
+
+Launch run [36000555873](https://github.com/Gardishan/Horeca/actions/runs/36000555873)
+on main `dd72be8f634b27609d9cfb558a04aaaaa04c1902` passed provider, SSH and
+runtime-secret preflight, then stopped before upload with `prefix not found`.
+CLI 5.41.2 retains the explicit relative `.` input while using the absolute
+linked project directory as the archive prefix. The workflow now uses the
+documented `railway up` current-directory form so both paths share that root.
+Scope is only upload-path selection; service, environment, credentials and
+deployment gates are unchanged. The failed run never enabled Beta. A fresh
+main CI and actual upload/deployment must verify the correction.
+
+## APK verification correction
+
+The corrected upload succeeded on Railway, and
+[Beta Launch 36002052452](https://github.com/Gardishan/Horeca/actions/runs/36002052452)
+on `bfa8e345eda060b2bea0cfea166fb32cd9bfca2a` passed migration, demo seed,
+external role/download smoke and database/private-file persistence after app
+redeploy. Gradle built the APK successfully, but the verifier inspected only
+`classes.dex`. The downloaded Quality APK reproduces the defect: the configured
+URL resides in `classes2.dex`.
+
+Change contract: verify the exact configured URL among root APK DEX string
+constants, including secondary DEX files. Reject missing/wrong URLs, resource-only
+matches and unreadable artifacts. Preserve Gradle and application configuration;
+do not add dependencies or weaken the origin check. Focused fixtures and the
+actual downloaded APK cover the failure before another full launch attempt.
+
+The failed run exercised the safety shutdown: at 2026-09-24T12:58:08Z the
+workflow verified a new disabled deployment and external kill switch. An
+independent probe at 13:00:46Z returned `503 BETA_DISABLED`. This is real shutdown
+evidence, not a successful launch or rollback rehearsal.
+
+## Railway rollback and shutdown correction
+
+[Beta Launch 36004483180](https://github.com/Gardishan/Horeca/actions/runs/36004483180)
+on `f5455cbbf0de4aaf105350747be24befb36493a9` passed external smoke, persistence
+and the external-origin APK check. The rollback step then returned HTTP 400.
+Live API introspection on 2026-09-25 reports
+`deploymentRollback(id: String!): Boolean!`; the workflow's object selection
+was invalid. The read query is separate and must not be blamed from this log.
+[Read-only diagnostic 36137079916](https://github.com/Gardishan/Horeca/actions/runs/36137079916)
+confirmed the complete deployment read, `canRollback`, image digest and scalar
+schema with the existing project token. No broader credential is required.
+
+Change contract: call both rollback mutations as scalar operations, require an
+explicit `true`, then retain the existing provider deployment and external smoke
+readbacks. A rejected mutation must stop promotion. Preserve project-token scope;
+do not replace it with broader account credentials.
+
+The failure cleanup requested deployment `fa257e47-4ed1-4233-b9c3-7527bfa1f986`
+at 2026-09-24T13:21:37.341Z. Provider readback records SUCCESS at 13:28:08.056Z;
+the old 24-by-5-second poll loop had already stopped. Independent HTTPS probes
+on 2026-09-25 confirmed `503 BETA_DISABLED` and `503 NOT_READY`.
+Ordinary-failure cleanup must use the existing 15-minute deployment budget;
+cancellation remains explicitly best effort within 240 seconds. Test delayed
+success beyond the former poll cap and deadline expiry. Provider outage or loss
+of the runner can still prevent verification; do not claim shutdown from a
+variable update alone. No application policy or schema changes are in scope.

@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node scripts/prepare-standalone.mjs && node scripts/check-standalone-artifact.mjs",
+    "build": "next build --webpack && node scripts/prepare-standalone.mjs && node scripts/check-standalone-artifact.mjs",
     "start": "node .next/standalone/server.js",
     "check:runtime": "node scripts/check-runtime.mjs",
     "runtime:validate": "node --import tsx scripts/validate-runtime-config.ts",

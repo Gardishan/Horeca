@@ -1,0 +1,81 @@
+{
+  "phase": "after",
+  "verifiedAt": "2026-09-24T13:04:23.804698+00:00",
+  "projectId": "0c684f12-6b8d-441e-938d-48d312cc8bc3",
+  "environmentId": "e52a9c65-52ea-4e3d-8eba-d8f953f330a7",
+  "databaseServiceId": "e00c10d9-97d9-486e-9c9d-aed1f0034c2d",
+  "appVersion": "bfa8e345eda060b2bea0cfea166fb32cd9bfca2a",
+  "provider": {
+    "database": {
+      "id": "b258072a-bc5d-431c-9706-19493714d60d",
+      "latestDeployment": {
+        "id": "9e853fa2-faa6-4726-8b83-5341f5a70142",
+        "status": "SUCCESS"
+      },
+      "imageDigest": "sha256:a2a686db487c03fd134378cf3dfa26ca7c5558a977c3938fe6652f5d9fda6242"
+    },
+    "app": {
+      "id": "14d5c0ec-3e29-4f2c-8880-18238e0c1dc8",
+      "latestDeployment": {
+        "id": "9edf7b81-652f-4ca3-ad94-cf93c1fd3938",
+        "status": "SUCCESS"
+      }
+    },
+    "volume": {
+      "id": "d84d0870-4b70-4d04-9ee2-a7122cd7dc14",
+      "isPendingDeletion": false,
+      "mountPath": "/var/lib/postgresql/data",
+      "serviceId": "e00c10d9-97d9-486e-9c9d-aed1f0034c2d",
+      "state": "READY",
+      "volumeId": "29b37916-dab5-4d79-8221-b2c74a7c3440"
+    }
+  },
+  "externalPreflight": {
+    "ok": true,
+    "mode": "preflight",
+    "origin": "https://horeca-beta.up.railway.app",
+    "checks": [
+      "external HTTPS liveness",
+      "readiness closed",
+      "traffic kill switch closed"
+    ]
+  },
+  "database": {
+    "event": "beta_postgres_persistence_snapshot",
+    "observedAt": "2026-09-24T13:04:23.675978+00:00",
+    "readOnly": "on",
+    "serverVersion": "17.11 (Debian 17.11-1.pgdg13+2)",
+    "serverVersionNum": "170011",
+    "database": "horeca_beta",
+    "dataDirectory": "/var/lib/postgresql/data/pgdata",
+    "postmasterStartedAt": "2026-09-24T13:04:08.514032+00:00",
+    "clusterSystemId": "7689071758798798909",
+    "tls": {
+      "ssl": true,
+      "version": "TLSv1.3",
+      "cipher": "TLS_AES_256_GCM_SHA384"
+    },
+    "migrations": [
+      {
+        "name": "202607160001_init",
+        "checksum": "9f4c051cf3ed3b0687a6f1c3c367736d5093f745d0dcc5ce142e20d2a4ddf445",
+        "finishedAt": "2026-09-24T12:55:23.06195+00:00",
+        "rolledBackAt": null,
+        "appliedSteps": 1
+      }
+    ],
+    "counts": {
+      "users": 3,
+      "companies": 2,
+      "products": 6,
+      "buyerRequests": 1,
+      "documents": 5,
+      "payments": 2
+    },
+    "marker": {
+      "id": "cmufjcr7b0005pt01e7lcsgxu",
+      "labelSha256": "57bba216638908be21fdc98117f256bcc51d3bb3b27a1d374881cea7c784fef6",
+      "createdAt": "2026-09-24T12:56:20.663"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "projectId": "0c684f12-6b8d-441e-938d-48d312cc8bc3",
+  "environmentId": "e52a9c65-52ea-4e3d-8eba-d8f953f330a7",
+  "serviceId": "2f4e1206-828e-4fc2-86d3-34ff2da48c7c",
+  "event": "beta_demo_bootstrap_verified",
+  "deploymentId": "bd44f543-7ccf-42ea-98b7-05b9fa24e695",
+  "verifiedAt": "2026-09-24T12:50:59.072Z",
+  "betaEnabled": false,
+  "pid1Uid": 1001,
+  "firstBootstrap": {
+    "created": 5,
+    "existing": 0
+  },
+  "secondBootstrap": {
+    "created": 0,
+    "existing": 5
+  },
+  "privateFileCount": 5,
+  "privateDirectoryCount": 4,
+  "fileOwnerUid": 1001,
+  "fileOwnerGid": 1001,
+  "fileMode": "0600",
+  "directoryMode": "0700",
+  "existingFileMetadataPreserved": true
+}

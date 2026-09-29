@@ -1,0 +1,24 @@
+{
+  "observedAt": "2026-09-29T16:45:23.211830+00:00",
+  "volumes": [
+    {
+      "environmentId": "e52a9c65-52ea-4e3d-8eba-d8f953f330a7",
+      "id": "1b08d773-198f-42a1-a7b6-afd6351cd1c5",
+      "isPendingDeletion": false,
+      "mountPath": "/app/storage/private",
+      "serviceId": "2f4e1206-828e-4fc2-86d3-34ff2da48c7c",
+      "state": "READY",
+      "volumeId": "13da0661-9e80-4084-a4df-5b50dada991b"
+    },
+    {
+      "environmentId": "e52a9c65-52ea-4e3d-8eba-d8f953f330a7",
+      "id": "d84d0870-4b70-4d04-9ee2-a7122cd7dc14",
+      "isPendingDeletion": false,
+      "mountPath": "/var/lib/postgresql/data",
+      "serviceId": "e00c10d9-97d9-486e-9c9d-aed1f0034c2d",
+      "state": "READY",
+      "volumeId": "29b37916-dab5-4d79-8221-b2c74a7c3440"
+    }
+  ],
+  "historicalDatabaseVolumeMatches": true
+}
